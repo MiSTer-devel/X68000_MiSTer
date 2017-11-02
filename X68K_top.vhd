@@ -85,9 +85,9 @@ port(
 	setup          : in std_logic;
 
 	-- Video, Audio/CMT ports
-	VGA_R     		: inout std_logic_vector( 3 downto 0);  	-- RGB_Red / Svideo_C
-	VGA_G     		: inout std_logic_vector( 3 downto 0);  	-- RGB_Grn / Svideo_Y
-	VGA_B     		: inout std_logic_vector( 3 downto 0);  	-- RGB_Blu / CompositeVideo
+	VGA_R     		: inout std_logic_vector( 4 downto 0);  	-- RGB_Red / Svideo_C
+	VGA_G     		: inout std_logic_vector( 4 downto 0);  	-- RGB_Grn / Svideo_Y
+	VGA_B     		: inout std_logic_vector( 4 downto 0);  	-- RGB_Blu / CompositeVideo
 	VGA_HS  			: out std_logic;                        	-- Csync(RGB15K), HSync(VGA31K)
 	VGA_VS  			: out std_logic;                        	-- Audio(RGB15K), VSync(VGA31K)
 	VGA_DE  			: out std_logic;
@@ -2376,7 +2376,7 @@ begin
 
 	nv_ce<='1' when abus(23 downto 14)="1110110100" else '0';
 
-	CRTC	:CRTCX68TXT generic map(4) port map(
+	CRTC	:CRTCX68TXT generic map(5) port map(
 		LRAMSEL	=>LRAMSEL,
 		LRAMADR	=>LVIDADR,
 		LRAMDAT	=>LVIDRD,

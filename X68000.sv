@@ -224,12 +224,12 @@ end
 
 ///////////////////////////////////////////////////
 
-wire [3:0] video_r, video_g, video_b;
+wire [4:0] video_r, video_g, video_b;
 wire video_hs, video_vs;
 
-assign VGA_R = {2{video_r}};
-assign VGA_G = {2{video_g}};
-assign VGA_B = {2{video_b}};
+assign VGA_R = {video_r, video_r[4:2]};
+assign VGA_G = {video_g, video_g[4:2]};
+assign VGA_B = {video_b, video_b[4:2]};
 assign VGA_HS = ~video_hs;
 assign VGA_VS = ~video_vs;
 assign CLK_VIDEO = clk_vid;
