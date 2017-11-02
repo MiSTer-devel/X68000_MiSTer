@@ -12,3 +12,6 @@
 * floppy images mounted as ejected (Nios II source code required to get it fixed)
 * Unused real HDD/FDD options should be deleted from menu.
 * original screen not properly framed.
+
+### Special keys
+**F11** - switch to diskemu menu.
