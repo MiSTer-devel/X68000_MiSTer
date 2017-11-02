@@ -719,12 +719,14 @@ begin
 				gdoten	when pri_gr="10" else
 				'0';
 
-	lbwdat<=	(others=>'0') when lvviden='0' or lhviden='0' else
-				wdatpr0 when wenpr0d='1' else
-				wdatpr1 when wenpr1d='1' else
-				wdatpr2 when wenpr2d='1' else
-				(others=>'0');
-				
+	lbwdat(15 downto 1) <= (others=>'0') when lvviden='0' or lhviden='0' else
+									wdatpr0(15 downto 1) when wenpr0d='1' else
+									wdatpr1(15 downto 1) when wenpr1d='1' else
+									wdatpr2(15 downto 1) when wenpr2d='1' else
+									(others=>'0');
+
+	lbwdat(0) <= lvviden and lhviden;
+
 	lbaddr<=hadly2;
 	
 	g00_addr<=	g_base(arange-1 downto 18) & nxt_g0addr	when ramsel='0' else

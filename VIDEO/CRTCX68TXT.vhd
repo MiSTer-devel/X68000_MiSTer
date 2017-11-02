@@ -285,7 +285,7 @@ begin
 	X68R<=(others=>'0')when VISIBLE='0' else LRAMDAT(10 downto 11-DACRES);
 	X68G<=(others=>'0')when VISIBLE='0' else LRAMDAT(15 downto 16-DACRES);
 	X68B<=(others=>'0')when VISIBLE='0' else LRAMDAT(5 downto 6-DACRES);
-	VIDEN <= VISIBLE;
+	VIDEN <= VISIBLE and (LRAMDAT(0) or TXTMODE);
 	CEPIX <= clk2;
 
 	process(gclk)begin
