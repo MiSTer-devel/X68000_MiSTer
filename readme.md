@@ -11,7 +11,7 @@
 * config file sometimes gets corrupted after save.
 * floppy images mounted as ejected (Nios II source code required to get it fixed)
 * Unused real HDD/FDD options should be deleted from menu.
-* original screen not properly framed.
+* Reset works only once (probably Nios II FW bug).
 
 ### Special keys
 **F11** - switch to diskemu menu.
