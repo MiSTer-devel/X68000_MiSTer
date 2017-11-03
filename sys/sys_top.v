@@ -612,6 +612,10 @@ wire        led_user;
 wire  [1:0] led_power;
 wire  [1:0] led_disk;
 
+wire vs_emu, hs_emu;
+sync_fix sync_v(FPGA_CLK3_50, vs_emu, vs);
+sync_fix sync_h(FPGA_CLK3_50, hs_emu, hs);
+
 emu emu
 (
 	.CLK_50M(FPGA_CLK3_50),
@@ -624,8 +628,8 @@ emu emu
 	.VGA_R(r_out),
 	.VGA_G(g_out),
 	.VGA_B(b_out),
-	.VGA_HS(hs),
-	.VGA_VS(vs),
+	.VGA_HS(hs_emu),
+	.VGA_VS(vs_emu),
 	.VGA_DE(de),
 
 	.LED_USER(led_user),
@@ -677,5 +681,34 @@ emu emu
 	.SDRAM_CLK(SDRAM_CLK),
 	.SDRAM_CKE(SDRAM_CKE)
 );
+
+endmodule
+
+module sync_fix
+(
+	input clk,
+	
+	input sync_in,
+	output sync_out
+);
+
+assign sync_out = sync_in ^ pol;
+
+reg pol;
+always @(posedge clk) begin
+	integer pos = 0, neg = 0, cnt = 0;
+	reg s1,s2;
+
+	s1 <= sync_in;
+	s2 <= s1;
+
+	if(~s2 & s1) neg <= cnt;
+	if(s2 & ~s1) pos <= cnt;
+
+	cnt <= cnt + 1;
+	if(s2 != s1) cnt <= 0;
+
+	pol <= pos > neg;
+end
 
 endmodule
