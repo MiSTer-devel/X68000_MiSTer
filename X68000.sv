@@ -111,15 +111,13 @@ parameter CONF_STR = {
 	"O1,Aspect ratio,4:3,16:9;",
 	"-;",
 	"T6,Reset;",
-	"V,v1.00.",`BUILD_DATE
+	"V,v1.01.",`BUILD_DATE
 };
 
 /////////////////  CLOCKS  ////////////////////////
 
-wire clk_ram, clk_sys, clk_fdd;
+wire clk_ram, clk_sys, clk_fdd, clk_vid;
 wire pll_locked;
-
-wire clk_vid = clk_ram;
 
 pll pll
 (
@@ -129,6 +127,7 @@ pll pll
 	.outclk_1(SDRAM_CLK),
 	.outclk_2(clk_sys),
 	.outclk_3(clk_fdd),
+	.outclk_4(clk_vid),
 	.locked(pll_locked)
 );
 
@@ -230,8 +229,6 @@ wire video_hs, video_vs;
 assign VGA_R = {video_r, video_r[4:2]};
 assign VGA_G = {video_g, video_g[4:2]};
 assign VGA_B = {video_b, video_b[4:2]};
-assign VGA_HS = ~video_hs;
-assign VGA_VS = ~video_vs;
 assign CLK_VIDEO = clk_vid;
 
 assign AUDIO_S = 1;
@@ -295,15 +292,15 @@ X68K_top X68K_top
 	.VGA_R(video_r),
 	.VGA_G(video_g),
 	.VGA_B(video_b),
-	.VGA_HS(video_hs),
-	.VGA_VS(video_vs),
+	.VGA_HS(VGA_HS),
+	.VGA_VS(VGA_VS),
 	.VGA_DE(VGA_DE),
 	.VGA_CE(CE_PIXEL),
 
 	.sndL(AUDIO_L),
 	.sndR(AUDIO_R),
 
-	.pswn(1),
+	.pswn(0),
 	.rstn(reset_n & ~reset)
 );
 

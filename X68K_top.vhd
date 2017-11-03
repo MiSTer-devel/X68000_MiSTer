@@ -2008,26 +2008,31 @@ begin
 --	mem_rstn<=not srst when pDip(0)='1' else plllock and rstn;
 	mem_rstn<=rstn;
 
-	--ldr_rstn<=plllock and pwr_rstn and ram_inidone;
-	dem_rstn<=plllock and pwr_rstn;
-	srstn<=plllock and pwr_rstn and ldr_done and dem_initdone;
+	pwrsw <= pswn;
+	dem_rstn <= rstn;
+	srstn <= rstn and ldr_done and dem_initdone;
 
-	pwr	:pwrcont  port map
-	(
-		addrin=>abus,
-		wr		=>b_wr(0),
-		wrdat	=>dbus(7 downto 0),
-		
-		psw	=>pswn,
-
-		power	=>pwr_rstn,
-		pint	=>pwrsw,
-
-		sclk	=>sysclk,
-		srstn	=>srstn,
-		pclk	=>sysclk,
-		prstn	=>rstn
-	);
+--	--ldr_rstn<=plllock and pwr_rstn and ram_inidone;
+--	dem_rstn<=plllock and pwr_rstn;
+--	srstn<=plllock and pwr_rstn and ldr_done and dem_initdone;
+--
+--
+--	pwr	:pwrcont  port map
+--	(
+--		addrin=>abus,
+--		wr		=>b_wr(0),
+--		wrdat	=>dbus(7 downto 0),
+--		
+--		psw	=>pswn,
+--
+--		power	=>pwr_rstn,
+--		pint	=>pwrsw,
+--
+--		sclk	=>sysclk,
+--		srstn	=>srstn,
+--		pclk	=>sysclk,
+--		prstn	=>rstn
+--	);
 
 	mpu_clke<=(not dma_bconte);-- and (not pDip(2));
 	MPU	:TG68 port map
