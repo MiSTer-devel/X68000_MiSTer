@@ -111,6 +111,7 @@ parameter CONF_STR = {
 	"O1,Aspect ratio,4:3,16:9;",
 	"-;",
 	"T6,Reset;",
+	"J,Fire 1,Fire 2;",
 	"V,v1.01.",`BUILD_DATE
 };
 
@@ -137,6 +138,9 @@ wire [31:0] status;
 wire  [1:0] buttons;
 
 wire [15:0] joystick_0, joystick_1;
+
+wire  [5:0] joyA = ~{joystick_0[5:4],joystick_0[0],joystick_0[1],joystick_0[2],joystick_0[3]};
+wire  [5:0] joyB = ~{joystick_1[5:4],joystick_1[0],joystick_1[1],joystick_1[2],joystick_1[3]};
 
 wire        ioctl_download;
 wire  [7:0] ioctl_index;
@@ -264,8 +268,8 @@ X68K_top X68K_top
 	.ms_datin(ps2_mouse_data_out),
 	.ms_datout(ps2_mouse_data_in),
 
-	.pJoyA(joystick_0[5:0]),
-	.pJoyB(joystick_1[5:0]),
+	.pJoyA(joyA),
+	.pJoyB(joyB),
 
 	.ldr_addr(ioctl_addr[19:0]),
 	.ldr_wdat(ioctl_dout),
