@@ -59,19 +59,18 @@ signal	STATE	:state_t;
 constant RAWIDRG	:integer	:=AWIDTH-CAWIDTH;
 
 --command: CKE & CSN & RAS_N & CAS_N & WE_N
-constant cmd_CWAIT	:std_logic_vector(4 downto 0)	:="01111";
-constant cmd_NOP	:std_logic_vector(4 downto 0)	:="11111";
-constant cmd_BNKE	:std_logic_vector(4 downto 0)	:="10011";
-constant cmd_READ	:std_logic_vector(4 downto 0)	:="10101";
-constant cmd_WRITE	:std_logic_vector(4 downto 0)	:="10100";
-constant cmd_PALL	:std_logic_vector(4 downto 0)	:="10010";
-constant cmd_REFRSH	:std_logic_vector(4 downto 0)	:="10001";
-constant cmd_MRS	:std_logic_vector(4 downto 0)	:="10000";
+constant cmd_CWAIT	:std_logic_vector(2 downto 0)	:="111";
+constant cmd_NOP	   :std_logic_vector(2 downto 0)	:="111";
+constant cmd_BNKE	   :std_logic_vector(2 downto 0)	:="011";
+constant cmd_READ	   :std_logic_vector(2 downto 0)	:="101";
+constant cmd_WRITE	:std_logic_vector(2 downto 0)	:="100";
+constant cmd_PALL	   :std_logic_vector(2 downto 0)	:="010";
+constant cmd_REFRSH	:std_logic_vector(2 downto 0)	:="001";
+constant cmd_MRS	   :std_logic_vector(2 downto 0)	:="000";
 
-signal	COMMAND	:std_logic_vector(4 downto 0);
-signal	DQE		:std_logic_vector(1 downto 0);
-signal	BA		:std_logic_vector(1 downto 0);
-signal	MADDR	:std_logic_vector(12 downto 0);
+signal	COMMAND  :std_logic_vector(2 downto 0);
+signal	BA		   :std_logic_vector(1 downto 0);
+signal	MADDR	   :std_logic_vector(12 downto 0);
 
 signal	clkstate	:integer range 0 to 11;
 signal	csshift		:std_logic;
@@ -133,7 +132,6 @@ begin
 	begin
 		if(rstn='0')then
 			COMMAND<=cmd_NOP;
-			DQE<="11";
 			BA<="11";
 			MADDR<=(others=>'0');
 			clkstate<=0;
@@ -166,18 +164,15 @@ begin
 					case clkstate is
 					when 0 =>
 						COMMAND<=cmd_PALL;
-						DQE<="11";
 						BA<="00";
-						MADDR<=(others=>'1');
+						MADDR<="0010000000000";
 					when 3 =>
 						COMMAND<=cmd_NOP;
-						DQE<="11";
 						BA<="00";
 						MADDR<=(others=>'0');
 						st_next:='1';
 					when others =>
 						COMMAND<=cmd_NOP;
-						DQE<="11";
 						BA<="00";
 						MADDR<=(others=>'0');
 					end case;
@@ -185,37 +180,31 @@ begin
 					case clkstate is
 					when 0 =>
 						COMMAND<=cmd_REFRSH;
-						DQE<="11";
 						BA<="00";
-						MADDR<=(others=>'0');
+						MADDR<=(others=>'1');
 					when 9 =>
 						COMMAND<=cmd_NOP;
-						DQE<="11";
 						BA<="00";
-						MADDR<=(others=>'0');
+						MADDR<=(others=>'1');
 						st_next:='1';
 					when others =>
 						COMMAND<=cmd_NOP;
-						DQE<="11";
 						BA<="00";
-						MADDR<=(others=>'0');
+						MADDR<=(others=>'1');
 					end case;
 				when ST_INITMRS =>
 					case clkstate is
 					when 0 =>
 						COMMAND<=cmd_MRS;
-						DQE<="11";
 						BA<="00";
 						MADDR<="0000000110111";		--CAS3, full page burst
 					when 2 =>
 						COMMAND<=cmd_NOP;
-						DQE<="11";
 						BA<="00";
 						MADDR<=(others=>'0');
 						st_next:='1';
 					when others =>
 						COMMAND<=cmd_NOP;
-						DQE<="11";
 						BA<="00";
 						MADDR<=(others=>'0');
 					end case;
@@ -223,48 +212,40 @@ begin
 					case clkstate is
 					when 0 =>
 						COMMAND<=cmd_BNKE;
-						DQE<="11";
 						BA<=BADDR;
 						MADDR<=RADDR;
 					when 3 =>
 						COMMAND<=cmd_READ;
-						DQE<="00";
 						BA<=BADDR;
-						MADDR<='0' & CBADDR(10) & '0' & CBADDR(9 downto 0);
+						MADDR<="000" & CBADDR(9 downto 0);
 						curaddr<=bgnaddr;
 					when 4 =>
 						if(curaddr=lastlow)then
 							COMMAND<=cmd_READ;
-							DQE<="00";
 							BA<=BADDR;
-							MADDR<='0' & CZADDR(10) & '0' & CZADDR(9 downto 0);
+							MADDR<="000" & CZADDR(9 downto 0);
 						else
 							COMMAND<=cmd_NOP;
-							DQE<="00";
 							BA<="00";
 							MADDR<=(others=>'0');
 						end if;
 					when 5 =>
 						if((curaddr+addr1)=lastlow)then
 							COMMAND<=cmd_READ;
-							DQE<="00";
 							BA<=BADDR;
-							MADDR<='0' & CZADDR(10) & '0' & CZADDR(9 downto 0);
+							MADDR<="000" & CZADDR(9 downto 0);
 						else
 							COMMAND<=cmd_NOP;
-							DQE<="00";
 							BA<="00";
 							MADDR<=(others=>'0');
 						end if;
 					when 6 =>
 						if((curaddr+addr2)=lastlow)then
 							COMMAND<=cmd_READ;
-							DQE<="00";
 							BA<=BADDR;
-							MADDR<='0' & CZADDR(10) & '0' & CZADDR(9 downto 0);
+							MADDR<="000" & CZADDR(9 downto 0);
 						else
 							COMMAND<=cmd_NOP;
-							DQE<="00";
 							BA<="00";
 							MADDR<=(others=>'0');
 						end if;
@@ -273,12 +254,10 @@ begin
 					when 7 =>
 						if((curaddr+addr3)=lastlow)then
 							COMMAND<=cmd_READ;
-							DQE<="00";
 							BA<=BADDR;
-							MADDR<='0' & CZADDR(10) & '0' & CZADDR(9 downto 0);
+							MADDR<="000" & CZADDR(9 downto 0);
 						else
 							COMMAND<=cmd_NOP;
-							DQE<="00";
 							BA<="00";
 							MADDR<=(others=>'0');
 						end if;
@@ -289,20 +268,17 @@ begin
 						de<='1';
 					when 8 =>
 						COMMAND<=cmd_PALL;
-						DQE<="11";
 						BA<="00";
 						MADDR<=(others=>'1');
 						curaddr<=curaddr+addr1;
 					when 10  =>
 						COMMAND<=cmd_NOP;
-						DQE<="11";
 						BA<="00";
 						de<='0';
 						MADDR<=(others=>'0');
 						st_next:='1';
 					when others =>
 						COMMAND<=cmd_NOP;
-						DQE<="11";
 						BA<="00";
 						MADDR<=(others=>'0');
 					end case;
@@ -310,35 +286,30 @@ begin
 					case clkstate is
 					when 0 =>
 						COMMAND<=cmd_BNKE;
-						DQE<="11";
 						BA<=BADDR;
 						MADDR<=RADDR;
 						curaddr<=bgnaddr;
 					when 1 =>
 						COMMAND<=cmd_NOP;
-						DQE<="11";
 						BA<="00";
-						MADDR<=(others=>'0');
+						MADDR<=(others=>'1');
 						de<='1';
 					when 2 =>
 						COMMAND<=cmd_NOP;
-						DQE<="11";
 						BA<="00";
-						MADDR<=(others=>'0');
+						MADDR<=(others=>'1');
 						curaddr<=curaddr+addr1;
 					when 3 =>
 						COMMAND<=cmd_WRITE;
-						DQE<=not we;
 						BA<=BADDR;
-						MADDR<='0' & CBADDR(10) & '0' & CBADDR(9 downto 0);
+						MADDR<=not we & '0' & CBADDR(9 downto 0);
 						curaddr<=curaddr+addr1;
 						PMEMDAT<=wrdat;
 						csshift<='0';
 					when 4 =>
 						COMMAND<=cmd_NOP;
-						DQE<=not we;
 						BA<=BADDR;
-						MADDR<=(others=>'0');
+						MADDR<=not we & "00000000000";
 						PMEMDAT<=wrdat;
 						if(curaddr>=endaddr or curaddr<bgnaddr)then
 							csshift<='1';
@@ -349,18 +320,15 @@ begin
 					when 5 =>
 						PMEMDAT<=(others=>'Z');
 						COMMAND<=cmd_PALL;
-						DQE<="11";
 						BA<="00";
 						MADDR<=(others=>'1');
 					when 7 =>
 						COMMAND<=cmd_NOP;
-						DQE<="11";
 						BA<="00";
 						MADDR<=(others=>'0');
 						st_next:='1';
 					when others =>
 						COMMAND<=cmd_NOP;
-						DQE<="11";
 						BA<="00";
 						MADDR<=(others=>'0');
 					end case;
@@ -399,13 +367,13 @@ begin
 		end if;
 	end process;
 	
-	PMEMCKE	<=COMMAND(4);
-	PMEMCS_N	<=COMMAND(3);
+	PMEMCKE	<='1';
+	PMEMCS_N	<='0';
 	PMEMRAS_N<=COMMAND(2);
 	PMEMCAS_N<=COMMAND(1);
 	PMEMWE_N	<=COMMAND(0);
-	PMEMUDQ	<=DQE(1);
-	PMEMLDQ	<=DQE(0);
+	PMEMUDQ	<=MADDR(12);
+	PMEMLDQ	<=MADDR(11);
 	PMEMBA1	<=BA(1);
 	PMEMBA0	<=BA(0);
 	PMEMADR	<=MADDR;
