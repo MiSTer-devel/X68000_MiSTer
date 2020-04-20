@@ -13,8 +13,6 @@ rmdir /s /q .qsys_edit
 rmdir /s /q hps_isw_handoff
 rmdir /s /q sys\.qsys_edit
 rmdir /s /q sys\vip
-rmdir /s /q diskemu\.qsys_edit
-rmdir /s /q diskemu\diskemu
 cd sys
 for /d %%i in (*_sim) do rmdir /s /q "%%~nxi"
 cd ..
@@ -33,7 +31,5 @@ del /s *.bsf
 del /s *.f
 del /s *.sopcinfo
 del /s *.xml
-del /s new_rtl_netlist
-del /s old_rtl_netlist
-
+del *.cdf
 pause
