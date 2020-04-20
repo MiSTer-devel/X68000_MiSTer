@@ -124,22 +124,19 @@ module emu
 );
 
 assign ADC_BUS  = 'Z;
-
-assign UART_RTS = UART_CTS;
-assign UART_DTR = UART_DSR;
-
 assign USER_OUT  = '1;
 
 assign AUDIO_MIX = 0;
 assign VGA_SL    = 0;
 assign VGA_F1    = 0;
-
+assign {UART_RTS, UART_TXD, UART_DTR} = 0;
 assign {DDRAM_CLK, DDRAM_BURSTCNT, DDRAM_ADDR, DDRAM_DIN, DDRAM_BE, DDRAM_RD, DDRAM_WE} = 0;
 
 assign LED_USER  = ioctl_download & ~ldr_done;
 assign LED_DISK  = {1'b1, sd_act};
 assign LED_POWER = 0;
-
+assign BUTTONS   = 0;
+ 
 assign VIDEO_ARX = status[1] ? 8'd16 : 8'd4;
 assign VIDEO_ARY = status[1] ? 8'd9  : 8'd3; 
 

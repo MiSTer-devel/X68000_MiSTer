@@ -62,7 +62,7 @@ BEGIN
 		address_aclr_a => "NONE",
 		clock_enable_input_a => "BYPASS",
 		clock_enable_output_a => "BYPASS",
-		init_file => "./VIDEO/font/font.mif",
+		init_file => "./rtl/VIDEO/font/font.mif",
 		intended_device_family => "Cyclone V",
 		lpm_hint => "ENABLE_RUNTIME_MOD=NO",
 		lpm_type => "altsyncram",
