@@ -268,19 +268,22 @@ wire reset = buttons[1] | status[6];
 
 reg  setup = 0;
 
-wire pressed    = (ps2_key[15:8] != 8'hf0);
-wire extended   = (~pressed ? (ps2_key[23:16] == 8'he0) : (ps2_key[15:8] == 8'he0));
-wire [8:0] code = ps2_key[63:24] ? 9'd0 : {extended, ps2_key[7:0]}; // filter out PRNSCR and PAUSE
+wire pressed    = ps2_key[9];
+wire [7:0] code = ps2_key[7:0];
 always @(posedge clk_sys) begin
+	reg [15:0] cnt;
 	reg old_state;
 	reg next_setup = 0;
-	old_state <= ps2_key[64];
+	old_state <= ps2_key[10];
+	
+	//make sure the last key is fully transferred over PS2
+	if(&cnt) setup <= next_setup;
+	if(!ps2_kbd_clk_out) cnt <= 0;
+	else if(~&cnt) cnt <= cnt + 1'd1;
 
-	if(ps2_key[65]) setup <= next_setup;
-
-	if(old_state != ps2_key[64]) begin
+	if(old_state != ps2_key[10]) begin
 		casex(code)
-			'h078: if(pressed) next_setup <= ~setup; // F11
+			'h78: if(pressed) next_setup <= ~setup; // F11
 		endcase
 	end
 end
