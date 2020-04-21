@@ -12,17 +12,16 @@ generic(
 );
 port(
 	-- SDRAM PORTS
-	PMEMCKE		:OUT	STD_LOGIC;							-- SD-RAM CLOCK ENABLE
-	PMEMCS_N	:OUT	STD_LOGIC;							-- SD-RAM CHIP SELECT
-	PMEMRAS_N	:OUT	STD_LOGIC;							-- SD-RAM ROW/RAS
-	PMEMCAS_N	:OUT	STD_LOGIC;							-- SD-RAM /CAS
-	PMEMWE_N	:OUT	STD_LOGIC;							-- SD-RAM /WE
-	PMEMUDQ		:OUT	STD_LOGIC;							-- SD-RAM UDQM
-	PMEMLDQ		:OUT	STD_LOGIC;							-- SD-RAM LDQM
-	PMEMBA1		:OUT	STD_LOGIC;							-- SD-RAM BANK SELECT ADDRESS 1
-	PMEMBA0		:OUT	STD_LOGIC;							-- SD-RAM BANK SELECT ADDRESS 0
-	PMEMADR		:OUT	STD_LOGIC_VECTOR( 12 DOWNTO 0 );	-- SD-RAM ADDRESS
-	PMEMDAT		:INOUT	STD_LOGIC_VECTOR( 15 DOWNTO 0 );	-- SD-RAM DATA
+	SDRAM_CKE     	: out std_logic;                 			-- SD-RAM Clock enable
+	SDRAM_nCS    	: out std_logic;                        	-- SD-RAM Chip select
+	SDRAM_nRAS   	: out std_logic;                        	-- SD-RAM Row/RAS
+	SDRAM_nCAS   	: out std_logic;                        	-- SD-RAM /CAS
+	SDRAM_nWE    	: out std_logic;                        	-- SD-RAM /WE
+	SDRAM_DQMH    	: out std_logic;                        	-- SD-RAM DQMH
+	SDRAM_DQML    	: out std_logic;                        	-- SD-RAM DQML
+	SDRAM_BA     	: out std_logic_vector(1 downto 0);      	-- SD-RAM Bank select address
+	SDRAM_A     	: out std_logic_vector(12 downto 0);    	-- SD-RAM Address
+	SDRAM_DQ     	: inout std_logic_vector(15 downto 0);  	-- SD-RAM Data
 
 	addr_high	:in std_logic_vector(AWIDTH-LAWIDTH-1 downto 0);
 	bgnaddr		:in std_logic_vector(LAWIDTH-1 downto 0);
@@ -143,7 +142,7 @@ begin
 			CLOCKWAIT	<=cwaitcnt;
 			de<='0';
 			initdone<='0';
-			PMEMDAT <=(others=>'Z');
+			SDRAM_DQ <=(others=>'Z');
 		elsif(clk' event and clk='1')then
 			st_next:='0';
 			if(INITTIMER>0)then
@@ -304,13 +303,13 @@ begin
 						BA<=BADDR;
 						MADDR<=not we & '0' & CBADDR(9 downto 0);
 						curaddr<=curaddr+addr1;
-						PMEMDAT<=wrdat;
+						SDRAM_DQ<=wrdat;
 						csshift<='0';
 					when 4 =>
 						COMMAND<=cmd_NOP;
 						BA<=BADDR;
 						MADDR<=not we & "00000000000";
-						PMEMDAT<=wrdat;
+						SDRAM_DQ<=wrdat;
 						if(curaddr>=endaddr or curaddr<bgnaddr)then
 							csshift<='1';
 							de<='0';
@@ -318,7 +317,7 @@ begin
 							curaddr<=curaddr+addr1;
 						end if;
 					when 5 =>
-						PMEMDAT<=(others=>'Z');
+						SDRAM_DQ<=(others=>'Z');
 						COMMAND<=cmd_PALL;
 						BA<="00";
 						MADDR<=(others=>'1');
@@ -367,20 +366,19 @@ begin
 		end if;
 	end process;
 	
-	PMEMCKE	<='1';
-	PMEMCS_N	<='0';
-	PMEMRAS_N<=COMMAND(2);
-	PMEMCAS_N<=COMMAND(1);
-	PMEMWE_N	<=COMMAND(0);
-	PMEMUDQ	<=MADDR(12);
-	PMEMLDQ	<=MADDR(11);
-	PMEMBA1	<=BA(1);
-	PMEMBA0	<=BA(0);
-	PMEMADR	<=MADDR;
+	SDRAM_CKE	<='1';
+	SDRAM_nCS	<='0';
+	SDRAM_nRAS	<=COMMAND(2);
+	SDRAM_nCAS	<=COMMAND(1);
+	SDRAM_nWE	<=COMMAND(0);
+	SDRAM_DQMH	<=MADDR(12);
+	SDRAM_DQML	<=MADDR(11);
+	SDRAM_BA		<=BA;
+	SDRAM_A		<=MADDR;
 
 	process(clk)begin
 		if(clk' event and clk='1')then
-			rddat<=PMEMDAT;
+			rddat<=SDRAM_DQ;
 		end if;
 	end process;
 	

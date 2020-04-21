@@ -146,7 +146,7 @@ parameter CONF_STR = {
 	"-;",
 	"O1,Aspect ratio,4:3,16:9;",
 	"-;",
-	"T6,Reset;",
+	"R6,Reset;",
 	"J,Fire 1,Fire 2;",
 	"V,v",`BUILD_DATE
 };
@@ -217,7 +217,7 @@ wire        ps2_mouse_data_out;
 wire        ps2_mouse_clk_in;
 wire        ps2_mouse_data_in;
 
-wire [65:0] ps2_key;
+wire [10:0] ps2_key;
 
 hps_io #(.STRLEN($size(CONF_STR)>>3), .PS2DIV(600), .PS2WE(1)) hps_io
 (

@@ -10,17 +10,16 @@ generic(
 );
 port(
 	-- SDRAM PORTS
-	PMEMCKE		:OUT	STD_LOGIC;							-- SD-RAM CLOCK ENABLE
-	PMEMCS_N	:OUT	STD_LOGIC;							-- SD-RAM CHIP SELECT
-	PMEMRAS_N	:OUT	STD_LOGIC;							-- SD-RAM ROW/RAS
-	PMEMCAS_N	:OUT	STD_LOGIC;							-- SD-RAM /CAS
-	PMEMWE_N	:OUT	STD_LOGIC;							-- SD-RAM /WE
-	PMEMUDQ		:OUT	STD_LOGIC;							-- SD-RAM UDQM
-	PMEMLDQ		:OUT	STD_LOGIC;							-- SD-RAM LDQM
-	PMEMBA1		:OUT	STD_LOGIC;							-- SD-RAM BANK SELECT ADDRESS 1
-	PMEMBA0		:OUT	STD_LOGIC;							-- SD-RAM BANK SELECT ADDRESS 0
-	PMEMADR		:OUT	STD_LOGIC_VECTOR( 12 DOWNTO 0 );	-- SD-RAM ADDRESS
-	PMEMDAT		:INOUT	STD_LOGIC_VECTOR( 15 DOWNTO 0 );	-- SD-RAM DATA
+	SDRAM_CKE     	: out std_logic;                 			-- SD-RAM Clock enable
+	SDRAM_nCS    	: out std_logic;                        	-- SD-RAM Chip select
+	SDRAM_nRAS   	: out std_logic;                        	-- SD-RAM Row/RAS
+	SDRAM_nCAS   	: out std_logic;                        	-- SD-RAM /CAS
+	SDRAM_nWE    	: out std_logic;                        	-- SD-RAM /WE
+	SDRAM_DQMH    	: out std_logic;                        	-- SD-RAM DQMH
+	SDRAM_DQML    	: out std_logic;                        	-- SD-RAM DQML
+	SDRAM_BA     	: out std_logic_vector(1 downto 0);      	-- SD-RAM Bank select address
+	SDRAM_A     	: out std_logic_vector(12 downto 0);    	-- SD-RAM Address
+	SDRAM_DQ     	: inout std_logic_vector(15 downto 0);  	-- SD-RAM Data
 
 	b_addr		:in std_logic_vector(awidth-1 downto 0);
 	b_wdat		:in std_logic_vector(15 downto 0);
@@ -132,47 +131,6 @@ signal	ramrdat		:std_logic_vector(15 downto 0);
 signal	ramwdat		:std_logic_vector(15 downto 0);
 signal	ramwe		:std_logic_vector(1 downto 0);
 
-component SDRAMC
-generic(
-	AWIDTH		:integer	:=25;
-	CAWIDTH		:integer	:=10;
-	LAWIDTH		:integer	:=8;
-	CLKMHZ		:integer	:=120		--MHz
-);
-port(
-	-- SDRAM PORTS
-	PMEMCKE		:OUT	STD_LOGIC;							-- SD-RAM CLOCK ENABLE
-	PMEMCS_N	:OUT	STD_LOGIC;							-- SD-RAM CHIP SELECT
-	PMEMRAS_N	:OUT	STD_LOGIC;							-- SD-RAM ROW/RAS
-	PMEMCAS_N	:OUT	STD_LOGIC;							-- SD-RAM /CAS
-	PMEMWE_N	:OUT	STD_LOGIC;							-- SD-RAM /WE
-	PMEMUDQ		:OUT	STD_LOGIC;							-- SD-RAM UDQM
-	PMEMLDQ		:OUT	STD_LOGIC;							-- SD-RAM LDQM
-	PMEMBA1		:OUT	STD_LOGIC;							-- SD-RAM BANK SELECT ADDRESS 1
-	PMEMBA0		:OUT	STD_LOGIC;							-- SD-RAM BANK SELECT ADDRESS 0
-	PMEMADR		:OUT	STD_LOGIC_VECTOR( 12 DOWNTO 0 );	-- SD-RAM ADDRESS
-	PMEMDAT		:INOUT	STD_LOGIC_VECTOR( 15 DOWNTO 0 );	-- SD-RAM DATA
-
-	addr_high	:in std_logic_vector(AWIDTH-LAWIDTH-1 downto 0);
-	bgnaddr		:in std_logic_vector(LAWIDTH-1 downto 0);
-	endaddr		:in std_logic_vector(LAWIDTH-1 downto 0);
-	addr_rc		:out std_logic_vector(LAWIDTH-1 downto 0);
-	addr_wc		:out std_logic_vector(LAWIDTH-1 downto 0);
-	rddat		:out std_logic_vector(15 downto 0);
-	wrdat		:in std_logic_vector(15 downto 0);
-	de			:out std_logic;
-	we			:in std_logic_vector(1 downto 0);
-	rd			:in std_logic;
-	wr			:in std_logic;
-	refrsh		:in std_logic;
-	busy		:out std_logic;
-	
-	initdone	:out std_logic;
-	clk			:in std_logic;
-	rstn		:in std_logic
-);
-end component;
-
 component cachecont
 generic(
 	awidth	:integer	:=22
@@ -283,23 +241,23 @@ port(
 end component;
 
 begin
-	RAMC	:SDRAMC generic map(
+	RAMC	: work.SDRAMC
+	generic map(
 		AWIDTH		=>AWIDTH,
 		CAWIDTH		=>CAWIDTH,
 		LAWIDTH		=>8,
 		CLKMHZ		=>CLKMHZ
 	) port map(
-		PMEMCKE		=>PMEMCKE,
-		PMEMCS_N	=>PMEMCS_N,
-		PMEMRAS_N	=>PMEMRAS_N,
-		PMEMCAS_N	=>PMEMCAS_N,
-		PMEMWE_N	=>PMEMWE_N,
-		PMEMUDQ		=>PMEMUDQ,
-		PMEMLDQ		=>PMEMLDQ,
-		PMEMBA1		=>PMEMBA1,
-		PMEMBA0		=>PMEMBA0,
-		PMEMADR		=>PMEMADR,
-		PMEMDAT		=>PMEMDAT,
+		SDRAM_CKE	=>SDRAM_CKE,
+		SDRAM_nCS	=>SDRAM_nCS,
+		SDRAM_nRAS	=>SDRAM_nRAS,
+		SDRAM_nCAS	=>SDRAM_nCAS,
+		SDRAM_nWE	=>SDRAM_nWE,
+		SDRAM_DQMH	=>SDRAM_DQMH,
+		SDRAM_DQML	=>SDRAM_DQML,
+		SDRAM_BA		=>SDRAM_BA,
+		SDRAM_A		=>SDRAM_A,
+		SDRAM_DQ		=>SDRAM_DQ,
 		
 		addr_high	=>ramaddrh,
 		bgnaddr		=>rambgnaddr,

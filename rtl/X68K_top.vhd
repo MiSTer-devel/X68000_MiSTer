@@ -592,116 +592,6 @@ component TG68
         );
 end component;
 
-component  memcont
-generic(
-	AWIDTH		:integer	:=25;
-	CAWIDTH		:integer	:=10;
-	CLKMHZ		:integer 	:=120		--SDRAM clk MHz
-);
-port(
-	-- SDRAM PORTS
-	PMEMCKE		:OUT	STD_LOGIC;							-- SD-RAM CLOCK ENABLE
-	PMEMCS_N	:OUT	STD_LOGIC;							-- SD-RAM CHIP SELECT
-	PMEMRAS_N	:OUT	STD_LOGIC;							-- SD-RAM ROW/RAS
-	PMEMCAS_N	:OUT	STD_LOGIC;							-- SD-RAM /CAS
-	PMEMWE_N	:OUT	STD_LOGIC;							-- SD-RAM /WE
-	PMEMUDQ		:OUT	STD_LOGIC;							-- SD-RAM UDQM
-	PMEMLDQ		:OUT	STD_LOGIC;							-- SD-RAM LDQM
-	PMEMBA1		:OUT	STD_LOGIC;							-- SD-RAM BANK SELECT ADDRESS 1
-	PMEMBA0		:OUT	STD_LOGIC;							-- SD-RAM BANK SELECT ADDRESS 0
-	PMEMADR		:OUT	STD_LOGIC_VECTOR( 12 DOWNTO 0 );	-- SD-RAM ADDRESS
-	PMEMDAT		:INOUT	STD_LOGIC_VECTOR( 15 DOWNTO 0 );	-- SD-RAM DATA
-
-	b_addr	:in std_logic_vector(awidth-1 downto 0);
-	b_wdat	:in std_logic_vector(15 downto 0);
-	b_rdat	:out std_logic_vector(15 downto 0);
-	b_rd	:in std_logic;
-	b_wr	:in std_logic_vector(1 downto 0);
-	b_rmw	:in std_logic_vector(1 downto 0);
-	b_rmwmsk:in std_logic_vector(15 downto 0);
-	b_ack	:out std_logic;
-
-	b_csaddr:in std_logic_vector(awidth-9 downto 0)	:=(others=>'0');
-	b_cdaddr:in std_logic_vector(awidth-9 downto 0)	:=(others=>'0');
-	b_cpy	:in std_logic_vector(3 downto 0)	:=(others=>'0');
-	b_cack	:out std_logic;
-	
-	g00_addr:in std_logic_vector(awidth-1 downto 0);
-	g00_rd	:in std_logic;
-	g00_rdat:out std_logic_vector(15 downto 0);
-	g00_ack	:out std_logic;
-
-	g01_addr:in std_logic_vector(awidth-1 downto 0);
-	g01_rd	:in std_logic;
-	g01_rdat:out std_logic_vector(15 downto 0);
-	g01_ack	:out std_logic;
-
-	g02_addr:in std_logic_vector(awidth-1 downto 0);
-	g02_rd	:in std_logic;
-	g02_rdat:out std_logic_vector(15 downto 0);
-	g02_ack	:out std_logic;
-
-	g03_addr:in std_logic_vector(awidth-1 downto 0);
-	g03_rd	:in std_logic;
-	g03_rdat:out std_logic_vector(15 downto 0);
-	g03_ack	:out std_logic;
-
-	g10_addr:in std_logic_vector(awidth-1 downto 0);
-	g10_rd	:in std_logic;
-	g10_rdat:out std_logic_vector(15 downto 0);
-	g10_ack	:out std_logic;
-
-	g11_addr:in std_logic_vector(awidth-1 downto 0);
-	g11_rd	:in std_logic;
-	g11_rdat:out std_logic_vector(15 downto 0);
-	g11_ack	:out std_logic;
-
-	g12_addr:in std_logic_vector(awidth-1 downto 0);
-	g12_rd	:in std_logic;
-	g12_rdat:out std_logic_vector(15 downto 0);
-	g12_ack	:out std_logic;
-
-	g13_addr:in std_logic_vector(awidth-1 downto 0);
-	g13_rd	:in std_logic;
-	g13_rdat:out std_logic_vector(15 downto 0);
-	g13_ack	:out std_logic;
-
-	t0_addr	:in std_logic_vector(awidth-3 downto 0);
-	t0_rd	:in std_logic;
-	t0_rdat0:out std_logic_vector(15 downto 0);
-	t0_rdat1:out std_logic_vector(15 downto 0);
-	t0_rdat2:out std_logic_vector(15 downto 0);
-	t0_rdat3:out std_logic_vector(15 downto 0);
-	t0_ack	:out std_logic;
-	
-	t1_addr	:in std_logic_vector(awidth-3 downto 0);
-	t1_rd	:in std_logic;
-	t1_rdat0:out std_logic_vector(15 downto 0);
-	t1_rdat1:out std_logic_vector(15 downto 0);
-	t1_rdat2:out std_logic_vector(15 downto 0);
-	t1_rdat3:out std_logic_vector(15 downto 0);
-	t1_ack	:out std_logic;
-	
-	g0_caddr	:in std_logic_vector(awidth-1 downto 7);
-	g0_clear	:in std_logic;
-	
-	g1_caddr	:in std_logic_vector(awidth-1 downto 7);
-	g1_clear	:in std_logic;
-
-	g2_caddr	:in std_logic_vector(awidth-1 downto 7);
-	g2_clear	:in std_logic;
-
-	g3_caddr	:in std_logic_vector(awidth-1 downto 7);
-	g3_clear	:in std_logic;
-
-	initdone:out std_logic;
-	sclk	:in std_logic;
-	vclk	:in std_logic;
-	rclk	:in std_logic;
-	rstn	:in std_logic
-);
-end component;
-
 component INTcont
 port(
 	int7	:in std_logic	:='0';
@@ -2257,7 +2147,8 @@ begin
 
 	ram_addrw<='0' & ram_addr;
 
-	RAM	:memcont generic map
+	RAM	: work.memcont
+	generic map
 	(
 		AWIDTH		=>24,
 		CAWIDTH		=>9,
@@ -2265,17 +2156,16 @@ begin
 	)
 	port map
 	(
-		PMEMCKE		=>SDRAM_CKE,
-		PMEMCS_N		=>SDRAM_nCS,
-		PMEMRAS_N	=>SDRAM_nRAS,
-		PMEMCAS_N	=>SDRAM_nCAS,
-		PMEMWE_N		=>SDRAM_nWE,
-		PMEMUDQ		=>SDRAM_DQMH,
-		PMEMLDQ		=>SDRAM_DQML,
-		PMEMBA1		=>SDRAM_BA(1),
-		PMEMBA0		=>SDRAM_BA(0),
-		PMEMADR		=>SDRAM_A,
-		PMEMDAT		=>SDRAM_DQ,
+		SDRAM_CKE	=>SDRAM_CKE,
+		SDRAM_nCS	=>SDRAM_nCS,
+		SDRAM_nRAS	=>SDRAM_nRAS,
+		SDRAM_nCAS	=>SDRAM_nCAS,
+		SDRAM_nWE	=>SDRAM_nWE,
+		SDRAM_DQMH	=>SDRAM_DQMH,
+		SDRAM_DQML	=>SDRAM_DQML,
+		SDRAM_BA		=>SDRAM_BA,
+		SDRAM_A		=>SDRAM_A,
+		SDRAM_DQ		=>SDRAM_DQ,
 
 		b_addr		=>ram_addrw,
 		b_wdat		=>ram_wdat,
