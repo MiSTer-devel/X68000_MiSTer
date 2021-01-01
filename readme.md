@@ -1,4 +1,4 @@
-# This is port of [Sharp X68000](http://fpga8801.seesaa.net) core
+# [Sharp X68000](https://en.wikipedia.org/wiki/X68000) for MiSTer Platform
 
 ## Work in progress...
 
