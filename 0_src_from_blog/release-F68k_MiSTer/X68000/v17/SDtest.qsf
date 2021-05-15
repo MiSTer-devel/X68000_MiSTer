@@ -1,0 +1,706 @@
+# -------------------------------------------------------------------------- #
+#
+# Copyright (C) 1991-2010 Altera Corporation
+# Your use of Altera Corporation's design tools, logic functions
+# and other software and tools, and its AMPP partner logic
+# functions, and any output files from any of the foregoing
+# (including device programming or simulation files), and any
+# associated documentation or information are expressly subject
+# to the terms and conditions of the Altera Program License
+# Subscription Agreement, Altera MegaCore Function License
+# Agreement, or other applicable license agreement, including,
+# without limitation, that your use is for the sole purpose of
+# programming logic devices manufactured by Altera and sold by
+# Altera or its authorized distributors.  Please refer to the
+# applicable agreement for further details.
+#
+# -------------------------------------------------------------------------- #
+#
+# Quartus II
+# Version 9.1 Build 350 03/24/2010 Service Pack 2 SJ Web Edition
+# Date created = 14:39:44  June 12, 2013
+#
+# -------------------------------------------------------------------------- #
+#
+# Notes:
+#
+# 1) The default values for assignments are stored in the file:
+#		SDtest_assignment_defaults.qdf
+#    If this file doesn't exist, see file:
+#		assignment_defaults.qdf
+#
+# 2) Altera recommends that you do not modify this file. This
+#    file is updated automatically by the Quartus II software
+#    and any changes you make may be lost or overwritten.
+#
+# -------------------------------------------------------------------------- #
+
+
+set_global_assignment -name FAMILY "Cyclone III"
+set_global_assignment -name DEVICE EP3C16F484C6
+set_global_assignment -name TOP_LEVEL_ENTITY SDtest
+set_global_assignment -name ORIGINAL_QUARTUS_VERSION 13.1
+set_global_assignment -name PROJECT_CREATION_TIME_DATE "08:54:29  SEPTEMBER 02, 2015"
+set_global_assignment -name LAST_QUARTUS_VERSION "17.0.2 Lite Edition"
+set_global_assignment -name USE_GENERATED_PHYSICAL_CONSTRAINTS OFF -section_id eda_blast_fpga
+set_global_assignment -name DEVICE_FILTER_PIN_COUNT 484
+set_global_assignment -name STRATIX_DEVICE_IO_STANDARD "3.3-V LVTTL"
+set_global_assignment -name CYCLONE_CONFIGURATION_DEVICE EPCS4
+set_global_assignment -name RESERVE_ASDO_AFTER_CONFIGURATION "AS INPUT TRI-STATED"
+set_global_assignment -name OPTIMIZE_HOLD_TIMING OFF
+set_global_assignment -name SAVE_DISK_SPACE OFF
+set_global_assignment -name FMAX_REQUIREMENT "21.480431 MHz" -section_id pclk21m
+set_global_assignment -name OPTIMIZE_TIMING OFF
+set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
+set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
+set_global_assignment -name USE_CONFIGURATION_DEVICE ON
+set_location_assignment PIN_K18 -to pDac_VB[3]
+set_location_assignment PIN_J22 -to pDac_VB[2]
+set_location_assignment PIN_J21 -to pDac_VG[3]
+set_location_assignment PIN_K17 -to pDac_VG[2]
+set_location_assignment PIN_H21 -to pDac_VR[3]
+set_location_assignment PIN_H20 -to pDac_VR[2]
+set_location_assignment PIN_E3 -to pDip[7]
+set_location_assignment PIN_J7 -to pDip[5]
+set_location_assignment PIN_H7 -to pDip[6]
+set_location_assignment PIN_G5 -to pDip[4]
+set_location_assignment PIN_G4 -to pDip[3]
+set_location_assignment PIN_H6 -to pDip[2]
+set_location_assignment PIN_H5 -to pDip[1]
+set_location_assignment PIN_J6 -to pDip[0]
+set_location_assignment PIN_R2 -to pFlshAdr[21]
+set_location_assignment PIN_P3 -to pFlshAdr[20]
+set_location_assignment PIN_P1 -to pFlshAdr[19]
+set_location_assignment PIN_M6 -to pFlshAdr[18]
+set_location_assignment PIN_M5 -to pFlshAdr[17]
+set_location_assignment PIN_AA2 -to pFlshAdr[16]
+set_location_assignment PIN_L6 -to pFlshAdr[15]
+set_location_assignment PIN_L7 -to pFlshAdr[14]
+set_location_assignment PIN_M1 -to pFlshAdr[13]
+set_location_assignment PIN_M2 -to pFlshAdr[12]
+set_location_assignment PIN_M3 -to pFlshAdr[11]
+set_location_assignment PIN_N1 -to pFlshAdr[10]
+set_location_assignment PIN_N2 -to pFlshAdr[9]
+set_location_assignment PIN_P2 -to pFlshAdr[8]
+set_location_assignment PIN_M4 -to pFlshAdr[7]
+set_location_assignment PIN_M8 -to pFlshAdr[6]
+set_location_assignment PIN_N6 -to pFlshAdr[5]
+set_location_assignment PIN_N5 -to pFlshAdr[4]
+set_location_assignment PIN_N7 -to pFlshAdr[3]
+set_location_assignment PIN_P6 -to pFlshAdr[2]
+set_location_assignment PIN_P5 -to pFlshAdr[1]
+set_location_assignment PIN_P7 -to pFlshAdr[0]
+set_location_assignment PIN_AA1 -to pFlshByte_n
+set_location_assignment PIN_N8 -to pFlshCe_n
+set_location_assignment PIN_Y2 -to pFlshDQ[15]
+set_location_assignment PIN_W2 -to pFlshDQ[14]
+set_location_assignment PIN_V4 -to pFlshDQ[13]
+set_location_assignment PIN_V1 -to pFlshDQ[12]
+set_location_assignment PIN_U2 -to pFlshDQ[11]
+set_location_assignment PIN_T4 -to pFlshDQ[10]
+set_location_assignment PIN_T7 -to pFlshDQ[9]
+set_location_assignment PIN_T5 -to pFlshDQ[8]
+set_location_assignment PIN_Y1 -to pFlshDQ[7]
+set_location_assignment PIN_W1 -to pFlshDQ[6]
+set_location_assignment PIN_V3 -to pFlshDQ[5]
+set_location_assignment PIN_V2 -to pFlshDQ[4]
+set_location_assignment PIN_U1 -to pFlshDQ[3]
+set_location_assignment PIN_R8 -to pFlshDQ[2]
+set_location_assignment PIN_P8 -to pFlshDQ[1]
+set_location_assignment PIN_R7 -to pFlshDQ[0]
+set_location_assignment PIN_R6 -to pFlshOe_n
+set_location_assignment PIN_R1 -to pFlshRst_n
+set_location_assignment PIN_M7 -to pFlshRy
+set_location_assignment PIN_P4 -to pFlshWe_n
+set_location_assignment PIN_T3 -to pFlshWp_n
+set_location_assignment PIN_AA20 -to pJoyA[5]
+set_location_assignment PIN_AB20 -to pJoyA[4]
+set_location_assignment PIN_AA19 -to pJoyA[3]
+set_location_assignment PIN_AB19 -to pJoyA[2]
+set_location_assignment PIN_AB18 -to pJoyA[1]
+set_location_assignment PIN_AA18 -to pJoyA[0]
+set_location_assignment PIN_AA17 -to pJoyB[5]
+set_location_assignment PIN_AB17 -to pJoyB[4]
+set_location_assignment PIN_Y17 -to pJoyB[3]
+set_location_assignment PIN_W17 -to pJoyB[2]
+set_location_assignment PIN_U15 -to pJoyB[1]
+set_location_assignment PIN_T15 -to pJoyB[0]
+set_location_assignment PIN_C2 -to pLed[7]
+set_location_assignment PIN_C1 -to pLed[6]
+set_location_assignment PIN_E1 -to pLed[5]
+set_location_assignment PIN_F2 -to pLed[4]
+set_location_assignment PIN_H1 -to pLed[3]
+set_location_assignment PIN_J3 -to pLed[2]
+set_location_assignment PIN_J2 -to pLed[1]
+set_location_assignment PIN_J1 -to pLed[0]
+set_location_assignment PIN_A7 -to pMemAdr[11]
+set_location_assignment PIN_B4 -to pMemAdr[10]
+set_location_assignment PIN_B7 -to pMemAdr[9]
+set_location_assignment PIN_C7 -to pMemAdr[8]
+set_location_assignment PIN_A6 -to pMemAdr[7]
+set_location_assignment PIN_B6 -to pMemAdr[6]
+set_location_assignment PIN_C6 -to pMemAdr[5]
+set_location_assignment PIN_A5 -to pMemAdr[4]
+set_location_assignment PIN_C3 -to pMemAdr[3]
+set_location_assignment PIN_B3 -to pMemAdr[2]
+set_location_assignment PIN_A3 -to pMemAdr[1]
+set_location_assignment PIN_C4 -to pMemAdr[0]
+set_location_assignment PIN_B5 -to pMemBa0
+set_location_assignment PIN_A4 -to pMemBa1
+set_location_assignment PIN_G8 -to pMemCas_n
+set_location_assignment PIN_E6 -to pMemCke
+set_location_assignment PIN_E5 -to pMemClk
+set_location_assignment PIN_G7 -to pMemCs_n
+set_location_assignment PIN_F10 -to pMemDat[15]
+set_location_assignment PIN_E10 -to pMemDat[14]
+set_location_assignment PIN_A10 -to pMemDat[13]
+set_location_assignment PIN_B10 -to pMemDat[12]
+set_location_assignment PIN_C10 -to pMemDat[11]
+set_location_assignment PIN_A9 -to pMemDat[10]
+set_location_assignment PIN_B9 -to pMemDat[9]
+set_location_assignment PIN_A8 -to pMemDat[8]
+set_location_assignment PIN_F8 -to pMemDat[7]
+set_location_assignment PIN_H9 -to pMemDat[6]
+set_location_assignment PIN_G9 -to pMemDat[5]
+set_location_assignment PIN_F9 -to pMemDat[4]
+set_location_assignment PIN_E9 -to pMemDat[3]
+set_location_assignment PIN_H10 -to pMemDat[2]
+set_location_assignment PIN_G10 -to pMemDat[1]
+set_location_assignment PIN_D10 -to pMemDat[0]
+set_location_assignment PIN_E7 -to pMemLdq
+set_location_assignment PIN_F7 -to pMemRas_n
+set_location_assignment PIN_B8 -to pMemUdq
+set_location_assignment PIN_D6 -to pMemWe_n
+set_location_assignment PIN_P22 -to pPs2Clk
+set_location_assignment PIN_P21 -to pPs2Dat
+set_location_assignment PIN_Y21 -to pSd_Ck
+set_location_assignment PIN_Y22 -to pSd_Cm
+set_location_assignment PIN_L21 -to pVideoHS_n
+set_location_assignment PIN_L22 -to pVideoVS_n
+set_location_assignment PIN_F1 -to rstn
+set_global_assignment -name CYCLONEII_RESERVE_NCEO_AFTER_CONFIGURATION "USE AS REGULAR IO"
+set_location_assignment PIN_E4 -to pDip[8]
+set_location_assignment PIN_D2 -to pDip[9]
+set_location_assignment PIN_D13 -to pSeg0[7]
+set_location_assignment PIN_F13 -to pSeg0[6]
+set_location_assignment PIN_F12 -to pSeg0[5]
+set_location_assignment PIN_G12 -to pSeg0[4]
+set_location_assignment PIN_H13 -to pSeg0[3]
+set_location_assignment PIN_H12 -to pSeg0[2]
+set_location_assignment PIN_F11 -to pSeg0[1]
+set_location_assignment PIN_E11 -to pSeg0[0]
+set_location_assignment PIN_B15 -to pSeg1[7]
+set_location_assignment PIN_A15 -to pSeg1[6]
+set_location_assignment PIN_E14 -to pSeg1[5]
+set_location_assignment PIN_B14 -to pSeg1[4]
+set_location_assignment PIN_A14 -to pSeg1[3]
+set_location_assignment PIN_C13 -to pSeg1[2]
+set_location_assignment PIN_B13 -to pSeg1[1]
+set_location_assignment PIN_A13 -to pSeg1[0]
+set_location_assignment PIN_A18 -to pSeg2[7]
+set_location_assignment PIN_F14 -to pSeg2[6]
+set_location_assignment PIN_B17 -to pSeg2[5]
+set_location_assignment PIN_A17 -to pSeg2[4]
+set_location_assignment PIN_E15 -to pSeg2[3]
+set_location_assignment PIN_B16 -to pSeg2[2]
+set_location_assignment PIN_A16 -to pSeg2[1]
+set_location_assignment PIN_D15 -to pSeg2[0]
+set_location_assignment PIN_G16 -to pSeg3[7]
+set_location_assignment PIN_G15 -to pSeg3[6]
+set_location_assignment PIN_D19 -to pSeg3[5]
+set_location_assignment PIN_C19 -to pSeg3[4]
+set_location_assignment PIN_B19 -to pSeg3[3]
+set_location_assignment PIN_A19 -to pSeg3[2]
+set_location_assignment PIN_F15 -to pSeg3[1]
+set_location_assignment PIN_B18 -to pSeg3[0]
+set_location_assignment PIN_AA7 -to pFd_DENn
+set_location_assignment PIN_T14 -to pFd_INDEXn
+set_location_assignment PIN_U9 -to pFd_MOTOR1
+set_location_assignment PIN_U12 -to pFd_MOTOR0
+set_location_assignment PIN_U10 -to pFd_DS0
+set_location_assignment PIN_R11 -to pFd_DS1
+set_location_assignment PIN_Y7 -to pFd_DIRn
+set_location_assignment PIN_V6 -to pFd_STEPn
+set_location_assignment PIN_V7 -to pFd_WDATAn
+set_location_assignment PIN_U8 -to pFd_WGATEn
+set_location_assignment PIN_T9 -to pFd_TRK00n
+set_location_assignment PIN_T10 -to pFd_WPTn
+set_location_assignment PIN_R12 -to pFd_RDATAn
+set_location_assignment PIN_T12 -to pFd_SIDE1n
+set_location_assignment PIN_R14 -to pFd_DSKCHG
+set_location_assignment PIN_K21 -to pDac_VB[1]
+set_location_assignment PIN_K22 -to pDac_VB[0]
+set_location_assignment PIN_J17 -to pDac_VG[1]
+set_location_assignment PIN_H22 -to pDac_VG[0]
+set_location_assignment PIN_H17 -to pDac_VR[1]
+set_location_assignment PIN_H19 -to pDac_VR[0]
+set_location_assignment PIN_R16 -to pDac_SL
+set_location_assignment PIN_T16 -to pDac_SR
+set_location_assignment PIN_AB16 -to pMONled[0]
+set_location_assignment PIN_AA16 -to pMONled[1]
+set_location_assignment PIN_AA15 -to pMONled[2]
+set_location_assignment PIN_AB15 -to pMONled[3]
+set_location_assignment PIN_AA14 -to pMONled[4]
+set_location_assignment PIN_AB14 -to pMONled[5]
+set_location_assignment PIN_AB13 -to pMONled[6]
+set_location_assignment PIN_AA13 -to pMONled[7]
+set_location_assignment PIN_AB10 -to pMONcol[0]
+set_location_assignment PIN_AA10 -to pMONcol[1]
+set_location_assignment PIN_AB8 -to pMONcol[2]
+set_location_assignment PIN_AA8 -to pMONcol[3]
+set_location_assignment PIN_W15 -to pI2Cscl
+set_location_assignment PIN_V15 -to pI2Csda
+set_location_assignment PIN_B2 -to pLed[8]
+set_location_assignment PIN_B1 -to pLed[9]
+set_location_assignment PIN_R21 -to pPmsClk
+set_location_assignment PIN_R22 -to pPmsDat
+set_location_assignment PIN_AB7 -to pStr
+set_location_assignment PIN_G3 -to pPsw[1]
+set_location_assignment PIN_H2 -to pPsw[0]
+set_global_assignment -name ENABLE_SIGNALTAP ON
+set_global_assignment -name USE_SIGNALTAP_FILE ../SDtest.stp
+set_location_assignment PIN_U22 -to pCOM_RxD
+set_location_assignment PIN_V21 -to pCOM_RTS
+set_location_assignment PIN_U21 -to pCOM_TxD
+set_location_assignment PIN_V22 -to pCOM_CTS
+set_global_assignment -name FITTER_EFFORT "STANDARD FIT"
+set_location_assignment PIN_G21 -to pClk50M
+set_global_assignment -name FORCE_CONFIGURATION_VCCIO ON
+set_global_assignment -name EDA_SIMULATION_TOOL "ModelSim-Altera (VHDL)"
+set_global_assignment -name EDA_OUTPUT_DATA_FORMAT VHDL -section_id eda_simulation
+set_global_assignment -name SYNTH_TIMING_DRIVEN_SYNTHESIS ON
+set_location_assignment PIN_C8 -to pMemAdr[12]
+set_global_assignment -name LL_ROOT_REGION ON -section_id "Root Region"
+set_global_assignment -name LL_MEMBER_STATE LOCKED -section_id "Root Region"
+set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
+set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pDip[0]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pDip[1]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pDip[2]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pDip[3]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pDip[4]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pDip[5]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pDip[6]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pDip[7]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pLed[0]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pLed[1]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pLed[2]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pLed[3]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pLed[4]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pLed[5]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pLed[6]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pLed[7]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemDat[0]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemDat[1]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemDat[2]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemDat[3]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemDat[4]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemDat[5]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemDat[6]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemDat[7]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemDat[8]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemDat[9]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemDat[10]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemDat[11]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemDat[12]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemDat[13]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemDat[14]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemDat[15]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pPs2Clk
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pPs2Dat
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pSd_Ck
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pSd_Cm
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pVideoHS_n
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pVideoVS_n
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pPmsClk
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pPmsDat
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemAdr[11]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemAdr[10]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemAdr[9]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemAdr[8]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemAdr[7]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemAdr[6]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemAdr[5]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemAdr[4]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemAdr[3]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemAdr[2]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemAdr[1]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemAdr[0]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemBa0
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemBa1
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemCas_n
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemCke
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemClk
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemCs_n
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemLdq
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemRas_n
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemUdq
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to pMemWe_n
+set_global_assignment -name SLD_NODE_CREATOR_ID 110 -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_ENTITY_NAME sld_signaltap -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_clk -to "SFTCLK:I2CCLK|SFT" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[0] -to "sasisd:HDIF|CSD[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[1] -to "sasisd:HDIF|CSD[100]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[2] -to "sasisd:HDIF|CSD[101]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[3] -to "sasisd:HDIF|CSD[102]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[4] -to "sasisd:HDIF|CSD[103]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[5] -to "sasisd:HDIF|CSD[104]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[6] -to "sasisd:HDIF|CSD[105]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[7] -to "sasisd:HDIF|CSD[106]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[8] -to "sasisd:HDIF|CSD[107]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[9] -to "sasisd:HDIF|CSD[108]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[10] -to "sasisd:HDIF|CSD[109]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[11] -to "sasisd:HDIF|CSD[10]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[12] -to "sasisd:HDIF|CSD[110]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[13] -to "sasisd:HDIF|CSD[111]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[14] -to "sasisd:HDIF|CSD[112]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[15] -to "sasisd:HDIF|CSD[113]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[16] -to "sasisd:HDIF|CSD[114]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[17] -to "sasisd:HDIF|CSD[115]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[18] -to "sasisd:HDIF|CSD[116]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[19] -to "sasisd:HDIF|CSD[117]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[20] -to "sasisd:HDIF|CSD[118]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[21] -to "sasisd:HDIF|CSD[119]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[22] -to "sasisd:HDIF|CSD[11]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[23] -to "sasisd:HDIF|CSD[120]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[24] -to "sasisd:HDIF|CSD[121]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[25] -to "sasisd:HDIF|CSD[122]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[26] -to "sasisd:HDIF|CSD[123]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[27] -to "sasisd:HDIF|CSD[124]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[28] -to "sasisd:HDIF|CSD[125]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[29] -to "sasisd:HDIF|CSD[126]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[30] -to "sasisd:HDIF|CSD[127]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[31] -to "sasisd:HDIF|CSD[12]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[32] -to "sasisd:HDIF|CSD[13]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[33] -to "sasisd:HDIF|CSD[14]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[34] -to "sasisd:HDIF|CSD[15]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[35] -to "sasisd:HDIF|CSD[16]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[36] -to "sasisd:HDIF|CSD[17]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[37] -to "sasisd:HDIF|CSD[18]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[38] -to "sasisd:HDIF|CSD[19]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[39] -to "sasisd:HDIF|CSD[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[40] -to "sasisd:HDIF|CSD[20]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[41] -to "sasisd:HDIF|CSD[21]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[42] -to "sasisd:HDIF|CSD[22]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[43] -to "sasisd:HDIF|CSD[23]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[44] -to "sasisd:HDIF|CSD[24]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[45] -to "sasisd:HDIF|CSD[25]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[46] -to "sasisd:HDIF|CSD[26]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[47] -to "sasisd:HDIF|CSD[27]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[48] -to "sasisd:HDIF|CSD[28]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[49] -to "sasisd:HDIF|CSD[29]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[50] -to "sasisd:HDIF|CSD[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[51] -to "sasisd:HDIF|CSD[30]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[52] -to "sasisd:HDIF|CSD[31]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[53] -to "sasisd:HDIF|CSD[32]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[54] -to "sasisd:HDIF|CSD[33]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[55] -to "sasisd:HDIF|CSD[34]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[56] -to "sasisd:HDIF|CSD[35]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[57] -to "sasisd:HDIF|CSD[36]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[58] -to "sasisd:HDIF|CSD[37]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[59] -to "sasisd:HDIF|CSD[38]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[60] -to "sasisd:HDIF|CSD[39]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[61] -to "sasisd:HDIF|CSD[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[62] -to "sasisd:HDIF|CSD[40]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[63] -to "sasisd:HDIF|CSD[41]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[64] -to "sasisd:HDIF|CSD[42]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[65] -to "sasisd:HDIF|CSD[43]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[66] -to "sasisd:HDIF|CSD[44]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[67] -to "sasisd:HDIF|CSD[45]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[68] -to "sasisd:HDIF|CSD[46]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[69] -to "sasisd:HDIF|CSD[47]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[70] -to "sasisd:HDIF|CSD[48]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[71] -to "sasisd:HDIF|CSD[49]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[72] -to "sasisd:HDIF|CSD[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[73] -to "sasisd:HDIF|CSD[50]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[74] -to "sasisd:HDIF|CSD[51]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[75] -to "sasisd:HDIF|CSD[52]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[76] -to "sasisd:HDIF|CSD[53]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[77] -to "sasisd:HDIF|CSD[54]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[78] -to "sasisd:HDIF|CSD[55]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[79] -to "sasisd:HDIF|CSD[56]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[80] -to "sasisd:HDIF|CSD[57]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[81] -to "sasisd:HDIF|CSD[58]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[82] -to "sasisd:HDIF|CSD[59]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[83] -to "sasisd:HDIF|CSD[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[84] -to "sasisd:HDIF|CSD[60]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[85] -to "sasisd:HDIF|CSD[61]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[86] -to "sasisd:HDIF|CSD[62]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[87] -to "sasisd:HDIF|CSD[63]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[88] -to "sasisd:HDIF|CSD[64]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[89] -to "sasisd:HDIF|CSD[65]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[90] -to "sasisd:HDIF|CSD[66]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[91] -to "sasisd:HDIF|CSD[67]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[92] -to "sasisd:HDIF|CSD[68]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[93] -to "sasisd:HDIF|CSD[69]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[94] -to "sasisd:HDIF|CSD[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[95] -to "sasisd:HDIF|CSD[70]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[96] -to "sasisd:HDIF|CSD[71]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[97] -to "sasisd:HDIF|CSD[72]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[98] -to "sasisd:HDIF|CSD[73]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[99] -to "sasisd:HDIF|CSD[74]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[100] -to "sasisd:HDIF|CSD[75]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[101] -to "sasisd:HDIF|CSD[76]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[102] -to "sasisd:HDIF|CSD[77]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[103] -to "sasisd:HDIF|CSD[78]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[104] -to "sasisd:HDIF|CSD[79]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[105] -to "sasisd:HDIF|CSD[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[106] -to "sasisd:HDIF|CSD[80]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[107] -to "sasisd:HDIF|CSD[81]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[108] -to "sasisd:HDIF|CSD[82]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[109] -to "sasisd:HDIF|CSD[83]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[110] -to "sasisd:HDIF|CSD[84]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[111] -to "sasisd:HDIF|CSD[85]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[112] -to "sasisd:HDIF|CSD[86]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[113] -to "sasisd:HDIF|CSD[87]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[114] -to "sasisd:HDIF|CSD[88]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[115] -to "sasisd:HDIF|CSD[89]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[116] -to "sasisd:HDIF|CSD[8]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[117] -to "sasisd:HDIF|CSD[90]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[118] -to "sasisd:HDIF|CSD[91]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[119] -to "sasisd:HDIF|CSD[92]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[120] -to "sasisd:HDIF|CSD[93]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[121] -to "sasisd:HDIF|CSD[94]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[122] -to "sasisd:HDIF|CSD[95]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[123] -to "sasisd:HDIF|CSD[96]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[124] -to "sasisd:HDIF|CSD[97]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[125] -to "sasisd:HDIF|CSD[98]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[126] -to "sasisd:HDIF|CSD[99]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[127] -to "sasisd:HDIF|CSD[9]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[0] -to "sasisd:HDIF|CSD[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[1] -to "sasisd:HDIF|CSD[100]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[2] -to "sasisd:HDIF|CSD[101]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[3] -to "sasisd:HDIF|CSD[102]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[4] -to "sasisd:HDIF|CSD[103]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[5] -to "sasisd:HDIF|CSD[104]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[6] -to "sasisd:HDIF|CSD[105]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[7] -to "sasisd:HDIF|CSD[106]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[8] -to "sasisd:HDIF|CSD[107]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[9] -to "sasisd:HDIF|CSD[108]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[10] -to "sasisd:HDIF|CSD[109]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[11] -to "sasisd:HDIF|CSD[10]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[12] -to "sasisd:HDIF|CSD[110]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[13] -to "sasisd:HDIF|CSD[111]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[14] -to "sasisd:HDIF|CSD[112]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[15] -to "sasisd:HDIF|CSD[113]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[16] -to "sasisd:HDIF|CSD[114]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[17] -to "sasisd:HDIF|CSD[115]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[18] -to "sasisd:HDIF|CSD[116]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[19] -to "sasisd:HDIF|CSD[117]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[20] -to "sasisd:HDIF|CSD[118]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[21] -to "sasisd:HDIF|CSD[119]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[22] -to "sasisd:HDIF|CSD[11]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[23] -to "sasisd:HDIF|CSD[120]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[24] -to "sasisd:HDIF|CSD[121]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[25] -to "sasisd:HDIF|CSD[122]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[26] -to "sasisd:HDIF|CSD[123]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[27] -to "sasisd:HDIF|CSD[124]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[28] -to "sasisd:HDIF|CSD[125]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[29] -to "sasisd:HDIF|CSD[126]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[30] -to "sasisd:HDIF|CSD[127]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[31] -to "sasisd:HDIF|CSD[12]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[32] -to "sasisd:HDIF|CSD[13]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[33] -to "sasisd:HDIF|CSD[14]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[34] -to "sasisd:HDIF|CSD[15]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[35] -to "sasisd:HDIF|CSD[16]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[36] -to "sasisd:HDIF|CSD[17]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[37] -to "sasisd:HDIF|CSD[18]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[38] -to "sasisd:HDIF|CSD[19]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[39] -to "sasisd:HDIF|CSD[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[40] -to "sasisd:HDIF|CSD[20]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[41] -to "sasisd:HDIF|CSD[21]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[42] -to "sasisd:HDIF|CSD[22]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[43] -to "sasisd:HDIF|CSD[23]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[44] -to "sasisd:HDIF|CSD[24]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[45] -to "sasisd:HDIF|CSD[25]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[46] -to "sasisd:HDIF|CSD[26]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[47] -to "sasisd:HDIF|CSD[27]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[48] -to "sasisd:HDIF|CSD[28]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[49] -to "sasisd:HDIF|CSD[29]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[50] -to "sasisd:HDIF|CSD[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[51] -to "sasisd:HDIF|CSD[30]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[52] -to "sasisd:HDIF|CSD[31]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[53] -to "sasisd:HDIF|CSD[32]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[54] -to "sasisd:HDIF|CSD[33]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[55] -to "sasisd:HDIF|CSD[34]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[56] -to "sasisd:HDIF|CSD[35]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[57] -to "sasisd:HDIF|CSD[36]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[58] -to "sasisd:HDIF|CSD[37]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[59] -to "sasisd:HDIF|CSD[38]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[60] -to "sasisd:HDIF|CSD[39]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[61] -to "sasisd:HDIF|CSD[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[62] -to "sasisd:HDIF|CSD[40]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[63] -to "sasisd:HDIF|CSD[41]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[64] -to "sasisd:HDIF|CSD[42]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[65] -to "sasisd:HDIF|CSD[43]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[66] -to "sasisd:HDIF|CSD[44]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[67] -to "sasisd:HDIF|CSD[45]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[68] -to "sasisd:HDIF|CSD[46]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[69] -to "sasisd:HDIF|CSD[47]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[70] -to "sasisd:HDIF|CSD[48]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[71] -to "sasisd:HDIF|CSD[49]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[72] -to "sasisd:HDIF|CSD[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[73] -to "sasisd:HDIF|CSD[50]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[74] -to "sasisd:HDIF|CSD[51]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[75] -to "sasisd:HDIF|CSD[52]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[76] -to "sasisd:HDIF|CSD[53]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[77] -to "sasisd:HDIF|CSD[54]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[78] -to "sasisd:HDIF|CSD[55]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[79] -to "sasisd:HDIF|CSD[56]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[80] -to "sasisd:HDIF|CSD[57]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[81] -to "sasisd:HDIF|CSD[58]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[82] -to "sasisd:HDIF|CSD[59]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[83] -to "sasisd:HDIF|CSD[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[84] -to "sasisd:HDIF|CSD[60]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[85] -to "sasisd:HDIF|CSD[61]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[86] -to "sasisd:HDIF|CSD[62]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[87] -to "sasisd:HDIF|CSD[63]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[88] -to "sasisd:HDIF|CSD[64]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[89] -to "sasisd:HDIF|CSD[65]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[90] -to "sasisd:HDIF|CSD[66]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[91] -to "sasisd:HDIF|CSD[67]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[92] -to "sasisd:HDIF|CSD[68]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[93] -to "sasisd:HDIF|CSD[69]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[94] -to "sasisd:HDIF|CSD[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[95] -to "sasisd:HDIF|CSD[70]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[96] -to "sasisd:HDIF|CSD[71]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[97] -to "sasisd:HDIF|CSD[72]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[98] -to "sasisd:HDIF|CSD[73]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[99] -to "sasisd:HDIF|CSD[74]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[100] -to "sasisd:HDIF|CSD[75]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[101] -to "sasisd:HDIF|CSD[76]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[102] -to "sasisd:HDIF|CSD[77]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[103] -to "sasisd:HDIF|CSD[78]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[104] -to "sasisd:HDIF|CSD[79]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[105] -to "sasisd:HDIF|CSD[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[106] -to "sasisd:HDIF|CSD[80]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[107] -to "sasisd:HDIF|CSD[81]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[108] -to "sasisd:HDIF|CSD[82]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[109] -to "sasisd:HDIF|CSD[83]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[110] -to "sasisd:HDIF|CSD[84]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[111] -to "sasisd:HDIF|CSD[85]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[112] -to "sasisd:HDIF|CSD[86]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[113] -to "sasisd:HDIF|CSD[87]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[114] -to "sasisd:HDIF|CSD[88]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[115] -to "sasisd:HDIF|CSD[89]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[116] -to "sasisd:HDIF|CSD[8]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[117] -to "sasisd:HDIF|CSD[90]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[118] -to "sasisd:HDIF|CSD[91]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[119] -to "sasisd:HDIF|CSD[92]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[120] -to "sasisd:HDIF|CSD[93]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[121] -to "sasisd:HDIF|CSD[94]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[122] -to "sasisd:HDIF|CSD[95]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[123] -to "sasisd:HDIF|CSD[96]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[124] -to "sasisd:HDIF|CSD[97]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[125] -to "sasisd:HDIF|CSD[98]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[126] -to "sasisd:HDIF|CSD[99]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[127] -to "sasisd:HDIF|CSD[9]" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_RAM_BLOCK_TYPE=AUTO" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_NODE_INFO=805334528" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_POWER_UP_TRIGGER=0" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_STORAGE_QUALIFIER_INVERSION_MASK_LENGTH=0" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_ATTRIBUTE_MEM_MODE=OFF" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_STATE_FLOW_USE_GENERATED=0" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_STATE_BITS=11" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_BUFFER_FULL_STOP=1" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_CURRENT_RESOURCE_WIDTH=1" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_TRIGGER_LEVEL=1" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_TRIGGER_IN_ENABLED=0" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_ADVANCED_TRIGGER_ENTITY=basic,1," -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_TRIGGER_LEVEL_PIPELINE=1" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_ENABLE_ADVANCED_TRIGGER=0" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_SEGMENT_SIZE=2048" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_SAMPLE_DEPTH=2048" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[128] -to "sasisd:HDIF|SCLK" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[129] -to "sasisd:HDIF|SDI" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[130] -to "sasisd:HDIF|SDO" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[131] -to "sasisd:HDIF|SD_CS" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[132] -to "sasisd:HDIF|bytecount[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[133] -to "sasisd:HDIF|bytecount[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[134] -to "sasisd:HDIF|bytecount[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[135] -to "sasisd:HDIF|bytecount[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[136] -to "sasisd:HDIF|bytecount[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[137] -to "sasisd:HDIF|bytecount[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[138] -to "sasisd:HDIF|bytecount[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[128] -to "sasisd:HDIF|SCLK" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[129] -to "sasisd:HDIF|SDI" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[130] -to "sasisd:HDIF|SDO" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[131] -to "sasisd:HDIF|SD_CS" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[132] -to "sasisd:HDIF|bytecount[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[133] -to "sasisd:HDIF|bytecount[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[134] -to "sasisd:HDIF|bytecount[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[135] -to "sasisd:HDIF|bytecount[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[136] -to "sasisd:HDIF|bytecount[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[137] -to "sasisd:HDIF|bytecount[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[138] -to "sasisd:HDIF|bytecount[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[139] -to "sasisd:HDIF|int_state[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[140] -to "sasisd:HDIF|int_state[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[141] -to "sasisd:HDIF|int_state[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[142] -to "sasisd:HDIF|int_state[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[143] -to "sasisd:HDIF|int_state[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[144] -to "sasisd:HDIF|int_state[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[145] -to "sasisd:HDIF|int_state[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[146] -to "sasisd:HDIF|s_STATUS[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[147] -to "sasisd:HDIF|s_STATUS[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[148] -to "sasisd:HDIF|s_STATUS[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[149] -to "sasisd:HDIF|s_STATUS[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[150] -to "sasisd:HDIF|s_STATUS[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[151] -to "sasisd:HDIF|s_STATUS[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[152] -to "sasisd:HDIF|s_STATUS[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[153] -to "sasisd:HDIF|s_STATUS[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[139] -to "sasisd:HDIF|int_state[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[140] -to "sasisd:HDIF|int_state[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[141] -to "sasisd:HDIF|int_state[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[142] -to "sasisd:HDIF|int_state[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[143] -to "sasisd:HDIF|int_state[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[144] -to "sasisd:HDIF|int_state[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[145] -to "sasisd:HDIF|int_state[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[146] -to "sasisd:HDIF|s_STATUS[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[147] -to "sasisd:HDIF|s_STATUS[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[148] -to "sasisd:HDIF|s_STATUS[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[149] -to "sasisd:HDIF|s_STATUS[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[150] -to "sasisd:HDIF|s_STATUS[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[151] -to "sasisd:HDIF|s_STATUS[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[152] -to "sasisd:HDIF|s_STATUS[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[153] -to "sasisd:HDIF|s_STATUS[7]" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_DATA_BITS=154" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_TRIGGER_BITS=154" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_INVERSION_MASK=0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_INVERSION_MASK_LENGTH=487" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_NODE_CRC_LOWORD=61941" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_NODE_CRC_HIWORD=32601" -section_id auto_signaltap_0
+set_location_assignment PIN_W21 -to pSd_Dt[3]
+set_location_assignment PIN_W22 -to pSd_Dt[2]
+set_location_assignment PIN_AA21 -to pSd_Dt[1]
+set_location_assignment PIN_AA22 -to pSd_Dt[0]
+set_global_assignment -name CRC_ERROR_OPEN_DRAIN OFF
+set_global_assignment -name OUTPUT_IO_TIMING_NEAR_END_VMEAS "HALF VCCIO" -rise
+set_global_assignment -name OUTPUT_IO_TIMING_NEAR_END_VMEAS "HALF VCCIO" -fall
+set_global_assignment -name OUTPUT_IO_TIMING_FAR_END_VMEAS "HALF SIGNAL SWING" -rise
+set_global_assignment -name OUTPUT_IO_TIMING_FAR_END_VMEAS "HALF SIGNAL SWING" -fall
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
+set_global_assignment -name INCREMENTAL_VECTOR_INPUT_SOURCE F68k_DE0.vwf
+set_global_assignment -name VHDL_FILE ../../SPI/SPI_IF.vhd
+set_global_assignment -name VHDL_FILE ../SASIIF/sasisd.vhd
+set_global_assignment -name VHDL_FILE ../SASIIF/sasiio.vhd
+set_global_assignment -name VHDL_FILE ../../LIB/g_srff.vhd
+set_global_assignment -name VHDL_FILE ../../LIB/HEX2SEG.vhd
+set_global_assignment -name VHDL_FILE ../../LIB/signext.vhd
+set_global_assignment -name VHDL_FILE ../../LIB/CRCGENN.vhd
+set_global_assignment -name VHDL_FILE ../../LIB/sftdiv.vhd
+set_global_assignment -name VHDL_FILE ../../LIB/sftgen.vhd
+set_global_assignment -name VHDL_FILE ../../LIB/sftclk.vhd
+set_global_assignment -name VHDL_FILE ../../LIB/HEX2SEGn.vhd
+set_global_assignment -name VHDL_FILE ../../LIB/PARITYG.vhd
+set_global_assignment -name VHDL_FILE ../../LIB/PARGEN.vhd
+set_global_assignment -name VHDL_FILE ../../LIB/unchchata.vhd
+set_global_assignment -name VHDL_FILE ../../LIB/delayer.vhd
+set_global_assignment -name VHDL_FILE ../../LIB/digifilters.vhd
+set_global_assignment -name VHDL_FILE ../../LIB/digifilter.vhd
+set_global_assignment -name VHDL_FILE ../../LIB/deltasigmas.vhd
+set_global_assignment -name VHDL_FILE ../../LIB/clkdiv.vhd
+set_global_assignment -name QIP_FILE ../mainpll.qip
+set_global_assignment -name VHDL_FILE ../SDtest.vhd
+set_global_assignment -name SIGNALTAP_FILE ../SDtest.stp
+set_global_assignment -name SLD_FILE db/SDtest_auto_stripped.stp
