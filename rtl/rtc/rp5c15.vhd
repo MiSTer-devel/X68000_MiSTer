@@ -4,7 +4,8 @@ LIBRARY	IEEE;
 
 entity rp5c15 is
 generic(
-	clkfreq	:integer	:=21477270
+	clkfreq	:integer	:=21477270;
+	YEAROFF	:std_logic_vector(7 downto 0)	:=x"00"
 );
 port(
 	addr	:in std_logic_vector(3 downto 0);
@@ -15,25 +16,10 @@ port(
 	clkout	:out std_logic;
 	alarm	:out std_logic;
 	
---I2C I/F
-	TXOUT		:out	std_logic_vector(7 downto 0);		--tx data in
-	RXIN		:in		std_logic_vector(7 downto 0);		--rx data out
-	WRn			:out	std_logic;							--write
-	RDn			:out	std_logic;							--read
-
-	TXEMP		:in		std_logic;							--tx buffer empty
-	RXED		:in		std_logic;							--rx buffered
-	NOACK		:in		std_logic;							--no ack
-	COLL		:in		std_logic;							--collision detect
-	NX_READ		:out	std_logic;							--next data is read
-	RESTART		:out	std_logic;							--make re-start condition
-	START		:out	std_logic;							--make start condition
-	FINISH		:out	std_logic;							--next data is final(make stop condition)
-	F_FINISH	:out	std_logic;							--next data is final(make stop condition)
-	INIT		:out	std_logic;
-
+	RTCIN	:in std_logic_vector(64 downto 0);
+	
 	clk		:in std_logic;
-	rstn	:in std_logic
+	rstn		:in std_logic
 );
 end rp5c15;
 architecture rtl of rp5c15 is
@@ -89,15 +75,19 @@ signal	MINHID	:std_logic_vector(2 downto 0);
 signal	MINLID	:std_logic_vector(3 downto 0);
 signal	SECHID	:std_logic_vector(2 downto 0);
 signal	SECLID	:std_logic_vector(3 downto 0);
-signal	I2CSET	:std_logic;
+signal	SYSSET	:std_logic;
 
 signal	BNKSEL	:std_logic;
-signal	I2CWR	:std_logic;
+signal	RESET		:std_logic_vector(3 downto 0);
 signal	MONHt	:std_logic;
 signal	MONLt	:std_logic_vector(3 downto 0);
 signal	monwdat	:std_logic_vector(3 downto 0);
-signal	i2cwcount	:integer range 0 to clkfreq/10;
-signal	wror	:std_logic;
+signal	Hz		:std_logic;
+signal	subHz	:integer range 0 to clkfreq-1;
+signal	Hz16	:std_logic;
+
+constant div32	:integer :=clkfreq/32;
+constant div16	:integer	:=clkfreq/16;
 
 component rtcbody
 generic(
@@ -144,6 +134,7 @@ port(
 	SECLOUT	:out std_logic_vector(3 downto 0);
 
 	OUT1Hz	:out std_logic;
+	SUBSEC	:out integer range 0 to clkfreq-1;
 	
 	fast	:in std_logic;
 
@@ -152,56 +143,6 @@ port(
 );
 end component;
 
-component I2Crtc is
-port(
-	TXOUT		:out	std_logic_vector(7 downto 0);		--tx data in
-	RXIN		:in		std_logic_vector(7 downto 0);	--rx data out
-	WRn			:out	std_logic;						--write
-	RDn			:out	std_logic;						--read
-
-	TXEMP		:in		std_logic;							--tx buffer empty
-	RXED		:in		std_logic;							--rx buffered
-	NOACK		:in		std_logic;							--no ack
-	COLL		:in		std_logic;							--collision detect
-	NX_READ		:out	std_logic;							--next data is read
-	RESTART		:out	std_logic;							--make re-start condition
-	START		:out	std_logic;							--make start condition
-	FINISH		:out	std_logic;							--next data is final(make stop condition)
-	F_FINISH	:out	std_logic;							--next data is final(make stop condition)
-	INIT		:out	std_logic;
-
-	YEHID		:out std_logic_vector(3 downto 0);
-	YELID		:out std_logic_vector(3 downto 0);
-	MONID		:out std_logic_vector(3 downto 0);
-	DAYHID		:out std_logic_vector(1 downto 0);
-	DAYLID		:out std_logic_vector(3 downto 0);
-	WDAYID		:out std_logic_vector(2 downto 0);
-	HORHID		:out std_logic_vector(1 downto 0);
-	HORLID		:out std_logic_vector(3 downto 0);
-	MINHID		:out std_logic_vector(2 downto 0);
-	MINLID		:out std_logic_vector(3 downto 0);
-	SECHID		:out std_logic_vector(2 downto 0);
-	SECLID		:out std_logic_vector(3 downto 0);
-	RTCINI		:out std_logic;
-	
-	YEHWD		:in std_logic_vector(3 downto 0);
-	YELWD		:in std_logic_vector(3 downto 0);
-	MONWD		:in std_logic_vector(3 downto 0);
-	DAYHWD		:in std_logic_vector(1 downto 0);
-	DAYLWD		:in std_logic_vector(3 downto 0);
-	WDAYWD		:in std_logic_vector(2 downto 0);
-	HORHWD		:in std_logic_vector(1 downto 0);
-	HORLWD		:in std_logic_vector(3 downto 0);
-	MINHWD		:in std_logic_vector(2 downto 0);
-	MINLWD		:in std_logic_vector(3 downto 0);
-	SECHWD		:in std_logic_vector(2 downto 0);
-	SECLWD		:in std_logic_vector(3 downto 0);
-	RTCWR		:in std_logic;
-	
-	clk			:in std_logic;
-	rstn		:in std_logic
-);
-end component;
 
 begin
 	rtc	:rtcbody generic map(clkfreq) port map(
@@ -244,7 +185,8 @@ begin
 		SECHOUT	=>SECH,
 		SECLOUT	=>SECL,
 
-		OUT1Hz	=>open,
+		OUT1Hz	=>Hz,
+		SUBSEC	=>subHz,
 		
 		fast	=>'0',
 
@@ -252,109 +194,120 @@ begin
 		rstn	=>rstn
 	);
 	
-	i2c	:I2Crtc port map(
-		TXOUT		=>TXOUT,
-		RXIN		=>RXIN,
-		WRn			=>WRn,
-		RDn			=>RDn,
+	process(clk,rstn)
+	variable modx	:integer range 0 to (div16-1);
+	begin
+		if(rstn='0')then
+			Hz16<='0';
+		elsif(clk' event and clk='1')then
+			modx:=subHz mod div16;
+			if(modx>div32)then
+				Hz16<='1';
+			else
+				Hz16<='0';
+			end if;
+		end if;
+	end process;
+	
+	alarm<=(Hz and (not RESET(3))) or (Hz16 and (not RESET(2)));
+			
+	SECLID<=RTCIN(3 downto 0);
+	SECHID<=RTCIN(6 downto 4);
+	MINLID<=RTCIN(11 downto 8);
+	MINHID<=RTCIN(14 downto 12);
+	HORLID<=RTCIN(19 downto 16);
+	HORHID<=RTCIN(21 downto 20);
+	DAYLID<=RTCIN(27 downto 24);
+	DAYHID<=RTCIN(29 downto 28);
+	MONID<=	RTCIN(35 downto 32) when RTCIN(36)='0' else
+				RTCIN(35 downto 32)+x"a";
+	
+	process(RTCIN)
+	variable carry	:std_logic;
+	variable	tmpval	:std_logic_vector(4 downto 0);
+	begin
+		tmpval:=('0' & RTCIN(43 downto 40))+('0' & YEAROFF(3 downto 0));
+		if(tmpval>"01010")then
+			carry:='1';
+			tmpval:=tmpval-"01010";
+		else
+			carry:='0';
+		end if;
+		YELID<=tmpval(3 downto 0);
+		tmpval:=('0' & RTCIN(47 downto 44))+('0' & YEAROFF(7 downto 4));
+		if(carry='1')then
+			tmpval:=tmpval+1;
+		end if;
+		if(tmpval>"01010")then
+			tmpval:=tmpval-"01010";
+		end if;
+		YEHID<=tmpval(3 downto 0);
+	end process;
 
-		TXEMP		=>TXEMP,
-		RXED		=>RXED,
-		NOACK		=>NOACK,
-		COLL		=>COLL,
-		NX_READ		=>NX_READ,
-		RESTART		=>RESTART,
-		START		=>START,
-		FINISH		=>FINISH,
-		F_FINISH	=>F_FINISH,
-		INIT		=>INIT,
+	WDAYID<=RTCIN(50 downto 48);
 
-		YEHID		=>YEHID,
-		YELID		=>YELID,
-		MONID		=>MONID,
-		DAYHID		=>DAYHID,
-		DAYLID		=>DAYLID,
-		WDAYID		=>WDAYID,
-		HORHID		=>HORHID,
-		HORLID		=>HORLID,
-		MINHID		=>MINHID,
-		MINLID		=>MINLID,
-		SECHID		=>SECHID,
-		SECLID		=>SECLID,
-		RTCINI		=>I2CSET,
-		
-		YEHWD		=>YEH,
-		YELWD		=>YEL,
-		MONWD		=>MON,
-		DAYHWD		=>DAYH,
-		DAYLWD		=>DAYL,
-		WDAYWD		=>WDAY,
-		HORHWD		=>HORH,
-		HORLWD		=>HORL,
-		MINHWD		=>MINH,
-		MINLWD		=>MINL,
-		SECHWD		=>SECH,
-		SECLWD		=>SECL,
-		RTCWR		=>I2CWR,
-		
-		clk			=>clk,
-		rstn		=>rstn
-	);
-	YEHWD<=	wdat 				when wr='1' else YEHID;
-	YELWD<=	wdat 				when wr='1' else YELID;
-	MONWD<=	monwdat 			when wr='1' else MONID;
+	YEHWD<=wdat 					when wr='1' else YEHID;
+	YELWD<=wdat 					when wr='1' else YELID;
+	MONWD<=monwdat 				when wr='1' else MONID;
 	DAYHWD<=wdat(1 downto 0) 	when wr='1' else DAYHID;
-	DAYLWD<=wdat 				when wr='1' else DAYLID;
+	DAYLWD<=wdat 					when wr='1' else DAYLID;
 	WDAYWD<=wdat(2 downto 0)	when wr='1' else WDAYID;
 	HORHWD<=wdat(1 downto 0)	when wr='1' else HORHID;
-	HORLWD<=wdat 				when wr='1' else HORLID;
+	HORLWD<=wdat 					when wr='1' else HORLID;
 	MINHWD<=wdat(2 downto 0)	when wr='1' else MINHID;
-	MINLWD<=wdat 				when wr='1' else MINLID;
+	MINLWD<=wdat 					when wr='1' else MINLID;
 	SECHWD<=wdat(2 downto 0)	when wr='1' else SECHID;
-	SECLWD<=wdat 				when wr='1' else SECLID;
+	SECLWD<=wdat 					when wr='1' else SECLID;
 	
 	process(clk,rstn)begin
 		if(rstn='0')then
 			BNKSEL<='0';
+			RESET<=(others=>'0');
 		elsif(clk' event and clk='1')then
 			if(addr=x"d" and wr='1')then
 				BNKSEL<=wdat(0);
+			elsif(addr=x"f" and wr='1')then
+				RESET<=wdat(3 downto 0);
 			end if;
 		end if;
 	end process;
 	
-	YEHWR<=	'1' when addr=x"c" and BNKSEL='0' and wr='1' else I2CSET;
-	YELWR<=	'1' when addr=x"b" and BNKSEL='0' and wr='1' else I2CSET;
-	MONWR<=	'1' when (addr=x"9" or addr=x"a") and BNKSEL='0' and wr='1' else I2CSET;
-	DAYHWR<='1' when addr=x"8" and BNKSEL='0' and wr='1' else I2CSET;
-	DAYLWR<='1' when addr=x"7" and BNKSEL='0' and wr='1' else I2CSET;
-	WDAYWR<='1' when addr=x"6" and BNKSEL='0' and wr='1' else I2CSET;
-	HORHWR<='1' when addr=x"5" and BNKSEL='0' and wr='1' else I2CSET;
-	HORLWR<='1' when addr=x"4" and BNKSEL='0' and wr='1' else I2CSET;
-	MINHWR<='1' when addr=x"3" and BNKSEL='0' and wr='1' else I2CSET;
-	MINLWR<='1' when addr=x"2" and BNKSEL='0' and wr='1' else I2CSET;
-	SECHWR<='1' when addr=x"1" and BNKSEL='0' and wr='1' else I2CSET;
-	SECLWR<='1' when addr=x"0" and BNKSEL='0' and wr='1' else I2CSET;
-	SECZWR<='1' when addr=x"0" and BNKSEL='0' and wr='1' else I2CSET;
-	
-	wror<=	YEHWR or YELWR or MONWR or DAYHWR or DAYLWR or WDAYWR or HORHWR or HORLWR or MINHWR or MINLWR or SECHWR or SECLWR or SECZWR;
-	
-	process(clk,rstn)begin
+	process(clk,rstn)
+	variable state	:integer range 0 to 2;
+	begin
 		if(rstn='0')then
-			i2cwcount<=0;
-			I2CWR<='0';
+			state:=0;
+			SYSSET<='0';
 		elsif(clk' event and clk='1')then
-			I2CWR<='0';
-			if(wror='1')then
-				i2cwcount<=clkfreq/10;
-			elsif(i2cwcount=1)then
-				I2CWR<='1';
-				i2cwcount<=i2cwcount-1;
-			elsif(i2cwcount>0)then
-				i2cwcount<=i2cwcount-1;
-			end if;
+			SYSSET<='0';
+			case state is
+			when 2 =>
+			when 1 =>
+				SYSSET<='1';
+				state:=2;
+			when 0 =>
+				if(RTCIN(64)='1')then
+					state:=1;
+				end if;
+			when others =>
+				state:=2;
+			end case;
 		end if;
 	end process;
+	
+	YEHWR<=	'1' when addr=x"c" and BNKSEL='0' and wr='1' else SYSSET;
+	YELWR<=	'1' when addr=x"b" and BNKSEL='0' and wr='1' else SYSSET;
+	MONWR<=	'1' when (addr=x"9" or addr=x"a") and BNKSEL='0' and wr='1' else SYSSET;
+	DAYHWR<='1' when addr=x"8" and BNKSEL='0' and wr='1' else SYSSET;
+	DAYLWR<='1' when addr=x"7" and BNKSEL='0' and wr='1' else SYSSET;
+	WDAYWR<='1' when addr=x"6" and BNKSEL='0' and wr='1' else SYSSET;
+	HORHWR<='1' when addr=x"5" and BNKSEL='0' and wr='1' else SYSSET;
+	HORLWR<='1' when addr=x"4" and BNKSEL='0' and wr='1' else SYSSET;
+	MINHWR<='1' when addr=x"3" and BNKSEL='0' and wr='1' else SYSSET;
+	MINLWR<='1' when addr=x"2" and BNKSEL='0' and wr='1' else SYSSET;
+	SECHWR<='1' when addr=x"1" and BNKSEL='0' and wr='1' else SYSSET;
+	SECLWR<='1' when addr=x"0" and BNKSEL='0' and wr='1' else SYSSET;
+	SECZWR<='1' when addr=x"0" and BNKSEL='0' and wr='1' else SYSSET;
 	
 	process(clk,rstn)begin
 		if(rstn='0')then
@@ -390,6 +343,8 @@ begin
 			YEL			when addr=x"b" and BNKSEL='0' else
 			YEH			when addr=x"c" and BNKSEL='0' else
 			"000" & BNKSEL when addr=x"d" else
+			RESET		when addr=x"f" else
 			x"0";
+	
 end rtl;
 			

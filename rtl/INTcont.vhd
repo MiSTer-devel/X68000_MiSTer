@@ -69,16 +69,16 @@ signal	INTe	:std_logic_vector(7 downto 1);
 signal	INTclr	:std_logic_vector(2 downto 0);
 signal	lINTclr	:std_logic_vector(2 downto 0);
 signal	INTact	:std_logic_vector(2 downto 0);
-signal	vect1l	:std_logic_vector(7 downto 0);
-signal	vect2l	:std_logic_vector(7 downto 0);
-signal	vect3l	:std_logic_vector(7 downto 0);
-signal	vect4l	:std_logic_vector(7 downto 0);
-signal	vect5l	:std_logic_vector(7 downto 0);
-signal	vect6l	:std_logic_vector(7 downto 0);
-signal	vect7l	:std_logic_vector(7 downto 0);
+
+type vect_t is array(7 downto 1) of std_logic_vector(7 downto 0);
+signal	svectv	:vect_t;
+signal	vectl		:vect_t;
+signal	vectv		:vect_t;
+signal	ivackv	:vect_t;
 signal	ldtack	:std_logic;
 signal	ackcount:integer range 0 to INText;
 signal	INTen	:std_logic;
+signal	iackv	:std_logic_vector(7 downto 1);
 begin
 			
 	vINT<=int7 & int6 & int5 & int4 & int3 & int2 & int1;
@@ -93,6 +93,14 @@ begin
 			"101"	when INTe(2)='1' else
 			"110"	when INTe(1)='1' else
 			"111";
+	
+	vectv(7)<=vect7;
+	vectv(6)<=vect6;
+	vectv(5)<=vect5;
+	vectv(4)<=vect4;
+	vectv(3)<=vect3;
+	vectv(2)<=vect2;
+	vectv(1)<=vect1;
 	
 	process(clk,rstn)begin
 		if(rstn='0')then
@@ -112,13 +120,13 @@ begin
 --	INTen<='1';
 	addrout<=
 			addrin	when rw='0' else	--or INTen='0' 
-			"00000000000000" & vect7l & addrin(1 downto 0) when addrin(23 downto 2)="0000000000000000011111"  else
-			"00000000000000" & vect6l & addrin(1 downto 0) when addrin(23 downto 2)="0000000000000000011110"  else
-			"00000000000000" & vect5l & addrin(1 downto 0) when addrin(23 downto 2)="0000000000000000011101"  else
-			"00000000000000" & vect4l & addrin(1 downto 0) when addrin(23 downto 2)="0000000000000000011100"  else
-			"00000000000000" & vect3l & addrin(1 downto 0) when addrin(23 downto 2)="0000000000000000011011"  else
-			"00000000000000" & vect2l & addrin(1 downto 0) when addrin(23 downto 2)="0000000000000000011010"  else
-			"00000000000000" & vect1l & addrin(1 downto 0) when addrin(23 downto 2)="0000000000000000011001"  else
+			"00000000000000" & vectl(7) & addrin(1 downto 0) when addrin(23 downto 2)="0000000000000000011111"  else
+			"00000000000000" & vectl(6) & addrin(1 downto 0) when addrin(23 downto 2)="0000000000000000011110"  else
+			"00000000000000" & vectl(5) & addrin(1 downto 0) when addrin(23 downto 2)="0000000000000000011101"  else
+			"00000000000000" & vectl(4) & addrin(1 downto 0) when addrin(23 downto 2)="0000000000000000011100"  else
+			"00000000000000" & vectl(3) & addrin(1 downto 0) when addrin(23 downto 2)="0000000000000000011011"  else
+			"00000000000000" & vectl(2) & addrin(1 downto 0) when addrin(23 downto 2)="0000000000000000011010"  else
+			"00000000000000" & vectl(1) & addrin(1 downto 0) when addrin(23 downto 2)="0000000000000000011001"  else
 			addrin;
 	
 	INTclr<=
@@ -137,10 +145,12 @@ begin
 			sINT<=(others=>'0');
 			lINT<=(others=>'0');
 			lINTclr<=(others=>'0');
+			svectv<=(others=>x"00");
 		elsif(clk' event and clk='1')then
 			sINT<=vINT;
 			lINT<=sINT;
 			lINTclr<=INTclr;
+			svectv<=vectv;
 		end if;
 	end process;
 
@@ -167,7 +177,9 @@ begin
 		end if;
 	end process;
 			
---	process(clk,rstn)begin
+--	process(clk,rstn)
+--	variable ilintclr	:integer range 0 to 7;
+--	begin
 --		if(rstn='0')then
 --			INTe<=(others=>'0');
 --		elsif(clk' event and clk='1')then
@@ -179,123 +191,75 @@ begin
 --				end if;
 --			end loop;
 --			if(INTclr="000")then
---				case lINTclr is
---				when "111"	=>
---					if(e_ln7='1')then
---						INTe(7)<='0';
+--				ilintclr:=conv_integer(lintclr);
+--				if(ilintclr>0)then
+--					if(e_ln(ilintclr)='1')then
+--						INTe(ilintclr)<='0';
 --					end if;
---				when "110" =>
---					if(e_ln6='1')then
---						INTe(6)<='0';
---					end if;
---				when "101" =>
---					if(e_ln5='1')then
---						INTe(5)<='0';
---					end if;
---				when "100" =>
---					if(e_ln4='1')then
---						INTe(4)<='0';
---					end if;
---				when "011" =>
---					if(e_ln3='1')then
---						INTe(3)<='0';
---					end if;
---				when "010" =>
---					if(e_ln2='1')then
---						INTe(2)<='0';
---					end if;
---				when "001" =>
---					if(e_ln1='1')then
---						INTe(1)<='0';
---					end if;
---				when others =>
---				end case;
+--				end if;
 --			end if;
 --		end if;
 --	end process;
 	
-	process(clk,rstn)begin
+	process(clk,rstn)
+	variable iintact	:integer range 0 to 7;
+	begin
 		if(rstn='0')then
-			iack7<='0';
-			iack6<='0';
-			iack5<='0';
-			iack4<='0';
-			iack3<='0';
-			iack2<='0';
-			iack1<='0';
+			iackv<=(others=>'0');
 		elsif(clk' event and clk='1')then
-			iack7<='0';
-			iack6<='0';
-			iack5<='0';
-			iack4<='0';
-			iack3<='0';
-			iack2<='0';
-			iack1<='0';
+			iackv<=(others=>'0');
 			if(ackcount=1)then
-				case INTact is
-				when "111" =>
-					iack7<='1';
-				when "110" =>
-					iack6<='1';
-				when "101" =>
-					iack5<='1';
-				when "100" =>
-					iack4<='1';
-				when "011" =>
-					iack3<='1';
-				when "010" =>
-					iack2<='1';
-				when "001" =>
-					iack1<='1';
-				when others =>
-				end case;
+				iintact:=conv_integer(INTact);
+				if(iintact>0)then
+					iackv(iintact)<='1';
+				end if;
 			end if;
 		end if;
 	end process;
 				
 	
-	process(clk,rstn)begin
+	process(clk,rstn)
+	variable iintclr	:integer range 0 to 7;
+	begin
 		if(rstn='0')then
-			vect1l<=(others=>'0');
-			vect2l<=(others=>'0');
-			vect3l<=(others=>'0');
-			vect4l<=(others=>'0');
-			vect5l<=(others=>'0');
-			vect6l<=(others=>'0');
-			vect7l<=(others=>'0');
+			vectl<=(others=>x"00");
+			ivackv<=(others=>x"00");
 		elsif(clk' event and clk='1')then
-			if(INTclr/="001" and INTen='0')then
-				vect1l<=vect1;
-				ivack1<=vect1;
-			end if;
-			if(INTclr/="010" and INTen='0')then
-				vect2l<=vect2;
-				ivack2<=vect2;
-			end if;
-			if(INTclr/="011" and INTen='0')then
-				vect3l<=vect3;
-				ivack3<=vect3;
-			end if;
-			if(INTclr/="100" and INTen='0')then
-				vect4l<=vect4;
-				ivack4<=vect4;
-			end if;
-			if(INTclr/="101" and INTen='0')then
-				vect5l<=vect5;
-				ivack5<=vect5;
-			end if;
-			if(INTclr/="110" and INTen='0')then
-				vect6l<=vect6;
-				ivack6<=vect6;
-			end if;
-			if(INTclr/="111" and INTen='0')then
-				vect7l<=vect7;
-				ivack7<=vect7;
-			end if;
+			iintclr:=conv_integer(INTclr);
+			for i in 1 to 7 loop
+				if(iintclr/=i and inten='0')then
+					vectl(i)<=vectv(i);
+				elsif(iintclr=i)then
+					ivackv(i)<=vectl(i);
+				end if;
+--				if(sint(i)='1' and lint(i)='0')then
+--					vectl(i)<=svectv(i);
+--				end if;
+			end loop;
+--			if(iintclr>0)then
+--				ivackv(iintclr)<=vectl(iintclr);
+--			end if;
 		end if;
 	end process;
 			
 	IPL<=INTnum;
+	
+	iack7<=iackv(7);
+	iack6<=iackv(6);
+	iack5<=iackv(5);
+	iack4<=iackv(4);
+	iack3<=iackv(3);
+	iack2<=iackv(2);
+	iack1<=iackv(1);
+
+	ivack7<=ivackv(7);
+	ivack6<=ivackv(6);
+	ivack5<=ivackv(5);
+	ivack4<=ivackv(4);
+	ivack3<=ivackv(3);
+	ivack2<=ivackv(2);
+	ivack1<=ivackv(1);
+	
 end rtl;
 
 			

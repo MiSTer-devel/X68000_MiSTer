@@ -105,9 +105,7 @@ begin
 			end if;
 			if(wr='1')then
 				counter<=wdat;
-			elsif(mode="0000")then
-				counter<=(others=>'0');
-			else
+			elsif(mode/="0000")then
 				if(pmode='1')then
 					if(state='0')then
 						if(redge='1')then
@@ -126,8 +124,8 @@ begin
 					else
 						if(counter=x"01")then
 							INT<='1';
-							counter<=counter-x"01";
-						elsif(counter=x"00")then
+--							counter<=counter-x"01";
+--						elsif(counter=x"00")then
 							counter<=rvalue;
 						else
 							counter<=counter-x"01";

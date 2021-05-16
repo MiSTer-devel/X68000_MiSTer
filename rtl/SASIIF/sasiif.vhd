@@ -4,6 +4,10 @@ use ieee.std_logic_arith.all;
 use IEEE.std_logic_unsigned.all;
 
 entity sasiif is
+generic(
+	inirstwait	:integer	:=10;
+	rstlen		:integer	:=100
+);
 port(
 	cs		:in std_logic;
 	addr	:in std_logic_vector(1 downto 0);
@@ -39,6 +43,7 @@ architecture rtl of sasiif is
 signal	iowdat	:std_logic_vector(7 downto 0);
 signal	CMDWR	:std_logic;
 signal	CMDRD	:std_logic;
+signal	DMACLR:std_logic;
 signal	IDWR	:std_logic;
 signal	IDCLR	:std_logic;
 signal	BUSRST	:std_logic;
@@ -47,9 +52,17 @@ signal	adrrd,ladrrd	:std_logic_vector(3 downto 0);
 signal	RDDAT_DAT	:std_logic_vector(7 downto 0);
 signal	RDDAT_STA	:std_logic_vector(7 downto 0);
 signal	ACKb,lACK	:std_logic;
-signal	lREQ		:std_logic;
+signal	sREQ,lREQ	:std_logic;
 signal	SELb		:std_logic;
 signal	HSwait		:std_logic;
+signal	inirst		:std_logic;
+
+type initstate_t is (
+	is_init,
+	is_reset,
+	is_idle
+);
+signal	initstate	:initstate_t;
 
 type state_t	is(
 	st_IDLE,
@@ -115,32 +128,77 @@ begin
 		end if;
 	end process;
 	
+	process(clk,rstn)
+	variable wcount	:integer range 0 to inirstwait-1;
+	begin
+		if(rstn='0')then
+			initstate<=is_init;
+			wcount:=inirstwait-1;
+			inirst<='0';
+		elsif(clk' event and clk='1')then
+			inirst<='0';
+			case initstate is
+			when is_init =>
+				if(wcount>0)then
+					wcount:=wcount-1;
+				else
+					initstate<=is_reset;
+				end if;
+			when is_reset =>
+				inirst<='1';
+				initstate<=is_idle;
+			when is_idle =>
+			when others =>
+			end case;
+		end if;
+	end process;
+	
 	IDWR<=	'1' when adrwr(3)='0' and ladrwr(3)='1' else '0';
-	BUSRST<='1' when adrwr(2)='0' and ladrwr(2)='1' else '0';
+	BUSRST<=	'1' when adrwr(2)='0' and ladrwr(2)='1' else '1' when inirst='1' else '0';
 	IDCLR<=	'1' when adrwr(1)='0' and ladrwr(1)='1' else '0';
 	CMDWR<=	'1' when adrwr(0)='0' and ladrwr(0)='1' else '0';
 	CMDRD<=	'1' when adrrd(0)='0' and ladrrd(0)='1' else '0';
+	DMACLR<=	'1' when adrwr(0)='1' or adrrd(0)='1' else '0';
 	
-	RST<=BUSRST;
+	process(clk,rstn)
+	variable lencount	:integer range 0 to rstlen-1;
+	begin
+		if(rstn='0')then
+			lencount:=0;
+			RST<='0';
+		elsif(clk' event and clk='1')then
+			if(BUSRST='1')then
+				RST<='1';
+				lencount:=rstlen-1;
+			elsif(lencount>0)then
+				lencount:=lencount-1;
+			else
+				RST<='0';
+			end if;
+		end if;
+	end process;
 
 	process(clk,rstn)begin
 		if(rstn='0')then
 			drq<='0';
 			lACK<='0';
+			sREQ<='0';
 			lREQ<='0';
 			HSwait<='0';
 		elsif(clk' event and clk='1')then
-			lREQ<=REQ;
+			lREQ<=sREQ;
+			sREQ<=REQ;
 			lACK<=ACKb;
 			if(BUSRST='1')then
 				drq<='0';
 				HSwait<='0';
-			elsif(REQ='1' and lREQ='0')then
+			elsif(sREQ='1' and lREQ='0')then
 				drq<='1';
-			elsif(CMDRD='1' or CMDWR='1')then
+			elsif(DMACLR='1')then
 				drq<='0';
+			elsif(CMDRD='1' or CMDWR='1')then
 				HSwait<='1';
-			elsif(REQ='0')then
+			elsif(sREQ='0')then
 				HSwait<='0';
 			end if;
 		end if;
@@ -191,7 +249,7 @@ begin
 		end if;
 	end process;
 	
-	RDDAT_STA<=	"000" & MSG & CD & IO & BSY & REQ;
+	RDDAT_STA<=	"000" & MSG & CD & IO & BSY & sREQ;
 	rdat<=	IDAT when adrrd="0001" else
 			RDDAT_STA when adrrd="0010" else
 			(others=>'0');
@@ -209,7 +267,7 @@ begin
 				ACKb<='0';
 			elsif(CMDWR='1' or CMDRD='1')then
 				ACKb<='1';
-			elsif(REQ='0')then
+			elsif(sREQ='0')then
 				ACKb<='0';
 			end if;
 		end if;

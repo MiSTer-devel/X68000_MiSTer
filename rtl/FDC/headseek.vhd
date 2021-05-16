@@ -34,39 +34,44 @@ end headseek;
 architecture rtl of headseek is
 signal	current	:integer range 0 to maxtrack;
 
---type state_t is (ST_INIIN0,ST_INIIN1,ST_INIOUT,ST_IDLE,ST_CONTROL,ST_WAITSET);
---signal	state	:state_t;
-	signal	state	:integer range 0 to 5;
-	constant ST_INIIN0	:integer	:=0;
-	constant ST_INIIN1	:integer	:=1;
-	constant ST_INIOUT	:integer	:=2;
-	constant ST_IDLE	:integer	:=3;
-	constant ST_CONTROL	:integer	:=4;
-	constant ST_WAITSET	:integer	:=5;
-
---type movestate_t is (MS_IDLE,MS_SETDIR,MS_DIRWAIT,MS_SEEKON,MS_SEEKOFF,MS_SEEKWAIT);
---signal	movestate	:movestate_t;
-	signal	movestate	:integer range 0 to 5;
-	constant MS_IDLE	:integer	:=0;
-	constant MS_SETDIR	:integer	:=1;
-	constant MS_DIRWAIT	:integer	:=2;
-	constant MS_SEEKON	:integer	:=3;
-	constant MS_SEEKOFF	:integer	:=4;
-	constant MS_SEEKWAIT:integer	:=5;
+	type state_t is (
+		ST_INIIN0,
+		ST_INIIN1,
+		ST_INIOUT,
+		ST_IDLE,
+		ST_CONTROL,
+		ST_WAITSET,
+		ST_NOP
+	);
+	signal	state	:state_t;
+	
+	type movestate_t is(
+		MS_IDLE,
+		MS_SETDIR,
+		MS_DIRWAIT,
+		MS_SEEKON,
+		MS_SEEKOFF,
+		MS_SEEKWAIT
+	);
+	signal	movestate	:movestate_t;
+	
 
 signal	movedir		:std_logic;
 signal	move		:std_logic;
 signal	intbusy		:std_logic;
 signal	curdir		:std_logic;
 signal	wsetcount	:integer range 0 to maxset;
+signal	seekerrb	:std_logic;
+
 begin
+
 	process(clk,rstn)begin
 		if(rstn='0')then
 			current<=0;
 			movedir<='1';
 			move<='0';
 			reachtrack<='0';
-			seekerr<='0';
+			seekerrb<='0';
 			if(initseek=0)then
 				busy<='0';
 				state<=ST_IDLE;
@@ -80,7 +85,7 @@ begin
 			if(init='1')then
 				STATE<=ST_INIIN0;
 				current<=0;
-				seekerr<='0';
+				seekerrb<='0';
 				busy<='1';
 			end if;
 			case state is
@@ -92,7 +97,7 @@ begin
 							move<='1';
 							current<=current+1;
 						else
-							seekerr<='1';
+							seekerrb<='1';
 							busy<='1';
 							state<=ST_IDLE;
 						end if;
@@ -120,22 +125,23 @@ begin
 							movedir<='1';
 							move<='1';
 						else
-							seekerr<='1';
+							seekerrb<='1';
 							busy<='0';
 							state<=ST_IDLE;
 						end if;
 					else
 						current<=0;
-						seekerr<='0';
-						reachtrack<='1';
-						state<=ST_IDLE;
-						busy<='0';
+						seekerrb<='0';
+						wsetcount<=setwait;
+						state<=ST_WAITSET;
 					end if;
 				end if;
 			when ST_IDLE =>
 				if(destset='1')then
 					if(current=desttrack)then
 						reachtrack<='1';
+						state<=ST_NOP;
+						busy<='1';
 					else
 						if(desttrack>current)then
 							movedir<='0';
@@ -146,6 +152,9 @@ begin
 						busy<='1';
 					end if;
 				end if;
+			when ST_NOP =>
+				busy<='0';
+				state<=st_IDLE;
 			when ST_CONTROL =>
 				if(intbusy='0')then
 					if(current=desttrack)then
@@ -216,6 +225,7 @@ begin
 
 	sdir<=curdir;
 	curtrack<=current;
+	seekerr<=seekerrb and not (destset or init);
 	
 end rtl;
 				

@@ -39,6 +39,8 @@ port(
 	
 	rdaddr	:in std_logic_vector(8 downto 0);
 	dotout	:out std_logic_vector(7 downto 0);
+
+	debugsel	:in std_logic_vector(1 downto 0)	:="11";
 	
 	clk		:in std_logic;
 	rstn	:in std_logic
@@ -95,8 +97,6 @@ signal	sp_waddr	:std_logic_vector(9 downto 0);
 signal	sp_waddrd	:std_logic_vector(8 downto 0);
 signal	sp_maddr	:std_logic_vector(8 downto 0);
 signal	sp_wren	:std_logic;
-signal	bgHRd	:std_logic;
-signal	sprHRd	:std_logic;
 
 constant lastx	:std_logic_vector(8 downto 0)	:=(others=>'1');
 constant lastspno:std_logic_vector(6 downto 0)	:=(others=>'0');
@@ -186,7 +186,7 @@ begin
 	bg_patno<=	"00" & bgPAT when hres='0' else
 				bgPAT & bg_patnolsb when hres='1' else
 				(others=>'0');
-	bg_dotx<=	bg_xmodd(2 downto 0) when bgHRd='0' else
+	bg_dotx<=	bg_xmodd(2 downto 0) when bgHR='0' else
 				not bg_xmodd(2 downto 0);
 	bg_doty<=	bg_ymod(2 downto 0) when bgVR='0' else
 				not bg_ymod(2 downto 0);
@@ -231,10 +231,7 @@ begin
 			bg0wr<=bg0wrdly;
 			bg1wr<=bg1wrdly;
 			bg_xmodd<=bg_xmod;
---			bg_xmodd<=bg_xmodd1;
 			bg_waddr<=bg_waddrd1;
---			sp_wr<=spwrdly;
---			sp_waddrd<=sp_waddrd1;
 			sp_waddrd<=sp_waddr(8 downto 0);
 			sp_xposd<=sp_xposd1;
 			bg_xd<=bg_xd1;
@@ -261,8 +258,6 @@ begin
 			sp_waddrd1:=sp_waddr(8 downto 0);
 			sp_xposd1:=sp_xpos;
 			bg_xd1:=bg_x;
-			bgHRd<=bgHR;
-			sprHRd<=sprHR;
 		end if;
 	end process;
 	
@@ -351,7 +346,7 @@ begin
 	sp_patnolsb(1)<=sp_patsub(1) xor sprHR;
 	sp_patno<=	sprPAT & sp_patnolsb;
 	
-	sp_dotx<=	sp_xpos(2 downto 0) when sprHRd='0' else
+	sp_dotx<=	sp_xpos(2 downto 0) when sprHR='0' else
 				not sp_xpos(2 downto 0);
 	sp_doty<=	sp_ypos(2 downto 0) when sprVR='0' else
 				not sp_ypos(2 downto 0);
@@ -420,15 +415,16 @@ begin
 	doty<=	bg_doty		when state=st_BG0 else
 			bg_doty		when state=st_BG1 else
 			sp_doty		when state=st_SPRITE else
+			
 			(others=>'0');
 
 	dotout<=
 		(others=>'0') when spren='0' else
-		sp3rdat	when sp3rdat(3 downto 0)/="0000" else
-		bg0rdat	when bg0rdat(3 downto 0)/="0000" and bgen(0)='1' else
-		sp2rdat when sp2rdat(3 downto 0)/="0000" else
-		bg1rdat	when bg1rdat(3 downto 0)/="0000" and bgen(1)='1' else
-		sp1rdat when sp1rdat(3 downto 0)/="0000" else
+		sp3rdat	when sp3rdat(3 downto 0)/="0000" and debugsel(0)='1' else
+		bg0rdat	when bg0rdat(3 downto 0)/="0000" and bgen(0)='1' and debugsel(1)='1' else
+		sp2rdat when sp2rdat(3 downto 0)/="0000" and debugsel(0)='1' else
+		bg1rdat	when bg1rdat(3 downto 0)/="0000" and bgen(1)='1' and debugsel(1)='1' else
+		sp1rdat when sp1rdat(3 downto 0)/="0000" and debugsel(0)='1' else
 		(others=>'0');
 		
 end rtl;
