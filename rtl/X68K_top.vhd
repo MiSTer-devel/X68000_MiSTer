@@ -3,7 +3,6 @@ LIBRARY	IEEE;
 	USE IEEE.STD_LOGIC_ARITH.ALL;
 	USE	IEEE.STD_LOGIC_UNSIGNED.ALL;
 	use work.FDC_timing.all;
-	use work.I2C_pkg.all;
 
 entity X68K_top is
 generic(
@@ -1797,37 +1796,6 @@ port(
 );
 end component;
 
-component I2CIF
-port(
-	DATIN	:in	std_logic_vector(I2CDAT_WIDTH-1 downto 0);		--tx data in
-	DATOUT	:out	std_logic_vector(I2CDAT_WIDTH-1 downto 0);	--rx data out
-	WRn		:in		std_logic;						--write
-	RDn		:in		std_logic;						--read
-
-	TXEMP	:out std_logic;							--tx buffer empty
-	RXED	:out std_logic;							--rx buffered
-	NOACK	:out std_logic;							--no ack
-	COLL	:out std_logic;							--collision detect
-	NX_READ	:in std_logic;							--next data is read
-	RESTART	:in std_logic;							--make re-start condition
-	START	:in std_logic;							--make start condition
-	FINISH	:in std_logic;							--next data is final(make stop condition)
-	F_FINISH :in std_logic;							--next data is final(make stop condition)
-	INIT	:in std_logic;
-	
---	INTn :out	std_logic;
-
-	SDAIN :in	std_logic;
-	SDAOUT :out	std_logic;
-	SCLIN :in	std_logic;
-	SCLOUT :out	std_logic;
-
-	SFT	:in		std_logic;
-	clk	:in		std_logic;
-	rstn :in	std_logic
-);
-end component;
-
 component pwrcont
 port(
 	addrin	:in std_logic_vector(23 downto 0);
@@ -3107,33 +3075,6 @@ begin
 --		rstn	=>srstn
 --	);
 --
---	I2C	:I2CIF port map(
---		DATIN	=>I2C_TXDAT,
---		DATOUT	=>I2C_RXDAT,
---		WRn		=>I2C_WRn,
---		RDn		=>I2C_RDn,
---
---		TXEMP	=>I2C_TXEMP,
---		RXED	=>I2C_RXED,
---		NOACK	=>I2C_NOACK,
---		COLL	=>I2C_COLL,
---		NX_READ	=>I2C_NX_READ,
---		RESTART	=>I2C_RESTART,
---		START	=>I2C_START,
---		FINISH	=>I2C_FINISH,
---		F_FINISH=>I2C_F_FINISH,
---		INIT	=>I2C_INIT,
---		
---
---		SDAIN 	=>SDAIN,
---		SDAOUT	=>SDAOUT,
---		SCLIN	=>SCLIN,
---		SCLOUT	=>SCLOUT,
---
---		SFT		=>I2CCLKEN,
---		clk		=>sysclk,
---		rstn 	=>srstn
---	);
 --
 --	pI2CSCL <= '0' when SCLOUT='0' else 'Z';
 --	pI2CSDA <= '0' when SDAOUT='0' else 'Z';
