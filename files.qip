@@ -23,7 +23,6 @@ set_global_assignment -name QIP_FILE  rtl/diskemu/meminit.qip
 set_global_assignment -name QSYS_FILE rtl/diskemu/diskemu.qsys
 set_global_assignment -name VHDL_FILE rtl/diskemu/FDemu.vhd
 set_global_assignment -name VHDL_FILE rtl/diskemu/diskemuunit.vhd
-set_global_assignment -name VHDL_FILE rtl/rtc/I2Crtc.vhd
 set_global_assignment -name VHDL_FILE rtl/rtc/rtcbody.vhd
 set_global_assignment -name VHDL_FILE rtl/rtc/rp5c15.vhd
 set_global_assignment -name VHDL_FILE rtl/SCC/scc.vhd
