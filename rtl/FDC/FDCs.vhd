@@ -5,7 +5,7 @@ USE	IEEE.STD_LOGIC_UNSIGNED.ALL;
 use work.FDC_sectinfo.all;
 use work.FDC_timing.all;
 
-entity FDC is
+entity FDCs is
 generic(
 	maxtrack	:integer	:=85;
 	maxbwidth	:integer	:=88;
@@ -56,21 +56,13 @@ port(
 	
 	ismode	:in std_logic	:='1';
 	
-	mon0	:out std_logic_vector(7 downto 0);
-	mon1	:out std_logic_vector(7 downto 0);
-	mon2	:out std_logic_vector(7 downto 0);
-	mon3	:out std_logic_vector(7 downto 0);
-	mon4	:out std_logic_vector(7 downto 0);
-	mon5	:out std_logic_vector(7 downto 0);
-	mon6	:out std_logic_vector(7 downto 0);
-	mon7	:out std_logic_vector(7 downto 0);
-	
-	clk		:in std_logic;
+	sclk	:in std_logic;
+	fclk	:in std_logic;
 	rstn	:in std_logic
 );
-end FDC;
+end FDCs;
 
-architecture rtl of FDC is
+architecture rtl of FDCs is
 signal	command	:std_logic_vector(4 downto 0);
 signal	ecommand:std_logic_vector(4 downto 0);
 signal	iC		:integer range 0 to maxtrack;
@@ -155,20 +147,29 @@ signal	lIOWR_DAT	:std_logic;
 signal	lIORD_DAT	:std_logic;
 signal	lIORD_STA	:std_logic;
 signal	datnum		:integer range 0 to 20;
-signal	lWDAT		:std_logic_vector(7 downto 0);
+--signal	lWDAT		:std_logic_vector(7 downto 0);
 signal	CPUWR_DAT	:std_logic;
 signal	CPURD_DAT	:std_logic;
 signal	CPURD_STA	:std_logic;
+signal	CPUWR_DATf	:std_logic;
+signal	lCPURD_DAT	:std_logic_vector(1 downto 0);
+signal	lCPUWR_DAT	:std_logic_vector(1 downto 0);
+signal	CPURD_DATf	:std_logic;
 signal	DMARD		:std_logic;
 signal	DMAWR		:std_logic;
 signal	DMARDx		:std_logic;
 signal	DMAWRx		:std_logic;
+signal	DMARDxf		:std_logic;
+signal	DMAWRxf		:std_logic;
+signal	lDMARDx		:std_logic_vector(1 downto 0);
+signal	lDMAWRx		:std_logic_vector(1 downto 0);
 signal	lDMARD		:std_logic;
 signal	lDMAWR		:std_logic;
 signal	CPUWRDAT	:std_logic_vector(7 downto 0);
 
-signal	EXEC		:std_logic;
-signal	end_EXEC	:std_logic;
+signal	EXEC			:std_logic;
+signal	end_EXEC		:std_logic;
+signal	end_EXECs	:std_logic;
 signal	RD_CMD		:std_logic;
 signal	RDDAT_CMD	:std_logic_vector(7 downto 0);
 signal	DETSECT		:std_logic;
@@ -177,6 +178,7 @@ signal	scancomp	:std_logic;
 
 type execstate_t is (
 		es_idle,
+
 		es_seek,
 		es_windex,
 		es_GAP0,
@@ -328,13 +330,19 @@ signal	nturns		:integer range 0 to 3;
 signal	indexb		:std_logic;
 signal	lindex		:std_logic;
 signal	contdata	:std_logic;
+signal	track0b		:std_logic;
+signal	track0s		:std_logic;
 
 signal	TCclr		:std_logic;
+signal	sTC			:std_logic;
 signal	TCen		:std_logic;
 
-signal	INT			:std_logic;		--interrupt start
+signal	INT		:std_logic;		--interrupt start
 signal	INTs		:std_logic;		--interrput at seek/re-carib.
+signal	sINT		:std_logic;		--interrupt start
+signal	sINTs		:std_logic;		--interrput at seek/re-carib.
 signal	DMARQ		:std_logic;		--DMA request start
+signal	DMARQs	:std_logic;		--DMA request start
 signal	setC		:std_logic;
 signal	incC		:std_logic;
 signal	resH		:std_logic;
@@ -343,10 +351,20 @@ signal	setR		:std_logic;
 signal	incR		:std_logic;
 signal	resR		:std_logic;
 signal	setN		:std_logic;
+signal	setCs		:std_logic;
+signal	incCs		:std_logic;
+signal	resHs		:std_logic;
+signal	setHs		:std_logic;
+signal	setRs		:std_logic;
+signal	incRs		:std_logic;
+signal	resRs		:std_logic;
+signal	setNs		:std_logic;
 signal	bitwidth	:integer range 0 to maxbwidth*2;
 signal	sftwidth	:integer range 0 to maxbwidth*2;
 signal	setHD		:std_logic;
 signal	resHD		:std_logic;
+signal	setHDs	:std_logic;
+signal	resHDs	:std_logic;
 
 constant extcount	:integer	:=(sysclk*WR_WIDTH)/1000;
 
@@ -587,6 +605,16 @@ component DIGIFILTER
 	);
 end component;
 
+component clktx is
+port(
+	txin	:in std_logic;
+	txout	:out std_logic;
+	
+	fclk	:in std_logic;
+	sclk	:in std_logic;
+	rstn	:in std_logic
+);
+end component;
 begin
 	
 	usel<=US;
@@ -597,7 +625,9 @@ begin
 	DMAWR<='1' when DACKn='0' and WRn='0' else '0';
 	DMARD<='1' when DACKn='0' and RDn='0' else '0';
 	
-	ixflt	:DIGIFILTER generic map(1,'1') port map(index,indexb,clk,rstn);
+	ixflt	:DIGIFILTER generic map(1,'1') port map(index,indexb,fclk,rstn);
+	t0flt	:DIGIFILTER generic map(1,'1') port map(track0,track0b,fclk,rstn);
+	t0flts:DIGIFILTER generic map(1,'1') port map(track0,track0s,sclk,rstn);
 --	process(clk,rstn)begin
 --		if(rstn='0')then
 --			indexb<='0';
@@ -606,26 +636,30 @@ begin
 --		end if;
 --	end process;
 	
-	process(clk,rstn)begin
+	DMARQtx	:clktx port map(DMARQ,DMARQs,fclk,sclk,rstn);
+
+	process(sclk,rstn)
+	begin
 		if(rstn='0')then
 			lIOWR_DAT<='0';
 			lIORD_DAT<='0';
 			lIORD_STA<='0';
-			lWDAT<=(others=>'0');
+--			lWDAT<=(others=>'0');
 			CPUWRDAT<=(others=>'0');
 			CPUWR_DAT<='0';
 			CPURD_DAT<='0';
 			CPURD_STA<='0';
 			DRQ<='0';
-		elsif(clk' event and clk='1')then
+		elsif(sclk' event and sclk='1')then
 			CPUWR_DAT<='0';
 			CPURD_DAT<='0';
 			CPURD_STA<='0';
 			DMARDx<='0';
 			DMAWRx<='0';
-			if(IOWR_DAT='0' and lIOWR_DAT='1')then
+			if(IOWR_DAT='1')then
+				CPUWRDAT<=WDAT;
+			elsif(IOWR_DAT='0' and lIOWR_DAT='1')then
 				CPUWR_DAT<='1';
-				CPUWRDAT<=lWDAT;
 			end if;
 			if(IORD_DAT='0' and lIORD_DAT='1')then
 				CPURD_DAT<='1';
@@ -633,14 +667,15 @@ begin
 			if(IORD_STA='0' and lIORD_STA='1')then
 				CPURD_STA<='1';
 			end if;
-			if(DMAWR='0' and lDMAWR='1')then
+			if(DMAWR='1')then
+				CPUWRDAT<=WDAT;
+			elsif(DMAWR='0' and lDMAWR='1')then
 				DMAWRx<='1';
-				CPUWRDAT<=lWDAT;
 			end if;
 			if(DMARD='0' and lDMARD='1')then
 				DMARDx<='1';
 			end if;
-			if(DMARQ='1')then
+			if(DMARQs='1')then
 				DRQ<='1';
 			elsif(DACKn='0' or IORD_DAT='1' or IOWR_DAT='1')then
 				DRQ<='0';
@@ -650,13 +685,25 @@ begin
 			lIORD_STA<=IORD_STA;
 			lDMAWR<=DMAWR;
 			lDMARD<=DMARD;
-			lWDAT<=WDAT;
+--			lWDAT<=WDAT;
 		end if;
 	end process;
 	
 	DATOE<='1' when IORD_DAT='1' or IORD_STA='1' or DMARD='1' else '0';
 	
-	process(clk,rstn)begin
+	setCtx	:clktx port map(setC,setCs,fclk,sclk,rstn);
+	incCtx	:clktx port map(incC,incCs,fclk,sclk,rstn);
+	resHtx	:clktx port map(resH,resHs,fclk,sclk,rstn);
+	setHtx	:clktx port map(setH,setHs,fclk,sclk,rstn);
+	setRtx	:clktx port map(setR,setRs,fclk,sclk,rstn);
+	incRtx	:clktx port map(incR,incRs,fclk,sclk,rstn);
+	resRtx	:clktx port map(resR,resRs,fclk,sclk,rstn);
+	setNtx	:clktx port map(setN,setNs,fclk,sclk,rstn);
+	setHDtx	:clktx port map(setHD,setHDs,fclk,sclk,rstn);
+	resHDtx	:clktx port map(resHD,resHDs,fclk,sclk,rstn);
+	endEXECtx	:clktx port map(end_EXEC,end_EXECs,fclk,sclk,rstn);
+	
+	process(sclk,rstn)begin
 		if(rstn='0')then
 			command	<=(others=>'0');
 			C		<=(others=>'0');
@@ -688,34 +735,34 @@ begin
 			DxBclr	<='0';
 			SEclr	<='0';
 			SISclr	<='0';
-		elsif(clk' event and clk='1')then 
+		elsif(sclk' event and sclk='1')then 
 			EXEC<='0';
 			DxBclr	<='0';
 			SEclr	<='0';
 			SISclr	<='0';
-			if(setC='1')then
+			if(setCs='1')then
 				C<=rxC;
-			elsif(incC='1')then
+			elsif(incCs='1')then
 				C<=C+x"01";
 			end if;
-			if(setH='1')then
+			if(setHs='1')then
 				H<=x"01";
-			elsif(resH='1')then
+			elsif(resHs='1')then
 				H<=x"00";
 			end if;
-			if(setR='1')then
+			if(setRs='1')then
 				R<=rxR;
-			elsif(incR='1')then
+			elsif(incRs='1')then
 				R<=R+x"01";
-			elsif(resR='1')then
+			elsif(resRs='1')then
 				R<=x"01";
 			end if;
-			if(setN='1')then
+			if(setNs='1')then
 				N<=rxN;
 			end if;
-			if(setHD='1')then
+			if(setHDs='1')then
 				HD<='1';
-			elsif(resHD='1')then
+			elsif(resHDs='1')then
 				HD<='0';
 			end if;
 			if(datnum=0)then
@@ -817,7 +864,7 @@ begin
 							datnum<=datnum+1;
 						end if;
 					when 10 =>
-						if(end_EXEC='1')then
+						if(end_EXECs='1')then
 							RD_CMD<='1';
 							RDDAT_CMD<=ST0;
 							datnum<=datnum+1;
@@ -877,7 +924,7 @@ begin
 							datnum<=datnum+1;
 						end if;
 					when 3 =>
-						if(end_EXEC='1')then
+						if(end_EXECs='1')then
 							RD_CMD<='1';
 							RDDAT_CMD<=ST0;
 --							SEclr<='1';
@@ -958,7 +1005,7 @@ begin
 							datnum<=datnum+1;
 						end if;
 					when 7 =>
-						if(end_EXEC='1')then
+						if(end_EXECs='1')then
 							RD_CMD<='1';
 							RDDAT_CMD<=ST0;
 --							SEclr<='1';
@@ -1020,7 +1067,7 @@ begin
 							datnum<=datnum+1;
 						end if;
 					when 3 =>
-						if(end_EXEC='1')then
+						if(end_EXECs='1')then
 							RD_CMD<='1';
 							datnum<=0;
 						end if;
@@ -1121,7 +1168,7 @@ begin
 							datnum<=datnum+1;
 						end if;
 					when 4 =>
-						if(end_EXEC='1')then
+						if(end_EXECs='1')then
 							RD_CMD<='1';
 							datnum<=0;
 						end if;
@@ -1158,7 +1205,41 @@ begin
 --			'0' when execstate=es_idle else
 --			'1';
 	
-	process(clk,rstn)begin
+	process(fclk,rstn)begin
+		if(rstn='0')then
+			lCPURD_DAT<=(others=>'0');
+			lCPUWR_DAT<=(others=>'0');
+			lDMARDx<=(others=>'0');
+			lDMAWRx<=(others=>'0');
+			CPURD_DATf<='0';
+			CPUWR_DATf<='0';
+			DMARDxf<='0';
+			DMAWRxf<='0';
+		elsif(fclk' event and fclk='1')then
+			CPURD_DATf<='0';
+			CPUWR_DATf<='0';
+			DMARDxf<='0';
+			DMAWRxf<='0';
+			lCPURD_DAT<=lCPURD_DAT(0) & CPURD_DAT;
+			lCPUWR_DAT<=lCPUWR_DAT(0) & CPUWR_DAT;
+			lDMARDx<=lDMARDx(0) & DMARDx;
+			lDMAWRx<=lDMAWRx(0) & DMAWRx;
+			if(lCPURD_DAT="01")then
+				CPURD_DATf<='1';
+			end if;
+			if(lCPUWR_DAT="01")then
+				CPUWR_DATf<='1';
+			end if;
+			if(lDMARDx="01")then
+				DMARDxf<='1';
+			end if;
+			if(lDMAWRx="01")then
+				DMAWRxf<='1';
+			end if;
+		end if;
+	end process;
+	
+	process(fclk,rstn)begin
 		if(rstn='0')then
 			execstate<=es_idle;
 			end_EXEC<='0';
@@ -1190,6 +1271,7 @@ begin
 			resR<='0';
 			setN<='0';
 			setHD<='0';
+			resHD<='0';
 			sIC<="00";
 			sOR<='0';
 			sND<='0';
@@ -1202,6 +1284,7 @@ begin
 			sCM<='0';
 			sWC<='0';
 			sDD<='0';
+			sMD<='0';
 			iSE<='0';
 			sSH<='0';
 			txdat<=(others=>'0');
@@ -1219,7 +1302,7 @@ begin
 			ecommand<=(others=>'0');
 			COMPDAT<=(others=>'0');
 			scancomp<='0';
-		elsif(clk' event and clk='1')then
+		elsif(fclk' event and fclk='1')then
 			end_EXEC<='0';
 			seek_bgn<='0';
 			seek_init<='0';
@@ -1249,6 +1332,7 @@ begin
 			resR<='0';
 			setN<='0';
 			setHD<='0';
+			resHD<='0';
 			NRDSTART<='0';
 			if(execstate=es_idle)then
 				sRQM<='1';
@@ -1264,6 +1348,7 @@ begin
 					sDD<='0';
 					sEN<='0';
 					sSH<='0';
+					sMD<='0';
 					contdata<='0';
 					sRQM<='0';
 					sCM<='0';
@@ -1399,7 +1484,11 @@ begin
 							sUS<=US;
 							sIC<="01";
 							sND<='1';
-							sMA<='1';
+							if(DETSECT='0')then
+								sMA<='1';
+							else
+								sMD<='1';
+							end if;
 							PCN<=cPCN;
 							INT<='1';
 							iSE<='0';
@@ -1662,6 +1751,7 @@ begin
 									crcin<=x"fb";
 								end if;
 								crcwr<='1';
+								TCclr<='1';
 								execstate<=es_DATA;
 							elsif(fmmf8det='1' or fmmfbdet='1'or fmmfcdet='1' or fmmfedet='1' or fmrxed='1')then
 								dembreak<='1';
@@ -1727,6 +1817,7 @@ begin
 						if(mfmrxed='1' and ((((ecommand=cmd_READDATA or ecommand=cmd_READATRACK) or SK='0') and mfmrxdat=x"fb") or ((ecommand=cmd_READDELETEDDATA or SK='0') and mfmrxdat=x"f8")))then
 							crcin<=mfmrxdat;
 							crcwr<='1';
+							TCclr<='1';
 							execstate<=es_DATA;
 						elsif(mfmma1det='1' or mfmmc2det='1' or mfmrxed='1')then
 							dembreak<='1';
@@ -1774,13 +1865,12 @@ begin
 							end if;
 						end if;
 					when es_DATAw =>
-						if(CPURD_DAT='1' or DMARDx='1')then
+						if(CPURD_DATf='1' or DMARDxf='1')then
 							sRQM<='0';
 							if(bytecount>1)then
 								bytecount<=bytecount-1;
 								execstate<=es_DATA;
 							else
-								TCclr<='1';
 								execstate<=es_CRCd0;
 							end if;
 						elsif((MF='0' and fmrxed='1') or (MF='1' and mfmrxed='1'))then
@@ -1866,6 +1956,7 @@ begin
 									nturns<=0;
 									crcclr<='1';
 									contdata<='1';
+									DETSECT<='0';
 									execstate<=es_IAM0;
 								end if;
 							else
@@ -2252,6 +2343,7 @@ begin
 								end if;
 								sRQM<='1';
 								sDIOd<='0';
+								TCclr<='1';
 								execstate<=es_DATA;
 							else
 								mfmma1wr<='1';
@@ -2313,10 +2405,11 @@ begin
 							end if;
 							sRQM<='1';
 							sDIOd<='0';
+							TCclr<='1';
 							execstate<=es_DATA;
 						end if;
 					when es_DATA =>
-						if(CPUWR_DAT='1' or DMAWRx='1')then
+						if(CPUWR_DATf='1' or DMAWRxf='1')then
 							sRQM<='0';
 							txdat<=CPUWRDAT;
 							crcin<=CPUWRDAT;
@@ -2330,7 +2423,6 @@ begin
 								bytecount<=bytecount-1;
 								execstate<=es_DATAw;
 							else
-								TCclr<='1';
 								execstate<=es_CRCd0;
 							end if;
 						elsif((MF='0' and fmtxend='1') or (MF='1' and mfmtxend='1'))then
@@ -2602,7 +2694,7 @@ begin
 --							end if;
 --						end if;
 --					when es_DATAw =>
---						if(CPURD_DAT='1' or DMARDx='1')then
+--						if(CPURD_DATf='1' or DMARDx=f'1')then
 --							sRQM<='0';
 --							if(bytecount>1)then
 --								bytecount<=bytecount-1;
@@ -2951,7 +3043,11 @@ begin
 							sUS<=US;
 							sIC<="01";
 							sND<='1';
-							sMA<='1';
+							if(DETSECT='0')then
+								sMA<='1';
+							else
+								sMD<='1';
+							end if;
 							PCN<=cPCN;
 							INT<='1';
 							iSE<='0';
@@ -3214,6 +3310,7 @@ begin
 									crcin<=x"fb";
 								end if;
 								crcwr<='1';
+								TCclr<='1';
 								execstate<=es_DATA;
 								scancomp<='0';
 							elsif(fmmf8det='1' or fmmfbdet='1'or fmmfcdet='1' or fmmfedet='1' or fmrxed='1')then
@@ -3280,6 +3377,7 @@ begin
 						if(mfmrxed='1' and (mfmrxdat=x"fb" or mfmrxdat=x"f8"))then
 							crcin<=mfmrxdat;
 							crcwr<='1';
+							TCclr<='1';
 							execstate<=es_DATA;
 							scancomp<='0';
 						elsif(mfmma1det='1' or mfmmc2det='1' or mfmrxed='1')then
@@ -3328,14 +3426,13 @@ begin
 							end if;
 						end if;
 					when es_DATAw =>
-						if(CPUWR_DAT='1' or DMAWRx='1')then
+						if(CPUWR_DATf='1' or DMAWRxf='1')then
 							sRQM<='0';
 							if(CPUWRDAT=x"ff" or CPUWRDAT=COMPDAT or scancomp='1')then
 								if(bytecount>1)then
 									bytecount<=bytecount-1;
 									execstate<=es_DATA;
 								else
-									TCclr<='1';
 									execstate<=es_CRCd0;
 								end if;
 							elsif(COMPDAT<CPUWRDAT and command=cmd_SCANLOWEQUAL)then
@@ -3344,7 +3441,6 @@ begin
 									bytecount<=bytecount-1;
 									execstate<=es_DATA;
 								else
-									TCclr<='1';
 									execstate<=es_CRCd0;
 								end if;
 							elsif(COMPDAT>CPUWRDAT and command=cmd_SCANHIGHEQUAL)then
@@ -3353,7 +3449,6 @@ begin
 									bytecount<=bytecount-1;
 									execstate<=es_DATA;
 								else
-									TCclr<='1';
 									execstate<=es_CRCd0;
 								end if;
 							else
@@ -3455,6 +3550,7 @@ begin
 									nturns<=0;
 									crcclr<='1';
 									contdata<='1';
+									DETSECT<='0';
 									execstate<=es_IAM0;
 								end if;
 							else
@@ -3695,7 +3791,7 @@ begin
 							execstate<=es_C;
 						end if;
 					when es_C | es_H | es_R | es_N =>
-						if(CPUWR_DAT='1' or DMAWRx='1')then
+						if(CPUWR_DATf='1' or DMAWRxf='1')then
 							sRQM<='0';
 							txdat<=CPUWRDAT;
 							crcin<=CPUWRDAT;
@@ -4021,15 +4117,18 @@ begin
 		end if;
 	end process;
 	
-	process(clk,rstn)begin
+	inttx	:clktx port map(INT,sINT,fclk,sclk,rstn);
+	intstx:clktx port map(INTs,sINTs,fclk,sclk,rstn);
+	
+	process(sclk,rstn)begin
 		if(rstn='0')then
 			INTn<='1';
 			SISen<='0';
-		elsif(clk' event and clk='1')then
-			if(INTs='1')then
+		elsif(sclk' event and sclk='1')then
+			if(sINTs='1')then
 				INTn<='0';
 				SISen<='1';
-			elsif(INT='1')then
+			elsif(sINT='1')then
 				INTn<='0';
 				if(ismode='1')then
 					SISen<='1';
@@ -4045,11 +4144,10 @@ begin
 	
 	sEXM<='1' when (execstate/=es_IDLE and ND='1') else '0';
 	sNR<=READY;
-	
 	ST0<=sIC &sSE & sEC & sNR & sHD & sUS;
 	ST1<=sEN & '0' & sDE & sOR & '0' & sND & sNW & sMA;
 	ST2<='0' & sCM & sDD & sWC & sSH & sSN & sBC & sMD;
-	ST3<='0' & not WPRT & not READY & not track0 & '1' & sideb & uselb;
+	ST3<='0' & not WPRT & not READY & not track0s & '1' & sideb & uselb;
 	MSR<=sRQM & sDIO & sEXM & sCB & sDxB;
 	
 	RDAT<=	RDDAT_DAT when DACKn='0' else
@@ -4064,13 +4162,27 @@ begin
 	uselb<=US;
 	usel<=uselb;
 	
-	process(clk,rstn)begin
+	process(sclk,rstn)
+	variable	ext	:std_logic_vector(3 downto 0);
+	begin
+		if(rstn='0')then
+			sTC<='0';
+		elsif(sclk' event and sclk='1')then
+			if(TC='1')then
+				sTC<='1';
+			elsif(TCen='1')then
+				sTC<='0';
+			end if;
+		end if;
+	end process;
+	
+	process(fclk,rstn)begin
 		if(rstn='0')then
 			TCen<='0';
-		elsif(clk' event and clk='1')then
+		elsif(fclk' event and fclk='1')then
 			if(TCclr='1')then
 				TCen<='0';
-			elsif(TC='1')then
+			elsif(sTC='1')then
 				TCen<='1';
 			end if;
 		end if;
@@ -4083,10 +4195,10 @@ begin
 				int3;
 
 
-	process(clk,rstn)begin
+	process(fclk,rstn)begin
 		if(rstn='0')then
 			sDxB<=(others=>'0');
-		elsif(clk' event and clk='1')then
+		elsif(fclk' event and fclk='1')then
 			if(seek_busy0='1')then
 				sDxB(0)<='1';
 			end if;
@@ -4116,7 +4228,7 @@ begin
 		
 		sftout	=>seek_sft,
 		
-		clk		=>clk,
+		clk		=>fclk,
 		rstn	=>rstn
 	);
 
@@ -4151,14 +4263,14 @@ begin
 		reachtrack	=>seek_end0,
 		busy		=>seek_busy0,
 	
-		track0		=>track0,
+		track0		=>track0b,
 		seek		=>STEP0,
 		sdir		=>SDIR0,
 	
 		init		=>seek_init0,
 		seekerr		=>seek_err0,
 		sft			=>seek_sft0,
-		clk			=>clk,
+		clk			=>fclk,
 		rstn		=>rstn
 	);
 	
@@ -4172,14 +4284,14 @@ begin
 		reachtrack	=>seek_end1,
 		busy		=>seek_busy1,
 	
-		track0		=>track0,
+		track0		=>track0b,
 		seek		=>STEP1,
 		sdir		=>SDIR1,
 	
 		init		=>seek_init1,
 		seekerr		=>seek_err1,
 		sft			=>seek_sft1,
-		clk			=>clk,
+		clk			=>fclk,
 		rstn		=>rstn
 	);
 	
@@ -4193,14 +4305,14 @@ begin
 		reachtrack	=>seek_end2,
 		busy		=>seek_busy2,
 	
-		track0		=>track0,
+		track0		=>track0b,
 		seek		=>STEP2,
 		sdir		=>SDIR2,
 	
 		init		=>seek_init2,
 		seekerr		=>seek_err2,
 		sft			=>seek_sft2,
-		clk			=>clk,
+		clk			=>fclk,
 		rstn		=>rstn
 	);
 	
@@ -4214,14 +4326,14 @@ begin
 		reachtrack	=>seek_end3,
 		busy		=>seek_busy3,
 	
-		track0		=>track0,
+		track0		=>track0b,
 		seek		=>STEP3,
 		sdir		=>SDIR3,
 	
 		init		=>seek_init3,
 		seekerr		=>seek_err3,
 		sft			=>seek_sft3,
-		clk			=>clk,
+		clk			=>fclk,
 		rstn		=>rstn
 	);
 	
@@ -4264,10 +4376,10 @@ begin
 --	sSE<=not seek_busy;
 --	sSE<=iSE;
 
-		process(clk,rstn)begin
+		process(fclk,rstn)begin
 		if(rstn='0')then
 			sSE<='0';
-		elsif(clk' event and clk='1')then
+		elsif(fclk' event and fclk='1')then
 			if(seek_end='1')then
 				sSE<='1';
 			elsif(SEclr='1')then
@@ -4290,7 +4402,7 @@ begin
 		DONE	=>crcdone,
 		CRCZERO	=>crczero,
 
-		clk		=>clk,
+		clk		=>fclk,
 		rstn	=>rstn
 	);
 	
@@ -4314,7 +4426,7 @@ port map(
 	
 	curlen	=>fmcurwid,
 	
-	clk		=>clk,
+	clk		=>fclk,
 	rstn	=>rstn
 );
 
@@ -4336,7 +4448,7 @@ port map(
 	
 	curlen	=>mfmcurwid,
 	
-	clk		=>clk,
+	clk		=>fclk,
 	rstn	=>rstn
 );
 
@@ -4346,7 +4458,7 @@ port map(
 		len		=>sftwidth,
 		sft		=>modsft,
 		
-		clk		=>clk,
+		clk		=>fclk,
 		rstn	=>rstn
 	);
 
@@ -4367,7 +4479,7 @@ port map(
 	writeen	=>fmwren,
 	
 	sft		=>modsft,
-	clk		=>clk,
+	clk		=>fclk,
 	rstn	=>rstn
 );
 
@@ -4386,7 +4498,7 @@ port map(
 	writeen	=>mfmwren,
 	
 	sft		=>modsft,
-	clk		=>clk,
+	clk		=>fclk,
 	rstn	=>rstn
 );
 
@@ -4397,15 +4509,15 @@ port map(
 		NOTRDY	=>NOTRDY,
 		
 		mssft	=>hmssft,
-		clk		=>clk,
+		clk		=>fclk,
 		rstn	=>rstn
 	);
 
 	wrbits<=fmwrbit when MF='0' else mfmwrbit;
 	wrens<=fmwren when MF='0' else mfmwren;
 	
-	wbext	:signext generic map(extcount) port map(extcount,wrbits,wrbitex,clk,rstn);
-	weext	:signext generic map(extcount) port map(extcount,wrens,wrenex,clk,rstn);
+	wbext	:signext generic map(extcount) port map(extcount,wrbits,wrbitex,fclk,rstn);
+	weext	:signext generic map(extcount) port map(extcount,wrens,wrenex,fclk,rstn);
 	
 	WREN<=not wrenex;
 	WRBIT<=not wrbitex;
@@ -4414,18 +4526,6 @@ port map(
 			'1' when datnum/=0 else
 			'0';
 		
-	mon0<=MT & MF & SK & command;
-	mon1<=N(3 downto 0)& rxN(3 downto 0);
-	mon2<=C;
-	mon3<=R(3 downto 0) & rxR(3 downto 0);
---	mon4<=EOT;
---	mon4<=conv_std_logic_vector(execstate,8);
---	mon5<=GPL;
-	mon4<=ST0;
-	mon5<=ST1;
-	mon6<=ST2;
-	mon7<=ST3;
-	
 	mfm<=mf;
 	
 end rtl;

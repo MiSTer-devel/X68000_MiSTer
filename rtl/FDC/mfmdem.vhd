@@ -5,7 +5,7 @@ USE	IEEE.STD_LOGIC_UNSIGNED.ALL;
 entity mfmdem is
 generic(
 	bwidth	:integer	:=88;
-	fben	:integer	:=0
+	fben	:integer	:=1
 );
 port(
 	bitlen	:in integer range 0 to bwidth;
@@ -19,6 +19,7 @@ port(
 	RXED	:out std_logic;
 	DetMA1	:out std_logic;
 	DetMC2	:out std_logic;
+	broken	:out std_logic;
 	
 	curlen	:out integer range 0 to bwidth*2;
 	
@@ -173,8 +174,8 @@ begin
 				charcount<=0;
 			elsif(lsft='1')then
 				if(datsft(1 downto 0)="11" or datsft(4 downto 0)="10000")then
---					mfmsync<='0';
---					charcount<=0;
+					mfmsync<='0';		--
+					charcount<=0;		--
 					daterr<='1';
 				end if;
 				if(datsft(15 downto 0)="0100010010001001")then
@@ -197,6 +198,9 @@ begin
 			end if;
 		end if;
 	end process;
+	
+	broken<=daterr;
+	
 end rtl;
 
 				

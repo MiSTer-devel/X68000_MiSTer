@@ -845,7 +845,7 @@ component VLINEBUF
 	);
 END component;
 
-component  FDC is
+component  FDCs is
 generic(
 	maxtrack	:integer	:=85;
 	maxbwidth	:integer	:=88;
@@ -895,16 +895,8 @@ port(
 	
 	ismode	:in std_logic	:='1';
 	
-	mon0	:out std_logic_vector(7 downto 0);
-	mon1	:out std_logic_vector(7 downto 0);
-	mon2	:out std_logic_vector(7 downto 0);
-	mon3	:out std_logic_vector(7 downto 0);
-	mon4	:out std_logic_vector(7 downto 0);
-	mon5	:out std_logic_vector(7 downto 0);
-	mon6	:out std_logic_vector(7 downto 0);
-	mon7	:out std_logic_vector(7 downto 0);
-	
-	clk		:in std_logic;
+	sclk		:in std_logic;
+	fclk		:in std_logic;
 	rstn	:in std_logic
 );
 end component;
@@ -2726,7 +2718,7 @@ begin
 	
 	FDC_DACKn<=not FDC_DACK;
 	FDC_CSn<=not FDC_CS;
-	fd	:fdc generic map(
+	fd	:fdcs generic map(
 		maxtrack	=>85,
 		maxbwidth	=>(BR_300_D*FCFREQ/1000000),
 		sysclk		=>FCFREQ/1000
@@ -2774,7 +2766,8 @@ begin
 		
 		ismode	=>'0',
 		
-		clk		=>fdcclk,
+		sclk	=>sysclk,
+		fclk	=>fdcclk,
 		rstn	=>srstn
 	);
 

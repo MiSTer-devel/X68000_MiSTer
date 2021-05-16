@@ -20,6 +20,7 @@ port(
 	DetMFB	:out std_logic;
 	DetMFC	:out std_logic;
 	DetMFE	:out std_logic;
+	broken	:out std_logic;
 	
 	curlen	:out integer range 0 to bwidth*2;
 	
@@ -170,12 +171,13 @@ begin
 					charcount<=0;
 					DetMFE<='1';
 				elsif(datsft(2 downto 0)="100")then
-					fmsync<='0';
-					charcount<=0;
+					fmsync<='0';	--
+					charcount<=0;	--
 					daterr<='1';
 				elsif((charcount mod 2)=0 and datsft(0)='0')then
 					fmsync<='0';
 					charcount<=0;
+					daterr<='1';
 				elsif(fmsync='1')then
 					if(charcount=15)then
 						RXDAT<=datsft(14) & datsft(12) & datsft(10) & datsft(8) & datsft(6) & datsft(4) & datsft(2) & datsft(0);
@@ -188,6 +190,8 @@ begin
 			end if;
 		end if;
 	end process;
+	
+	broken<=daterr;
 end rtl;
 
 				

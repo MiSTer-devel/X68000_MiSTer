@@ -3,7 +3,7 @@ set_global_assignment -name VHDL_FILE rtl/CPU/TG68_fast.vhd
 set_global_assignment -name VHDL_FILE rtl/DMAC/DMA63450.vhd
 set_global_assignment -name VHDL_FILE rtl/DMAC/dma1ch.vhd
 set_global_assignment -name VHDL_FILE rtl/FDC/crctest.vhd
-set_global_assignment -name VHDL_FILE rtl/FDC/FDC.vhd
+set_global_assignment -name VHDL_FILE rtl/FDC/FDCs.vhd
 set_global_assignment -name VHDL_FILE rtl/FDC/FDC_sectinfo.vhd
 set_global_assignment -name VHDL_FILE rtl/FDC/FDC_timing.vhd
 set_global_assignment -name VHDL_FILE rtl/FDC/fmdem.vhd
@@ -110,6 +110,7 @@ set_global_assignment -name VHDL_FILE rtl/LIB/digifilters.vhd
 set_global_assignment -name VHDL_FILE rtl/LIB/digifilter.vhd
 set_global_assignment -name VHDL_FILE rtl/LIB/deltasigmas.vhd
 set_global_assignment -name VHDL_FILE rtl/LIB/clkdiv.vhd
+set_global_assignment -name VHDL_FILE rtl/LIB/clktx.vhd
 set_global_assignment -name VHDL_FILE rtl/SDRAMC.vhd
 set_global_assignment -name VHDL_FILE rtl/memcont.vhd
 set_global_assignment -name VHDL_FILE rtl/cachecontr8b.vhd
