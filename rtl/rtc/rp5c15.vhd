@@ -2,7 +2,7 @@ LIBRARY	IEEE;
 	USE	IEEE.STD_LOGIC_1164.ALL;
 	USE	IEEE.STD_LOGIC_UNSIGNED.ALL;
 
-entity rp5c15_MiSTer is
+entity rp5c15 is
 generic(
 	clkfreq	:integer	:=21477270;
 	YEAROFF	:std_logic_vector(7 downto 0)	:=x"00"
@@ -21,8 +21,8 @@ port(
 	clk		:in std_logic;
 	rstn		:in std_logic
 );
-end rp5c15_MiSTer;
-architecture rtl of rp5c15_MiSTer is
+end rp5c15;
+architecture rtl of rp5c15 is
 signal	YEH		:std_logic_vector(3 downto 0);
 signal	YEL		:std_logic_vector(3 downto 0);
 signal	MON		:std_logic_vector(3 downto 0);
