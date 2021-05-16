@@ -1,6 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
+use ieee.std_logic_unsigned.all;
 
 entity grpal is
 port(
@@ -13,6 +14,7 @@ port(
 	wr		:in std_logic_vector(1 downto 0);
 	
 	gmode	:in std_logic;
+	skel	:in std_logic	:='0';
 	palnoh	:in std_logic_vector(7 downto 0);
 	palnol	:in std_logic_vector(7 downto 0);
 	palout	:out std_logic_vector(15 downto 0);
@@ -28,6 +30,9 @@ signal	wr3,wr2,wr1,wr0	:std_logic;
 signal	rdat3,rdat2,rdat1,rdat0	:std_logic_vector(7 downto 0);
 signal	pdat3,pdat2,pdat1,pdat0	:std_logic_vector(7 downto 0);
 signal	psel	:std_logic_vector(1 downto 0);
+signal	red,grn,blu	:std_logic_vector(5 downto 0);
+signal	palp,pals	:std_logic_vector(15 downto 0);
+signal	ssel	:std_logic;
 component gpram
 	PORT
 	(
@@ -73,15 +78,21 @@ begin
 		end if;
 	end process;
 	
-	palout(15 downto 8)<=	pdat1 when gmode='0' and psel(1)='0' else
+	palp(15 downto 8)<=	pdat1 when gmode='0' and psel(1)='0' else
 							pdat3 when gmode='0' and psel(1)='1' else
-							pdat0 when gmode='1' and psel(0)='0' else
-							pdat1 when gmode='1' and psel(0)='1' else
+							pdat2 when gmode='1' and psel(1)='1' else
+							pdat3 when gmode='1' and psel(1)='0' else
 							(others=>'0');
-	palout(7 downto 0)<=	pdat0 when gmode='0' and psel(0)='0' else
+	palp(7 downto 0)<=	pdat0 when gmode='0' and psel(0)='0' else
 							pdat2 when gmode='0' and psel(0)='1' else
-							pdat2 when gmode='1' and psel(1)='0' else
-							pdat3 when gmode='1' and psel(1)='1' else
+							pdat0 when gmode='1' and psel(0)='1' else
+							pdat1 when gmode='1' and psel(0)='0' else
 							(others=>'0');
-							
+	grn<=	('0' & pdat1(7 downto 3))+('0' & pdat3(7 downto 3));
+	red<=	('0' & pdat1(2 downto 0) & pdat0(7 downto 6))+('0' & pdat3(2 downto 0) & pdat2(7 downto 6));
+	blu<=	('0' & pdat0(5 downto 1))+('0' & pdat2(5 downto 1));
+	
+	pals<=grn(5 downto 1) & red(5 downto 1) & blu(5 downto 1) & '0';
+	palout<=palp when skel='0' or psel(0)='0' else pals;
+	
 end rtl;
