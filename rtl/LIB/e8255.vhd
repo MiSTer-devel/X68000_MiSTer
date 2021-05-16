@@ -3,6 +3,9 @@ USE	IEEE.STD_LOGIC_1164.ALL;
 USE	IEEE.STD_LOGIC_UNSIGNED.ALL;
 
 entity e8255 is
+generic(
+	deflogic	:std_logic	:='0'
+);
 port(
 	CSn		:in std_logic;
 	RDn		:in std_logic;
@@ -48,9 +51,9 @@ begin
 	WR<='1' when CSn='0' and WRn='0' else '0';
 	process(clk,rstn)begin
 		if(rstn='0')then
-			ODAT_A<=(others=>'0');
-			ODAT_B<=(others=>'0');
-			ODAT_C<=(others=>'0');
+			ODAT_A<=(others=>deflogic);
+			ODAT_B<=(others=>deflogic);
+			ODAT_C<=(others=>deflogic);
 			REG<=(others=>'0');
 			OE_A<='0';
 			OE_B<='0';
@@ -73,7 +76,18 @@ begin
 						OE_CH<=not DATIN(3);
 						OE_B<=not DATIN(1);
 						OE_CL<=not DATIN(0);
-						
+						if(DATIN(4)='0')then
+							ODAT_A<=(others=>'0');
+						end if;
+						if(DATIN(1)='0')then
+							ODAT_B<=(others=>'0');
+						end if;
+						if(DATIN(3)='0')then
+							ODAT_C(7 downto 4)<=(others=>'0');
+						end if;
+						if(DATIN(0)='0')then
+							ODAT_C(3 downto 0)<=(others=>'0');
+						end if;
 					else
 						case DATIN(3 downto 1) is
 						when "000" =>

@@ -23,7 +23,6 @@ begin
 	process(clk,rstn)begin
 		if(rstn='0')then
 			count<=0;
-			signout<='0';
 		elsif(clk' event and clk='1')then
 			if(signin='1')then
 				count<=len;
