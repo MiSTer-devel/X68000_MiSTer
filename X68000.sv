@@ -3,6 +3,7 @@
 //
 //  Port to MiSTer
 //  Copyright (C) 2017,2020 Alexey Melnikov
+//  Copyright (C) 2020 Puu
 //
 //  This program is free software; you can redistribute it and/or modify it
 //  under the terms of the GNU General Public License as published by the Free
@@ -133,7 +134,7 @@ assign {UART_RTS, UART_TXD, UART_DTR} = 0;
 assign {DDRAM_CLK, DDRAM_BURSTCNT, DDRAM_ADDR, DDRAM_DIN, DDRAM_BE, DDRAM_RD, DDRAM_WE} = 0;
 
 assign LED_USER  = ioctl_download & ~ldr_done;
-assign LED_DISK  = {1'b1, sd_act};
+assign LED_DISK  = {disk_led, sd_act};
 assign LED_POWER = 0;
 assign BUTTONS   = 0;
  
@@ -147,13 +148,30 @@ parameter CONF_STR = {
 	"O1,Aspect ratio,4:3,16:9;",
 	"-;",
 	"R6,Reset;",
+	"R7,NMI;",
+	"-;",
+	"R8,Power;",
+	"-;",
+	"S0,D88,FDD0;",
+	"S1,D88,FDD1;",
+	"S2,HDF,SASI;",
+	"S3,RAM,SRAM;",
+	"-;",
+	"R9,SYNC FD0;",
+	"RA,SYNC FD1;",
+	"-;",
+	"RB,EJECT FD0;",
+	"RC,EJECT FD1;",
+	"-;",
+	"RD,LOAD SRAM;",
+	"RE,STORE SRAM;",
 	"J,Fire 1,Fire 2;",
 	"V,v",`BUILD_DATE
 };
 
 /////////////////  CLOCKS  ////////////////////////
 
-wire clk_ram, clk_sys, clk_fdd, clk_vid;
+wire clk_ram, clk_sys, clk_vid, clk_fdd, clk_snd, clk_emu;
 wire pll_locked;
 
 pll pll
@@ -162,8 +180,10 @@ pll pll
 	.rst(0),
 	.outclk_0(clk_ram),
 	.outclk_1(clk_sys),
-	.outclk_2(clk_fdd),
-	.outclk_3(clk_vid),
+	.outclk_2(clk_vid),
+	.outclk_3(clk_fdd),
+	.outclk_4(clk_snd),
+	.outclk_5(clk_emu),
 	.locked(pll_locked)
 );
 
@@ -217,9 +237,24 @@ wire        ps2_mouse_data_out;
 wire        ps2_mouse_clk_in;
 wire        ps2_mouse_data_in;
 
-wire [10:0] ps2_key;
+wire  [31:0] sd_lba;
+wire   [3:0] sd_rd;
+wire   [3:0] sd_wr;
 
-hps_io #(.STRLEN($size(CONF_STR)>>3), .PS2DIV(600), .PS2WE(1)) hps_io
+wire        sd_ack;
+wire  [8:0] sd_buff_addr;
+wire  [7:0] sd_buff_dout;
+wire  [7:0] sd_buff_din;
+wire        sd_buff_wr;
+wire [15:0] sd_req_type = 0;
+wire  [3:0] img_mounted;
+wire  [3:0] img_readonly;
+wire [63:0] img_size;
+
+wire [65:0] ps2_key;
+wire [64:0] sysrtc;
+
+hps_io #(.STRLEN($size(CONF_STR)>>3), .PS2DIV(600), .PS2WE(1), .VDNUM(4)) hps_io
 (
 	.clk_sys(clk_sys),
 	.HPS_BUS(HPS_BUS),
@@ -230,6 +265,20 @@ hps_io #(.STRLEN($size(CONF_STR)>>3), .PS2DIV(600), .PS2WE(1)) hps_io
 	.status(status),
 	
 	.TIMESTAMP(TIMESTAMP),
+
+	.sd_lba(sd_lba),
+	.sd_rd(sd_rd),
+	.sd_wr(sd_wr),
+	.sd_ack(sd_ack),
+	.sd_buff_addr(sd_buff_addr),
+	.sd_buff_dout(sd_buff_dout),
+	.sd_buff_din(sd_buff_din),
+	.sd_buff_wr(sd_buff_wr),
+	.sd_req_type(sd_req_type),
+ 
+	.img_mounted(img_mounted),
+	.img_readonly(img_readonly),
+	.img_size(img_size),
 
 	.ioctl_download(ioctl_download),
 	.ioctl_index(ioctl_index),
@@ -248,6 +297,8 @@ hps_io #(.STRLEN($size(CONF_STR)>>3), .PS2DIV(600), .PS2WE(1)) hps_io
 	.ps2_mouse_data_in(ps2_mouse_data_in),
 
 	.ps2_key(ps2_key),
+	
+	.RTC(sysrtc),
 
 	.joystick_0(joystick_0),
 	.joystick_1(joystick_1)
@@ -266,38 +317,16 @@ end
 wire reset = buttons[1] | status[6];
 ///////////////////////////////////////////////////
 
-reg  setup = 0;
 
-wire pressed    = ps2_key[9];
-wire [7:0] code = ps2_key[7:0];
-always @(posedge clk_sys) begin
-	reg [15:0] cnt;
-	reg old_state;
-	reg next_setup = 0;
-	old_state <= ps2_key[10];
-	
-	//make sure the last key is fully transferred over PS2
-	if(&cnt) setup <= next_setup;
-	if(!ps2_kbd_clk_out) cnt <= 0;
-	else if(~&cnt) cnt <= cnt + 1'd1;
+wire NMI = status[7];
+wire POWER = status[8];
+wire [1:0] fdsync = status[10:9];
+wire [1:0] fdeject = status[12:11];
+wire sramld	= status[13];
+wire sramst = status[14];
+wire pdip = status[19:16];
 
-	if(old_state != ps2_key[10]) begin
-		casex(code)
-			'h78: if(pressed) next_setup <= ~setup; // F11
-		endcase
-	end
-end
-
-///////////////////////////////////////////////////
-
-wire [4:0] video_r, video_g, video_b;
-wire video_hs, video_vs;
-
-assign VGA_R = {video_r, video_r[4:2]};
-assign VGA_G = {video_g, video_g[4:2]};
-assign VGA_B = {video_b, video_b[4:2]};
 assign CLK_VIDEO = clk_vid;
-
 assign AUDIO_S = 1;
 
 wire disk_led;
@@ -308,31 +337,23 @@ X68K_top X68K_top
 	.sysclk(clk_sys),
 	.vidclk(clk_vid),
 	.fdcclk(clk_fdd),
+	.sndclk(clk_snd),
+	.emuclk(clk_emu),
 	.plllock(pll_locked),
+	
+	.sysrtc(sysrtc),
 
-	.SDRAM_CKE(SDRAM_CKE),
-	.SDRAM_nCS(SDRAM_nCS),
-	.SDRAM_nRAS(SDRAM_nRAS),
-	.SDRAM_nCAS(SDRAM_nCAS),
-	.SDRAM_nWE(SDRAM_nWE),
-	.SDRAM_DQMH(SDRAM_DQMH),
-	.SDRAM_DQML(SDRAM_DQML),
-	.SDRAM_BA(SDRAM_BA),
-	.SDRAM_A(SDRAM_A),
-	.SDRAM_DQ(SDRAM_DQ),
-
-	.kb_clkin(ps2_kbd_clk_out),
-	.kb_clkout(ps2_kbd_clk_in),
-	.kb_datin(ps2_kbd_data_out),
-	.kb_datout(ps2_kbd_data_in),
-
-	.ms_clkin(ps2_mouse_clk_out),
-	.ms_clkout(ps2_mouse_clk_in),
-	.ms_datin(ps2_mouse_data_out),
-	.ms_datout(ps2_mouse_data_in),
-
-	.pJoyA(joyA),
-	.pJoyB(joyB),
+	.pMemCke(SDRAM_CKE),
+	.pMemCs_n(SDRAM_nCS),
+	.pMemRas_n(SDRAM_nRAS),
+	.pMemCas_n(SDRAM_nCAS),
+	.pMemWe_n(SDRAM_nWE),
+	.pMemUdq(SDRAM_DQMH),
+	.pMemLdq(SDRAM_DQML),
+	.pMemBa1(SDRAM_BA[1]),
+	.pMemBa0(SDRAM_BA[0]),
+	.pMemAdr(SDRAM_A),
+	.pMemDat(SDRAM_DQ),
 
 	.ldr_addr(ioctl_addr[19:0]),
 	.ldr_wdat(ioctl_dout),
@@ -341,33 +362,58 @@ X68K_top X68K_top
 	.ldr_ack(ldr_ack),
 	.ldr_done(ldr_done),
 
-	.sdc_miso(SD_MISO),
-	.sdc_mosi(SD_MOSI),
-	.sdc_sclk(SD_SCK),
-	.sdc_cs(SD_CS),
+	.pPs2Clkin(ps2_kbd_clk_out),
+	.pPs2Clkout(ps2_kbd_clk_in),
+	.pPs2Datin(ps2_kbd_data_out),
+	.pPs2Datout(ps2_kbd_data_in),
 
-	.pFd_INDEXn(1),
-	.pFd_TRK00n(1),
-	.pFd_WPTn(1),
-	.pFd_RDATAn(1),
-	.pFd_DSKCHG(1),
+	.pPmsClkin(ps2_mouse_clk_out),
+	.pPmsClkout(ps2_mouse_clk_in),
+	.pPmsDatin(ps2_mouse_data_out),
+	.pPmsDatout(ps2_mouse_data_in),
 
-	.LED(disk_led),
+	.mist_mounted(img_mounted),
+	.mist_readonly(img_readonly),
+	.mist_imgsize(img_size),
 
-	.setup(setup),
+	.mist_lba(sd_lba),
+	.mist_rd(sd_rd),
+	.mist_wr(sd_wr),
+	.mist_ack(sd_ack),
 
-	.VGA_R(video_r),
-	.VGA_G(video_g),
-	.VGA_B(video_b),
-	.VGA_HS(VGA_HS),
-	.VGA_VS(VGA_VS),
-	.VGA_DE(VGA_DE),
-	.VGA_CE(CE_PIXEL),
+	.mist_buffaddr(sd_buff_addr),
+	.mist_buffdout(sd_buff_dout),
+	.mist_buffdin(sd_buff_din),
+	.mist_buffwr(sd_buff_wr),
 
-	.sndL(AUDIO_L),
-	.sndR(AUDIO_R),
+	.pJoyA(joyA),
+	.pJoyB(joyB),
 
-	.pswn(0),
+	.pSd_miso(SD_MISO),
+	.pSd_mosi(SD_MOSI),
+	.pSd_clk(SD_SCK),
+	.pSd_cs(SD_CS),
+
+	.pFDSYNC(fdsync),
+	.pFDEJECT(fdeject),
+
+	.pLed(disk_led),
+	.pDip(pdip),
+	.pPsw({~NMI,~POWER}),
+	.pSramld(sramld),
+	.pSramst(sramst),
+
+	.pVideoR(VGA_R),
+	.pVideoG(VGA_G),
+	.pVideoB(VGA_B),
+	.pVideoHS(VGA_HS),
+	.pVideoVS(VGA_VS),
+	.pVideoEN(VGA_DE),
+	.pVideoClk(CE_PIXEL),
+
+	.pSndL(AUDIO_L),
+	.pSndR(AUDIO_R),
+
 	.rstn(reset_n & ~reset)
 );
 

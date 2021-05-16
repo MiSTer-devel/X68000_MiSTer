@@ -65,6 +65,7 @@ port(
 	GT			:out std_logic;
 	GG			:out std_logic;
 	BP			:out std_logic;
+	HP			:out std_logic;
 	EXON		:out std_logic;
 	VHT			:out std_logic;
 	AH			:out std_logic;
@@ -334,12 +335,12 @@ begin
 				if(wr(0)='1')then
 					rtmask(7 downto 0)<=wdat(7 downto 0);
 				end if;
-			when VC_R0(23 downto 1) =>
+			when VC_R0(23 downto 1) | VC_R0s(23 downto 1) =>
 				if(wr(0)='1')then
 					rGR_SIZE<=wdat(2);
 					rGR_CMODE<=wdat(1 downto 0);
 				end if;
-			when VC_R1(23 downto 1) =>
+			when VC_R1(23 downto 1) | VC_R1s(23 downto 1) =>
 				if(wr(1)='1')then
 					rPRI_SP<=wdat(13 downto 12);
 					rPRI_TX<=wdat(11 downto 10);
@@ -348,7 +349,7 @@ begin
 				if(wr(0)='1')then
 					rGR_PRI<=wdat(7 downto 0);
 				end if;
-			when VC_R2(23 downto 1) =>
+			when VC_R2(23 downto 1) | VC_R2s(23 downto 1) =>
 				if(wr(1)='1')then
 					rYS<=wdat(15);
 					rAH<=wdat(14);
@@ -420,6 +421,7 @@ begin
 	GT			<=rGT;
 	GG			<=rGG;
 	BP			<=rBP;
+	HP			<=rHP;
 	EXON		<=rEXON;
 	VHT			<=rVHT;
 	AH			<=rAH;
