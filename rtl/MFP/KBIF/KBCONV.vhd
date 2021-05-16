@@ -132,7 +132,8 @@ type KBSTATE_T is (
 	KS_SETREP,
 	KS_SETREP1,
 	KS_SETREP2,
-	KS_SETREP3
+	KS_SETREP3,
+	KS_SENDDONE
 );
 
 signal	KBSTATE	:KBSTATE_T;
@@ -153,6 +154,8 @@ constant waitccount	:integer	:=waitcont*SFTCYC;
 constant waitscount	:integer	:=waitsep*SFTCYC;
 signal	WAITSFT		:integer range 0 to waitscount;
 
+signal	TXEN			:std_logic;
+signal	RXEN			:std_logic;
 signal	RXDONE		:std_logic;
 signal	RXRDY		:std_logic;
 
@@ -170,7 +173,9 @@ signal	KBINT		:std_logic_vector(3 downto 0);
 signal	REPVAL		:std_logic_vector(7 downto 0);
 signal	lDATRD		:std_logic;
 signal	TXEMPb		:std_logic;
-	
+signal	AT_REEN		:std_logic;
+signal	END_SET		:std_logic;
+signal	TSR_UE		:std_logic;
 begin
 --	MONOUT<="00000000" when KBSTATE=KS_IDLE else
 --			"00000001" when KBSTATE=KS_CLRRAM or KBSTATE=KS_CLRRAM1 else
@@ -278,6 +283,8 @@ begin
 		elsif(clk' event and clk='1')then
 			KB_WRn<='1';
 			RXDONE<='0';
+			AT_REEN<='0';
+			END_SET<='0';
 			if(WAITCNT>0)then
 				WAITCNT<=WAITCNT-1;
 			elsif(WAITSFT>0)then
@@ -361,28 +368,28 @@ begin
 					elsif(DATWR='1')then
 						if(DATIN(7 downto 6)="00")then
 							TXEMPb<='0';
-							KBSTATE<=KS_IDLE;
+							KBSTATE<=KS_SENDDONE;
 							WAITCNT<=2;
 						elsif(DATIN(7 downto 3)="01001")then
 							TXEMPb<='0';
-							KBSTATE<=KS_IDLE;
+							KBSTATE<=KS_SENDDONE;
 							WAITCNT<=2;
 							KBWAIT_CMD<=not DATIN(0);
 						elsif(DATIN(7 downto 2)="010100")then
 							TXEMPb<='0';
-							KBSTATE<=KS_IDLE;
+							KBSTATE<=KS_SENDDONE;
 							WAITCNT<=2;
 						elsif(DATIN(7 downto 2)="010101")then
 							TXEMPb<='0';
-							KBSTATE<=KS_IDLE;
+							KBSTATE<=KS_SENDDONE;
 							WAITCNT<=2;
 						elsif(DATIN(7 downto 2)="010110")then
 							TXEMPb<='0';
-							KBSTATE<=KS_IDLE;
+							KBSTATE<=KS_SENDDONE;
 							WAITCNT<=2;
 						elsif(DATIN(7 downto 2)="010111")then
 							TXEMPb<='0';
-							KBSTATE<=KS_IDLE;
+							KBSTATE<=KS_SENDDONE;
 							WAITCNT<=2;
 						elsif(DATIN(7 downto 4)="0110")then
 							TXEMPb<='0';
@@ -414,13 +421,21 @@ begin
 						else
 							if(LASTCODE=TBLDAT)then
 								KBDAT<='1' & TBLDAT;
-								RXDONE<='1';
-								KBSTATE<=KS_REP;
+								if(RXEN='1')then
+									RXDONE<='1';
+									KBSTATE<=KS_REP;
+								else
+									KBSTATE<=KS_IDLE;
+								end if;
 							else
 								LASTCODE<=TBLDAT;
 								KBDAT<='0' & TBLDAT;
-								RXDONE<='1';
-								KBSTATE<=KS_WINT;
+								if(RXEN='1')then
+									RXDONE<='1';
+									KBSTATE<=KS_WINT;
+								else
+									KBSTATE<=KS_IDLE;
+								end if;
 							end if;
 						end if;
 						WAITCNT<=1;
@@ -459,18 +474,29 @@ begin
 					if(KB_RXED='1')then
 						if(KB_RXDAT=x"fa")then
 							WAITSFT<=waitscount;
-							KBSTATE<=KS_IDLE;
+							KBSTATE<=KS_SENDDONE;
 						elsif(KB_RXDAT=x"fe")then
 							WAITSFT<=waitscount;
 							KBSTATE<=KS_SETREP;
 						end if;
 					end if;
+				when KS_SENDDONE =>
+					if(TSR(5)='1')then
+						AT_REEN<='1';
+					end if;
+					if(TSR(0)='0')then
+						END_SET<='1';
+					end if;
+					KBSTATE<=KS_IDLE;
 				when others =>
 					KBSTATE<=KS_IDLE;
 				end case;
 			end if;
 		end if;
 	end process;
+	
+	RXEN<=(not KBWAIT_CMD) and RSR(0);
+	TXEN<=TSR(0);
 	
 	NTBL	:ktbln port map(TBLADR,clk,NTBLDAT);
 	E0TBL	:ktble0 port map(TBLADR,clk,E0TBLDAT);
@@ -504,14 +530,21 @@ begin
 			elsif(TXSTWR='1')then
 				TSR<=DATIN;
 			end if;
+			if(AT_REEN='1')then
+				RSR(0)<='1';
+				TSR(5)<='0';
+			end if;
+			if(END_SET='1')then
+				RSR(4)<='1';
+			end if;
 		end if;
 	end process;
 	
 	DATOUT<=
 		KBDAT	when DATRD='1' else
 		UCR		when CONTRD='1' else
-		RXRDY & "00000" & RSR(1 downto 0) when RXSTRD='1' else
-		TXEMPb & "0000" & TSR(2 downto 0) when TXSTRD='1' else
+		RXRDY & "0000" & KB_BUSY & '0' & RSR(0) when RXSTRD='1' else
+		TXEMPb & TSR_UE & TSR(5 downto 0) when TXSTRD='1' else
 		x"00";
 	
 	DOE<=	'1' when DATRD='1' else
@@ -519,5 +552,22 @@ begin
 			'1' when RXSTRD='1' else
 			'1' when TXSTRD='1' else
 			'0';
-		
+	process(clk,rstn)
+	variable lTXEMP	:std_logic;
+	variable lTXSTRD	:std_logic;
+	begin
+		if(rstn='0')then
+			TSR_UE<='0';
+		elsif(clk' event and clk='1')then
+			if(TXEN='0')then
+				TSR_UE<='0';
+			elsif(lTXEMP='0' and TXEMPb='1')then
+				TSR_UE<='1';
+			elsif(TXSTRD='0' and lTXSTRD='1')then
+				TSR_UE<='0';
+			end if;
+			lTXEMP:=TXEMPb;
+			lTXSTRD:=TXSTRD;
+		end if;
+	end process;
 end MAIN;

@@ -103,7 +103,9 @@ begin
 		end if;
 	end process;
 	
-	process(clk,rstn)begin
+	process(clk,rstn)
+	variable iivack	:integer range 0 to 15;
+	begin
 		if(rstn='0')then
 			IPR<=(others=>'0');
 		elsif(clk' event and clk='1')then
@@ -117,41 +119,8 @@ begin
 				end if;
 			end loop;
 			if(IACK='1')then
-				case IVACK(3 downto 0) is
-				when x"0" =>
-					IPR(0)<='0';
-				when x"1" =>
-					IPR(1)<='0';
-				when x"2" =>
-					IPR(2)<='0';
-				when x"3" =>
-					IPR(3)<='0';
-				when x"4" =>
-					IPR(4)<='0';
-				when x"5" =>
-					IPR(5)<='0';
-				when x"6" =>
-					IPR(6)<='0';
-				when x"7" =>
-					IPR(7)<='0';
-				when x"8" =>
-					IPR(8)<='0';
-				when x"9" =>
-					IPR(9)<='0';
-				when x"a" =>
-					IPR(10)<='0';
-				when x"b" =>
-					IPR(11)<='0';
-				when x"c" =>
-					IPR(12)<='0';
-				when x"d" =>
-					IPR(13)<='0';
-				when x"e" =>
-					IPR(14)<='0';
-				when x"f" =>
-					IPR(15)<='0';
-				when others =>
-				end case;
+				iivack:=conv_integer(IVACK(3 downto 0));
+				IPR(iivack)<='0';
 			elsif(IPRAWR='1')then
 				IPR(15 downto 8)<=IPR(15 downto 8) and wdat;
 			elsif(IPRBWR='1')then
@@ -160,7 +129,9 @@ begin
 		end if;
 	end process;
 	
-	process(clk,rstn)begin
+	process(clk,rstn)
+	variable iivack	:integer range 0 to 15;
+	begin
 		if(rstn='0')then
 			ISR<=(others=>'0');
 		elsif(clk' event and clk='1')then
@@ -168,41 +139,8 @@ begin
 				ISR<=(others=>'0');
 			elsif(IACK='1')then
 				ISR<=(others=>'0');
-				case IVACK(3 downto 0) is
-				when x"0" =>
-					ISR(0)<='1';
-				when x"1" =>
-					ISR(1)<='1';
-				when x"2" =>
-					ISR(2)<='1';
-				when x"3" =>
-					ISR(3)<='1';
-				when x"4" =>
-					ISR(4)<='1';
-				when x"5" =>
-					ISR(5)<='1';
-				when x"6" =>
-					ISR(6)<='1';
-				when x"7" =>
-					ISR(7)<='1';
-				when x"8" =>
-					ISR(8)<='1';
-				when x"9" =>
-					ISR(9)<='1';
-				when x"a" =>
-					ISR(10)<='1';
-				when x"b" =>
-					ISR(11)<='1';
-				when x"c" =>
-					ISR(12)<='1';
-				when x"d" =>
-					ISR(13)<='1';
-				when x"e" =>
-					ISR(14)<='1';
-				when x"f" =>
-					ISR(15)<='1';
-				when others =>
-				end case;
+				iivack:=conv_integer(IVACK(3 downto 0));
+				ISR(iivack)<='1';
 			elsif(ISRAWR='1')then
 				ISR(15 downto 8)<=ISR(15 downto 8) and wdat;
 			elsif(ISRBWR='1')then
