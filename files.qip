@@ -15,9 +15,6 @@ set_global_assignment -name VHDL_FILE rtl/FDC/nrdet.vhd
 set_global_assignment -name VHDL_FILE rtl/FDC/dskchk.vhd
 set_global_assignment -name VHDL_FILE rtl/FDC/dskchk2d.vhd
 set_global_assignment -name VHDL_FILE rtl/SASIIF/sasiif.vhd
-set_global_assignment -name VHDL_FILE rtl/SASIIF/sasi2sd.vhd
-set_global_assignment -name VHDL_FILE rtl/SASIIF/sasisd.vhd
-set_global_assignment -name VHDL_FILE rtl/SASIIF/sasiio.vhd
 set_global_assignment -name HEX_FILE  rtl/diskemu/diskemu_FDTRAM.hex
 set_global_assignment -name HEX_FILE  rtl/diskemu/diskemu_vram.hex
 set_global_assignment -name HEX_FILE  rtl/diskemu/diskemu_mainmem.hex
