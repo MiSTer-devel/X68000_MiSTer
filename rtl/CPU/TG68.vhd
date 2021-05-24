@@ -125,7 +125,7 @@ TG68_fast_inst: TG68_fast
 		LDS => lds_in 			-- : out std_logic;
         );
 	
-	PROCESS (clk)
+	PROCESS (clk,clkena_in,clkena_e,state)
 	BEGIN
 		IF clkena_in='1' AND (clkena_e='1' OR state="01") THEN
 			clkena <= '1';

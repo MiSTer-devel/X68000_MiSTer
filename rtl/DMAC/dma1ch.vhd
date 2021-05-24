@@ -595,6 +595,7 @@ begin
 			reqwait<='0';
 			drqeclr<='0';
 		elsif(clk' event and clk='1')then
+			TXDAT<=(others=>'0'); --FIXME: should this be? Prevents latch.
 			MTC_dec		<='0';
 			MTC_dec2		<='0';
 			MTC_load	<='0';

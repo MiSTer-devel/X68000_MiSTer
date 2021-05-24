@@ -20,13 +20,16 @@ port(
 	fdcclk	:in std_logic;
 	sndclk	:in std_logic;
 	emuclk	:in std_logic;
+	mpuclk  :in std_logic;
 	plllock	:in std_logic;
+	ces     :in std_logic_vector(9 downto 0);
+	CPUS    :in std_logic;
 	
 	sysrtc	:in std_logic_vector(64 downto 0);
 	
    -- SD-RAM ports
-   pMemClk     : out std_logic;                        -- SD-RAM Clock
-   pMemCke     : out std_logic;                 		-- SD-RAM Clock enable
+   -- pMemClk     : out std_logic;                        -- SD-RAM Clock
+   pMemCke     : out std_logic;                        -- SD-RAM Clock enable
    pMemCs_n    : out std_logic;                        -- SD-RAM Chip select
    pMemRas_n   : out std_logic;                        -- SD-RAM Row/RAS
    pMemCas_n   : out std_logic;                        -- SD-RAM /CAS
@@ -63,9 +66,9 @@ port(
 	pStrB			: out std_logic;
    -- SD/MMC slot ports
 	pSd_miso		: in std_logic;
-   pSd_mosi		: out std_logic;
-   pSd_clk		: out std_logic;
-   pSd_cs		: out std_logic;
+   --   pSd_mosi		: out std_logic;
+ --  pSd_clk		: out std_logic;
+  -- pSd_cs		: out std_logic;
 
 	pFDSYNC		:in std_logic_Vector(1 downto 0);
 	pFDEJECT		:in std_logic_Vector(1 downto 0);
@@ -78,7 +81,7 @@ port(
 	mist_lba		:out std_logic_vector(31 downto 0);
 	mist_rd			:out std_logic_vector(3 downto 0);
 	mist_wr			:out std_logic_vector(3 downto 0);
-	mist_ack		:in std_logic;
+	mist_ack		:in std_logic_vector(3 downto 0);
 
 	mist_buffaddr	:in std_logic_vector(8 downto 0);
 	mist_buffdout	:in std_logic_vector(7 downto 0);
@@ -100,6 +103,8 @@ port(
 	pVideoR		:out std_logic_vector(7 downto 0);
 	pVideoG		:out std_logic_vector(7 downto 0);
 	pVideoB		:out std_logic_vector(7 downto 0);
+	pVideoHB        :out std_logic;
+	pVideoVB        :out std_logic;
 	pVideoEN		:out std_logic;
 	pVideoHS		:out std_logic;
 	pVideoVS		:out std_logic;
@@ -107,7 +112,15 @@ port(
 	pSndL		:out std_logic_vector(15 downto 0);
 	pSndR		:out std_logic_vector(15 downto 0);
 	
-	rstn		:in std_logic
+	pSndYML		:out std_logic_vector(15 downto 0);
+	pSndYMR		:out std_logic_vector(15 downto 0);
+	
+	pSndPCML		:out std_logic_vector(15 downto 0);
+	pSndPCMR		:out std_logic_vector(15 downto 0);
+	
+	rstn		:in std_logic;
+	dHMode      :in std_logic_vector(1 downto 0) := "11";
+	dVMode      :in std_logic := '1'
 );
 end X68K_top;
 
@@ -153,7 +166,10 @@ signal	mpu_as			:std_logic;
 signal	mpu_udsn			:std_logic;
 signal	mpu_ldsn			:std_logic;
 signal	mpu_rwn			:std_logic;
-signal	mpu_clke			:std_logic;
+signal  mpu_clke        :std_logic;
+signal  mpu_fc      :std_logic_vector(2 downto 0);
+signal  mpu_ce      :std_logic;
+signal  mpu_vpan    :std_logic;
 
 -- for memorymap
 signal	m_addr	:std_logic_vector(31 downto 0);
@@ -663,7 +679,6 @@ signal	contc_rdat	:std_logic_vector(7 downto 0);
 signal	contc_doe	:std_logic;
 
 --for debug
-signal	dopmonoff:std_logic_vector(7 downto 0);
 signal	dwait		:std_logic;
 signal	dsprbgen	:std_logic_vector(1 downto 0);
 
@@ -698,6 +713,63 @@ component TG68
         rw            : out std_logic;
         drive_data    : out std_logic				--enable for data_out driver
         );
+end component;
+
+component cpu_wrapper
+	port(
+		clk          :in  std_logic;
+		clk10m       :in  std_logic;
+		phi1_ce      :in  std_logic;
+		phi2_ce      :in  std_logic;
+		cpu_select   :in  std_logic;
+		reset_n      :in  std_logic;
+		din          :in  std_logic_vector(15 downto 0);
+		dTACK_n      :in  std_logic;
+		dma_active_n :in  std_logic;
+		IPL          :in  std_logic_vector(2 downto 0);
+		dout         :out std_logic_vector(15 downto 0);
+		FC           :out std_logic_vector(2 downto 0);
+		rw_n         :out std_logic;
+		address      :out std_logic_vector(23 downto 0);
+		AS_n         :out std_logic;
+		UDS_n        :out std_logic;
+		LDS_n        :out std_logic;
+		OE           :out std_logic
+	);
+end component;
+
+component fx68k
+	port(
+		clk        :in std_logic;
+		HALTn      :in std_logic;
+		extReset   :in std_logic;   
+		pwrUp      :in std_logic;   
+		enPhi1     :in std_logic;   
+		enPhi2     :in std_logic;   
+		eRWn       :out std_logic;  
+		ASn        :out std_logic;  
+		LDSn       :out std_logic;  
+		UDSn       :out std_logic;  
+		E          :out std_logic;  
+		VMAn       :out std_logic;  
+		FC0        :out std_logic;  
+		FC1        :out std_logic;  
+		FC2        :out std_logic;  
+		BGn        :out std_logic;  
+		oRESETn    :out std_logic;  
+		oHALTEDn   :out std_logic;  
+		DTACKn     :in std_logic;   
+		VPAn       :in std_logic;   
+		BERRn      :in std_logic;   
+		BRn        :in std_logic;   
+		BGACKn     :in std_logic;   
+		IPL0n      :in std_logic;   
+		IPL1n      :in std_logic;   
+		IPL2n      :in std_logic;   
+		iEdb       :in std_logic_vector(15 downto 0);
+		oEdb       :out std_logic_vector(15 downto 0);
+		eab        :out std_logic_vector(23 downto 1)
+	);
 end component;
 
 component  memcont
@@ -1055,6 +1127,67 @@ port(
 );
 end component;
 
+component mister_sync
+generic(
+	DACRES		:integer	:=4
+);
+port(
+	LRAMSEL		:out std_logic;
+	LRAMADR		:out std_logic_vector(9 downto 0);
+	LRAMDAT		:in std_logic_vector(15 downto 0);
+	
+	TRAM_ADR	:out std_logic_vector(12 downto 0);
+	TRAM_DAT	:in std_logic_vector(7 downto 0);
+	
+	FRAM_ADR	:out std_logic_vector(11 downto 0);
+	FRAM_DAT	:in std_logic_vector(7 downto 0);
+	
+	CURL		:in std_logic_vector(5 downto 0);
+	CURC		:in std_logic_vector(6 downto 0);
+	CURE		:in std_logic;
+
+	TXTMODE		:in std_logic;
+	
+	ROUT		:out std_logic_vector(DACRES-1 downto 0);
+	GOUT		:out std_logic_vector(DACRES-1 downto 0);
+	BOUT		:out std_logic_vector(DACRES-1 downto 0);
+	
+	RFOUT		:out std_logic_vector(5 downto 0);
+	GFOUT		:out std_logic_vector(5 downto 0);
+	BFOUT		:out std_logic_vector(5 downto 0);
+
+	HSYNC		:out std_logic;
+	VSYNC		:out std_logic;
+	
+	HMODE		:in std_logic_vector(1 downto 0);		-- "00":256 "01":512 "10":768 "11":768
+	VMODE		:in std_logic;		-- 1:512 0:256
+	
+	hfreq       :in std_logic;
+	htotal		:in std_logic_vector(7 downto 0);
+	hsynl		:in std_logic_vector(7 downto 0);
+	hvbgn		:in std_logic_vector(7 downto 0);
+	hvend		:in std_logic_vector(7 downto 0);
+	vtotal		:in std_logic_vector(9 downto 0);
+	vsynl		:in std_logic_vector(9 downto 0);
+	vvbgn		:in std_logic_vector(9 downto 0);
+	vvend		:in std_logic_vector(9 downto 0);
+	hadj		:in std_logic_vector(7 downto 0);
+
+	VRTC		:out std_logic;
+	HRTC		:out std_logic;
+	VIDEN		:out std_logic;
+	
+	HCOMP		:out std_logic;
+	VCOMP		:out std_logic;
+	VPSTART		:out std_logic;
+	
+	dclk		:out std_logic;
+
+	gclk		:in std_logic;
+	rstn		:in std_logic
+);
+end component;
+
 component rastercopy
 generic(
 	arange	:integer	:=14;
@@ -1372,7 +1505,7 @@ port(
 	mist_lba		:out std_logic_vector(31 downto 0);
 	mist_rd			:out std_logic_vector(3 downto 0);
 	mist_wr			:out std_logic_vector(3 downto 0);
-	mist_ack		:in std_logic;
+	mist_ack		:in std_logic_vector(3 downto 0);
 
 	mist_buffaddr	:in std_logic_vector(8 downto 0);
 	mist_buffdout	:in std_logic_vector(7 downto 0);
@@ -1988,6 +2121,30 @@ port(
 );
 end component;
 
+component jt51
+port(
+	rst      :in  std_logic;
+	clk      :in  std_logic;
+	cen      :in  std_logic;
+	cen_p1   :in  std_logic;
+	cs_n     :in  std_logic;
+	wr_n     :in  std_logic;
+	a0       :in  std_logic;
+	din      :in  std_logic_vector(7 downto 0);
+	dout     :out std_logic_vector(7 downto 0);
+	ct1      :out std_logic;
+	ct2      :out std_logic;
+	irq_n    :out std_logic;
+	sample   :out std_logic;
+	left     :out std_logic_vector(15 downto 0);
+	right    :out std_logic_vector(15 downto 0);
+	xleft    :out std_logic_vector(15 downto 0);
+	xright   :out std_logic_vector(15 downto 0);
+	dacleft  :out std_logic_vector(15 downto 0);
+	dacright :out std_logic_vector(15 downto 0)
+);
+end component;
+
 component e6258
 port(
 	addr	:in std_logic;
@@ -2273,7 +2430,7 @@ end component;
 --end component;
 
 begin
-	pllrst<=not pwr_rstn;
+	-- pllrst<=not pwr_rstn;
 --	pMemClk<=not ramclk;
 
 	sr	:sftclk    generic map(100000000,1,1) port map("1",srst,sysclk,rstn);
@@ -2301,10 +2458,42 @@ begin
 		prstn	=>rstn
 	);
 	
+	process(mpuclk)begin
+		if(mpuclk' event and mpuclk='1')then
+			mpu_ce <= not mpu_ce;
+		end if;
+	end process;
+	
+	mpu_addr(31 downto 24) <= "00000000";
+
+
+	-- CPU_W : cpu_wrapper
+	-- port map(
+	-- 	clk           =>mpuclk,
+	-- 	clk10m        =>sysclk,
+	-- 	buserr        =>buserr,
+	-- 	phi1_ce       =>mpu_ce,
+	-- 	phi2_ce       =>not mpu_ce,
+	-- 	cpu_select    =>CPUS,
+	-- 	reset_n       =>srstn,
+	-- 	din           =>dbus,
+	-- 	dTACK_n       =>mpu_dtack,
+	-- 	dma_active_n  =>dma_bconte,
+	-- 	IPL           =>mpu_ipl,
+	-- 	dout          =>mpu_od,
+	-- 	FC            =>open,
+	-- 	rw_n          =>mpu_rwn,
+	-- 	address       =>mpu_addr(23 downto 0),
+	-- 	AS_n          =>mpu_as,
+	-- 	UDS_n         =>mpu_udsn,
+	-- 	LDS_n         =>mpu_ldsn,
+	-- 	OE            =>mpu_oe
+	-- );
+	
 	mpu_clke<=(not dma_bconte);
 	MPU	:TG68 port map(
-		clk           =>sysclk,
-		reset         =>srstn,
+	    clk           =>sysclk,
+	    reset         =>srstn,
         clkena_in     =>mpu_clke,
         data_in       =>dbus,
         IPL           =>mpu_ipl,
@@ -2317,7 +2506,7 @@ begin
         rw            =>mpu_rwn,
         drive_data    =>mpu_oe
 	);
-	
+
 --	intcount	:intlen generic map(12)port map(
 --		IPL	=>mpu_ipl,
 --		ack	=>mpu_dtack,
@@ -2663,7 +2852,63 @@ begin
 	nvwpl	:bwlatch generic map(24,8) port map(abus(23 downto 0),b_lds,b_wr(0),dbus(7 downto 0),x"e8e00d",nvwp,sysclk,srstn);
 	nv_ce<='1' when abus(23 downto 14)="1110110100" else '0';
 
-	CRTC	:CRTCX68TXT generic map(4) port map(
+	-- CRTC	:CRTCX68TXT generic map(4) port map(
+	-- 	LRAMSEL		=>LRAMSEL,
+	-- 	LRAMADR		=>LVIDADR,
+	-- 	LRAMDAT		=>LVIDRD,
+		
+	-- 	TRAM_ADR	=>open,
+	-- 	TRAM_DAT	=>(others=>'0'),
+		
+	-- 	FRAM_ADR	=>open,
+	-- 	FRAM_DAT	=>(others=>'0'),
+		
+	-- 	CURL		=>(others=>'0'),
+	-- 	CURC		=>(others=>'0'),
+	-- 	CURE		=>'0',
+
+	-- 	TXTMODE		=>'0',
+	
+	-- 	ROUT		=>vidR,
+	-- 	GOUT		=>vidG,
+	-- 	BOUT		=>vidB,
+
+	-- 	RFOUT		=>vidRF,
+	-- 	GFOUT		=>vidGF,
+	-- 	BFOUT		=>vidBF,
+		
+	-- 	HSYNC		=>vidHS,
+	-- 	VSYNC		=>vidVS,
+		
+	-- 	HMODE		=>dHMode,
+	-- 	VMODE		=>dVMode,
+		
+	-- 	-- htotal		=>vr_htotal,
+	-- 	-- hsync		=>vr_hsync,
+	-- 	-- hvbgn		=>vr_hvbgn,
+	-- 	-- hvend		=>vr_hvend,
+	-- 	-- vtotal		=>vr_vtotal,
+	-- 	-- vsync		=>vr_vsync,
+	-- 	-- vvbgn		=>vr_vvbgn,
+	-- 	-- vvend		=>vr_vvend,
+	-- 	-- hadj		=>vr_hadj,
+
+	-- 	VRTC		=>VID_VRTC,
+	-- 	HRTC		=>VID_HRTC,
+	-- 	VIDEN		=>vidEN,
+
+	-- 	HCOMP		=>HCOMP,
+	-- 	VCOMP		=>open,
+	-- 	VPSTART		=>VPSTART,
+		
+	-- 	dclk		=>dclk,
+		
+	-- 	gclk		=>vidclk,
+	-- 	rstn		=>vid_rstn
+	-- );
+	
+	CRTC	:mister_sync 
+	port map(
 		LRAMSEL		=>LRAMSEL,
 		LRAMADR		=>LVIDADR,
 		LRAMDAT		=>LVIDRD,
@@ -2691,8 +2936,19 @@ begin
 		HSYNC		=>vidHS,
 		VSYNC		=>vidVS,
 		
-		HMODE		=>"11",
-		VMODE		=>'1',
+		HMODE		=>vr_HD,
+		VMODE		=>vr_VD(0),
+		
+		hfreq       =>'1', --vr_hfreq
+		htotal		=>"10001001",--vr_htotal,
+		hsynl		=>vr_hsync,
+		hvbgn		=>vr_hvbgn,
+		hvend		=>vr_hvend,
+		vtotal		=>"1000110111", --vr_vtotal,
+		vsynl		=>vr_vsync,
+		vvbgn		=>vr_vvbgn,
+		vvend		=>vr_vvend,
+		hadj		=>vr_hadj,
 
 		VRTC		=>VID_VRTC,
 		HRTC		=>VID_HRTC,
@@ -2736,9 +2992,12 @@ begin
 	pVideoEN<=vidEN;
 	pVideoHS<=vidHS;
 	pVideoVS<=vidVS;
-
-
 	
+
+	pVideoHB<= not VID_HRTC;
+	pVideoVB<= not VID_VRTC;
+
+
 	LBUFWR0<=LBUFWR and LRAMSEL;
 	LBUFWR1<=LBUFWR and (not LRAMSEL);
 	VLBUF0	:VLINEBUF port map(
@@ -3467,30 +3726,52 @@ begin
 --		end if;
 --	end process;
 	
-	dopmonoff<=(others=>'1');
 	
-	FM:OPM generic map(16) port map(
-		DIN		=>dbus(7 downto 0),
-		DOUT	=>opm_odat,
-		DOE		=>opm_doe,
-		CSn		=>opm_cen,
-		ADR0	=>abus(1),
-		RDn		=>b_rdn,
-		WRn		=>b_wrn(0),
-		INTn	=>opm_intn,
+	-- FM:OPM generic map(16) port map(
+	-- 	DIN		=>dbus(7 downto 0),
+	-- 	DOUT	=>opm_odat,
+	-- 	DOE		=>opm_doe,
+	-- 	CSn		=>opm_cen,
+	-- 	ADR0	=>abus(1),
+	-- 	RDn		=>b_rdn,
+	-- 	WRn		=>b_wrn(0),
+	-- 	INTn	=>opm_intn,
 		
-		sndL	=>opm_sndl,
-		sndR	=>opm_sndr,
+	-- 	sndL	=>opm_sndl,
+	-- 	sndR	=>opm_sndr,
 		
-		CT1		=>pcm_clkmode,
-		CT2		=>opm_ct2,
+	-- 	CT1		=>pcm_clkmode,
+	-- 	CT2		=>opm_ct2,
 		
-	--	monout	:out std_logic_vector(15 downto 0);
-		chenable	=>dopmonoff,
+	-- --	monout	:out std_logic_vector(15 downto 0);
+	-- 	chenable	=>dopmonoff,
 
-		fmclk		=>sndclk,
-		pclk		=>sysclk,
-		rstn	=>srstn
+	-- 	fmclk		=>sndclk,
+	-- 	pclk		=>sysclk,
+	-- 	rstn	=>srstn
+	-- );
+
+	opm_doe <= b_rd when opm_cen = '0';
+	FM:jt51 port map(
+		rst      => not srstn,
+		clk      => sysclk,
+		cen      => ces(0),
+		cen_p1   => ces(1),
+		cs_n     => opm_cen,
+		wr_n     => b_wrn(0),
+		a0       => abus(1),
+		din      => dbus(7 downto 0),
+		dout     => opm_odat,
+		ct1      => pcm_clkmode,
+		ct2      => opm_ct2,
+		irq_n    => opm_intn,
+		sample   => open,
+		left     => open,
+		right    => open,
+		xleft    => opm_sndl,
+		xright   => opm_sndr,
+		dacleft  => open,
+		dacright => open
 	);
 
 	pcm_ce<='1' when abus(23 downto 2)="1110100100100000000000" else '0';
@@ -3526,10 +3807,8 @@ begin
 	pcm_sndR<=(pcm_snd(11) & pcm_snd(11) & pcm_snd & "00") when pcm_enR='1' else (others=>'0');
 	
 	process(sndclk,srstn)
-	variable	sclk	:std_logic;
 	begin
 		if(srstn='0')then
-			sclk:='0';
 			opm_wstate<=0;
 		elsif(sndclk' event and sndclk='1')then
 			case opm_wstate is
@@ -3546,7 +3825,6 @@ begin
 			when others =>
 				opm_wstate<=0;
 			end case;
-			sclk:=sndclk;
 		end if;
 	end process;
 	
@@ -3557,6 +3835,11 @@ begin
 
 	dacs	:sftclk generic map(ACFREQ,DACFREQ,1) port map("1",dacsft,sndclk,srstn);
 	
+	pSndPCML <= opm_sndL;
+	pSndPCMR <= opm_sndR;
+	pSndYML  <= pcm_sndL;
+	pSndYMR  <= pcm_sndR;
+
 	sndL<=mix_sndL;
 
 	sndR<=mix_sndR;

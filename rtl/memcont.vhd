@@ -127,9 +127,13 @@ port(
 	initdone	:out std_logic;
 	
 	sclk	:in std_logic;
+	sys_ce  :in std_logic := '1';
 	vclk	:in std_logic;
+	vid_ce  :in std_logic := '1';
 	fclk	:in std_logic;
+	fd_ce   :in std_logic := '1';
 	rclk	:in std_logic;
+	ram_ce  :in std_logic := '1';
 	rstn	:in std_logic
 );
 end memcont;
@@ -323,9 +327,13 @@ port(
 	
 	ini_end	:out std_logic;
 	sclk		:in std_logic;
+	sys_ce      :in std_logic;
 	vclk		:in std_logic;
+	vid_ce      :in std_logic;
 	fclk		:in std_logic;
+	fd_ce       :in std_logic;
 	rclk		:in std_logic;
+	ram_ce      :in std_logic;
 	rstn		:in std_logic
 );
 end component;
@@ -491,9 +499,13 @@ begin
 		
 		ini_end	=>cache_inidone,
 		sclk	=>sclk,
+		sys_ce  =>sys_ce,
 		vclk	=>vclk,
+		vid_ce  =>vid_ce,
 		fclk	=>fclk,
+		fd_ce  =>fd_ce,
 		rclk	=>rclk,
+		ram_ce  =>ram_ce,
 		rstn	=>rstn
 	);
 	

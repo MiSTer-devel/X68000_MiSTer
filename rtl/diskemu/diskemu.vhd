@@ -79,7 +79,7 @@ port(
 	mist_lba		:out std_logic_vector(31 downto 0);
 	mist_rd		:out std_logic_vector(3 downto 0);
 	mist_wr		:out std_logic_vector(3 downto 0);
-	mist_ack		:in std_logic;
+	mist_ack		:in std_logic_vector(3 downto 0);
 
 	mist_buffaddr	:in std_logic_vector(8 downto 0);
 	mist_buffdout	:in std_logic_vector(7 downto 0);
@@ -809,12 +809,12 @@ begin
 					end if;
 				end if;
 			when ss_rwrite =>
-				if(mist_ack='1')then
+				if(mist_ack(bit_fd0)='1')then
 					mist_wr(bit_fd1 downto bit_fd0)<="00";
 					sbufstate<=ss_rwrite2;
 				end if;
 			when ss_rwrite2 =>
-				if(mist_ack='0')then
+				if(mist_ack(bit_fd0)='0')then
 					wrote:='0';
 					cur_lba<="000000000" & img_addr(31 downto 9);
 					cur_unit<=img_unit;
@@ -827,21 +827,21 @@ begin
 					sbufstate<=ss_read;
 				end if;
 			when ss_read =>
-				if(mist_ack='1')then
+				if(mist_ack(bit_fd0)='1')then
 					mist_rd(bit_fd1 downto bit_fd0)<="00";
 					sbufstate<=ss_read2;
 				end if;
 			when ss_read2 =>
-				if(mist_ack='0')then
+				if(mist_ack(bit_fd0)='0')then
 					sbufstate<=ss_idle;
 				end if;
 			when ss_write =>
-				if(mist_ack='1')then
+				if(mist_ack(bit_fd0)='1')then
 					mist_wr(bit_fd1 downto bit_fd0)<="00";
 					sbufstate<=ss_write2;
 				end if;
 			when ss_write2 =>
-				if(mist_ack='0')then
+				if(mist_ack(bit_fd0)='0')then
 					lba_fdd<="000000000" & img_addr(31 downto 9);
 					cur_lba<="000000000" & img_addr(31 downto 9);
 					cur_unit<=img_unit;
@@ -854,23 +854,23 @@ begin
 					sbufstate<=ss_wread;
 				end if;
 			when ss_wread =>
-				if(mist_ack='1')then
+				if(mist_ack(bit_fd0)='1')then
 					mist_rd(bit_fd1 downto bit_fd0)<="00";
 					sbufstate<=ss_wread2;
 				end if;
 			when ss_wread2 =>
-				if(mist_ack='0')then
+				if(mist_ack(bit_fd0)='0')then
 					sbufwr<='1';
 					wrote:='1';
 					sbufstate<=ss_idle;
 				end if;
 			when ss_sync =>
-				if(mist_ack='1')then
+				if(mist_ack(bit_fd0)='1')then
 					mist_wr(bit_fd1 downto bit_fd0)<="00";
 					sbufstate<=ss_sync2;
 				end if;
 			when ss_sync2 =>
-				if(mist_ack='0')then
+				if(mist_ack(bit_fd0)='0')then
 					wrote:='0';
 					sbufstate<=ss_idle;
 				end if;
@@ -2118,12 +2118,12 @@ begin
 						end if;
 					end if;
 				when ss_rwrite =>
-					if(mist_ack='1')then
+					if(mist_ack(bit_sasi)='1')then
 						mist_wr(bit_sasi)<='0';
 						sasibufstate<=ss_rwrite2;
 					end if;
 				when ss_rwrite2 =>
-					if(mist_ack='0')then
+					if(mist_ack(bit_sasi)='0')then
 						wrote:='0';
 						cur_slba<=allzero(31 downto 20) & sasi_lba(20 downto 1);
 						lba_sasi<=allzero(31 downto 20) & sasi_lba(20 downto 1);
@@ -2131,22 +2131,22 @@ begin
 						sasibufstate<=ss_read;
 					end if;
 				when ss_read =>
-					if(mist_ack='1')then
+					if(mist_ack(bit_sasi)='1')then
 						mist_rd(bit_sasi)<='0';
 						sasibufstate<=ss_read2;
 					end if;
 				when ss_read2 =>
-					if(mist_ack='0')then
+					if(mist_ack(bit_sasi)='0')then
 						sasidone<='1';
 						sasibufstate<=ss_idle;
 					end if;
 				when ss_write =>
-					if(mist_ack='1')then
+					if(mist_ack(bit_sasi)='1')then
 						mist_wr(bit_sasi)<='0';
 						sasibufstate<=ss_write2;
 					end if;
 				when ss_write2 =>
-					if(mist_ack='0')then
+					if(mist_ack(bit_sasi)='0')then
 						cur_slba<=allzero(31 downto 20) & sasi_lba(20 downto 1);
 						lba_sasi<=allzero(31 downto 20) & sasi_lba(20 downto 1);
 						mist_rd(bit_sasi)<='1';
@@ -2154,24 +2154,24 @@ begin
 						sasibufstate<=ss_wread;
 					end if;
 				when ss_wread =>
-					if(mist_ack='1')then
+					if(mist_ack(bit_sasi)='1')then
 						mist_rd(bit_sasi)<='0';
 						sasibufstate<=ss_wread2;
 					end if;
 				when ss_wread2 =>
-					if(mist_ack='0')then
+					if(mist_ack(bit_sasi)='0')then
 						sasibufwr<='1';
 						wrote:='1';
 						sasidone<='1';
 						sasibufstate<=ss_idle;
 					end if;
 				when ss_sync =>
-					if(mist_ack='1')then
+					if(mist_ack(bit_sasi)='1')then
 						mist_wr(bit_sasi)<='0';
 						sasibufstate<=ss_sync2;
 					end if;
 				when ss_sync2 =>
-					if(mist_ack='0')then
+					if(mist_ack(bit_sasi)='0')then
 						wrote:='0';
 						sasidone<='1';
 						sasibufstate<=ss_idle;
@@ -2203,7 +2203,7 @@ begin
 
 		mist_rd	=>mist_rd(bit_sram),
 		mist_wr	=>mist_wr(bit_sram),
-		mist_ack	=>mist_ack,
+		mist_ack	=>mist_ack(bit_sram),
 		
 		mist_lba		=>lba_sram,
 		mist_addr	=>mist_buffaddr,

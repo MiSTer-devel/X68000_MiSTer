@@ -126,11 +126,15 @@ port(
 	ramabort		:out std_logic;
 	
 	ini_end	:out std_logic;
-	sclk		:in std_logic;
-	vclk		:in std_logic;
-	fclk		:in std_logic;
-	rclk		:in std_logic;
-	rstn		:in std_logic
+	sclk	:in std_logic;
+	sys_ce  :in std_logic := '1';
+	vclk	:in std_logic;
+	vid_ce  :in std_logic := '1';
+	fclk	:in std_logic;
+	fd_ce   :in std_logic := '1';
+	rclk	:in std_logic;
+	ram_ce  :in std_logic := '1';
+	rstn	:in std_logic
 );
 end cachecont;
 
