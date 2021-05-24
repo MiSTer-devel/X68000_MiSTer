@@ -87,14 +87,9 @@ module hps_io #(parameter STRLEN=0, PS2DIV=0, WIDE=0, VDNUM=1, PS2WE=0)
 
 	// SD block level access
 	input      [31:0] sd_lba,
-	input      [VD:0] sd_rd,       // only single sd_rd can be active at any given time
-	input      [VD:0] sd_wr,       // only single sd_wr can be active at any given time
-	output reg        sd_ack,
-
-	// do not use in new projects.
-	// CID and CSD are fake except CSD image size field.
-	input             sd_conf,
-	output reg        sd_ack_conf,
+	input      [VD:0] sd_rd,
+	input      [VD:0] sd_wr,
+	output reg [VD:0] sd_ack,
 
 	// SD byte level access. Signals for 2-PORT altsyncram.
 	output reg [AW:0] sd_buff_addr,
@@ -105,10 +100,13 @@ module hps_io #(parameter STRLEN=0, PS2DIV=0, WIDE=0, VDNUM=1, PS2WE=0)
 
 	// ARM -> FPGA download
 	output reg        ioctl_download = 0, // signal indicating an active download
-	output reg  [7:0] ioctl_index,        // menu index used to upload the file
+	output reg [15:0] ioctl_index,        // menu index used to upload the file
 	output reg        ioctl_wr,
 	output reg [26:0] ioctl_addr,         // in WIDE mode address will be incremented by 2
 	output reg [DW:0] ioctl_dout,
+	output reg        ioctl_upload = 0,   // signal indicating an active upload
+	input      [DW:0] ioctl_din,
+	output reg        ioctl_rd,
 	output reg [31:0] ioctl_file_ext,
 	input             ioctl_wait,
 
@@ -123,7 +121,8 @@ module hps_io #(parameter STRLEN=0, PS2DIV=0, WIDE=0, VDNUM=1, PS2WE=0)
 	output reg [32:0] TIMESTAMP,
 
 	// UART flags
-	input      [15:0] uart_mode,
+	output reg  [7:0] uart_mode,
+	output reg [31:0] uart_speed,
 
 	// ps2 keyboard emulation
 	output            ps2_kbd_clk_out,
@@ -157,7 +156,7 @@ module hps_io #(parameter STRLEN=0, PS2DIV=0, WIDE=0, VDNUM=1, PS2WE=0)
 assign EXT_BUS[31:16] = HPS_BUS[31:16];
 assign EXT_BUS[35:33] = HPS_BUS[35:33];
 
-localparam MAX_W = $clog2((512 > (STRLEN+1)) ? 512 : (STRLEN+1))-1;
+localparam MAX_W = $clog2((32 > (STRLEN+2)) ? 32 : (STRLEN+2))-1;
 
 localparam DW = (WIDE) ? 15 : 7;
 localparam AW = (WIDE) ?  7 : 8;
@@ -173,7 +172,7 @@ reg  [15:0] io_dout;
 assign HPS_BUS[37]   = ioctl_wait;
 assign HPS_BUS[36]   = clk_sys;
 assign HPS_BUS[32]   = io_wide;
-assign HPS_BUS[15:0] = EXT_BUS[32] ? EXT_BUS[15:0] : io_dout;
+assign HPS_BUS[15:0] = EXT_BUS[32] ? EXT_BUS[15:0] : fp_enable ? fp_dout : io_dout;
 
 reg [15:0] cfg;
 assign buttons = cfg[1:0];
@@ -195,7 +194,7 @@ wire [15:0] sd_cmd =
 	(VDNUM>=3) ? sd_rd[2] : 1'b0,
 	(VDNUM>=2) ? sd_rd[1] : 1'b0,
 
-	4'h5, sd_conf, 1'b1,
+	4'h5, 1'b0, 1'b0,
 	sd_wr[0],
 	sd_rd[0]
 };
@@ -233,8 +232,9 @@ wire       pressed  = (ps2_key_raw[15:8] != 8'hf0);
 wire       extended = (~pressed ? (ps2_key_raw[23:16] == 8'he0) : (ps2_key_raw[15:8] == 8'he0));
 
 reg [MAX_W:0] byte_cnt;
+wire [7:0] disk = 4'd1 << (io_din[10:8]-1'd1);
 
-always@(posedge clk_sys) begin
+always@(posedge clk_sys) begin : uio_block
 	reg [15:0] cmd;
 	reg  [2:0] b_wr;
 	reg  [3:0] stick_idx;
@@ -245,6 +245,8 @@ always@(posedge clk_sys) begin
 	reg        old_status_set = 0;
 	reg        old_info = 0;
 	reg  [7:0] info_n = 0;
+	reg [15:0] tmp1;
+	reg  [7:0] tmp2;
 
 	old_status_set <= status_set;
 	if(~old_status_set & status_set) begin
@@ -276,9 +278,9 @@ always@(posedge clk_sys) begin
 		cmd <= 0;
 		byte_cnt <= 0;
 		sd_ack <= 0;
-		sd_ack_conf <= 0;
 		io_dout <= 0;
 		ps2skip <= 0;
+		img_mounted <= 0;
 	end
 	else if(io_strobe) begin
 
@@ -288,23 +290,22 @@ always@(posedge clk_sys) begin
 		if(byte_cnt == 0) begin
 			cmd <= io_din;
 
-			case(io_din)
-				'h19: sd_ack_conf <= 1;
-				'h17,
-				'h18: sd_ack <= 1;
+			casex(io_din)
+				'hX17,
+				'hX18: sd_ack <= VD ? disk[VD:0] : 1'd1;
 				'h29: io_dout <= {4'hA, stflg};
 				'h2B: io_dout <= 1;
 				'h2F: io_dout <= 1;
 				'h32: io_dout <= gamma_bus[21];
 				'h36: begin io_dout <= info_n; info_n <= 0; end
+				'h39: io_dout <= 1;
 			endcase
 
 			sd_buff_addr <= 0;
-			img_mounted <= 0;
 			if(io_din == 5) ps2_key_raw <= 0;
 		end else begin
 
-			case(cmd)
+			casex(cmd)
 				// buttons and switches
 				'h01: cfg <= io_din;
 				'h02: if(byte_cnt==1) joystick_0[15:0] <= io_din; else joystick_0[31:16] <= io_din;
@@ -346,7 +347,7 @@ always@(posedge clk_sys) begin
 						end
 
 				// reading config string, returning a byte from string
-				'h14: if(byte_cnt < STRLEN + 1) io_dout[7:0] <= conf_str[(STRLEN - byte_cnt)<<3 +:8];
+				'h14: if(byte_cnt <= STRLEN) io_dout[7:0] <= conf_str[{(STRLEN - byte_cnt),3'b000} +:8];
 
 				// reading sd card status
 				'h16: if(!byte_cnt[MAX_W:3]) begin
@@ -358,20 +359,15 @@ always@(posedge clk_sys) begin
 							endcase
 						end
 
-				// send SD config IO -> FPGA
-				// flag that download begins
-				// sd card knows data is config if sd_dout_strobe is asserted
-				// with sd_ack still being inactive (low)
-				'h19,
 				// send sector IO -> FPGA
 				// flag that download begins
-				'h17: begin
+				'hX17: begin
 							sd_buff_dout <= io_din[DW:0];
 							b_wr <= 1;
 						end
 
 				// reading sd card write data
-				'h18: begin
+				'hX18: begin
 							if(~&sd_buff_addr) sd_buff_addr <= sd_buff_addr + 1'b1;
 							io_dout <= sd_buff_din;
 						end
@@ -449,9 +445,6 @@ always@(posedge clk_sys) begin
 				//RTC
 				'h24: TIMESTAMP[(byte_cnt-6'd1)<<4 +:16] <= io_din;
 
-				//UART flags
-				'h28: io_dout <= uart_mode;
-
 				//status set
 				'h29: if(!byte_cnt[MAX_W:3]) begin
 							case(byte_cnt[2:0])
@@ -474,6 +467,15 @@ always@(posedge clk_sys) begin
 							gamma_wr_addr <= {(byte_cnt[1:0]-1'b1),io_din[15:8]};
 							{gamma_wr, gamma_value} <= {1'b1,io_din[7:0]};
 							if (byte_cnt[1:0] == 3) byte_cnt <= 1;
+						end
+
+				// UART
+				'h3b: if(!byte_cnt[MAX_W:2]) begin
+							case(byte_cnt[1:0])
+								1: tmp2 <= io_din[7:0];
+								2: tmp1 <= io_din;
+								3: {uart_speed, uart_mode} <= {io_din, tmp1, tmp2};
+							endcase
 						end
 			endcase
 		end
@@ -550,18 +552,20 @@ endgenerate
 
 ///////////////////////////////   DOWNLOADING   ///////////////////////////////
 
-localparam UIO_FILE_TX      = 8'h53;
-localparam UIO_FILE_TX_DAT  = 8'h54;
-localparam UIO_FILE_INDEX   = 8'h55;
-localparam UIO_FILE_INFO    = 8'h56;
+localparam FIO_FILE_TX      = 8'h53;
+localparam FIO_FILE_TX_DAT  = 8'h54;
+localparam FIO_FILE_INDEX   = 8'h55;
+localparam FIO_FILE_INFO    = 8'h56;
 
-always@(posedge clk_sys) begin
+reg [15:0] fp_dout;
+always@(posedge clk_sys) begin : fio_block
 	reg [15:0] cmd;
 	reg  [2:0] cnt;
 	reg        has_cmd;
 	reg [26:0] addr;
 	reg        wr;
 	
+	ioctl_rd <= 0;
 	ioctl_wr <= wr;
 	wr <= 0;
 
@@ -576,7 +580,7 @@ always@(posedge clk_sys) begin
 			end else begin
 
 				case(cmd)
-					UIO_FILE_INFO:
+					FIO_FILE_INFO:
 						if(~cnt[1]) begin
 							case(cnt)
 								0: ioctl_file_ext[31:16] <= io_din;
@@ -585,28 +589,53 @@ always@(posedge clk_sys) begin
 							cnt <= cnt + 1'd1;
 						end
 
-					UIO_FILE_INDEX:
+					FIO_FILE_INDEX:
 						begin
-							ioctl_index <= io_din[7:0];
+							ioctl_index <= io_din[15:0];
 						end
 
-					UIO_FILE_TX:
+					FIO_FILE_TX:
 						begin
-							if(io_din[7:0]) begin
-								addr <= 0;
-								ioctl_download <= 1;
-							end else begin
-								ioctl_addr <= addr;
-								ioctl_download <= 0;
-							end
+							cnt <= cnt + 1'd1;
+							case(cnt) 
+								0:	if(io_din[7:0] == 8'hAA) begin
+										ioctl_addr <= 0;
+										ioctl_upload <= 1;
+										ioctl_rd <= 1;
+									end
+									else if(io_din[7:0]) begin
+										addr <= 0;
+										ioctl_download <= 1;
+									end
+									else begin
+										if(ioctl_download) ioctl_addr <= addr;
+										ioctl_download <= 0;
+										ioctl_upload <= 0;
+									end
+
+								1: begin
+										ioctl_addr[15:0] <= io_din;
+										addr[15:0] <= io_din;
+									end
+
+								2: begin
+										ioctl_addr[26:16] <= io_din[10:0];
+										addr[26:16] <= io_din[10:0];
+									end
+							endcase
 						end
 
-					UIO_FILE_TX_DAT:
-						begin
+					FIO_FILE_TX_DAT:
+						if(ioctl_download) begin
 							ioctl_addr <= addr;
 							ioctl_dout <= io_din[DW:0];
 							wr   <= 1;
 							addr <= addr + (WIDE ? 2'd2 : 2'd1);
+						end
+						else begin
+							ioctl_addr <= ioctl_addr + (WIDE ? 2'd2 : 2'd1);
+							fp_dout <= ioctl_din;
+							ioctl_rd <= 1;
 						end
 				endcase
 			end
@@ -664,7 +693,7 @@ always@(posedge clk_sys) begin
 
 	tx_empty <= ((wptr == rptr) && (tx_state == 0));
 
-	if(we) begin
+	if(we && !has_data) begin
 		fifo[wptr] <= wdata;
 		wptr <= wptr + 1'd1;
 	end
@@ -704,6 +733,8 @@ always@(posedge clk_sys) begin
 						ps2_dat_out <= 1;
 						has_data <= 1;
 						rx_state <= 0;
+						rptr     <= 0;
+						wptr     <= 0;
 					end
 			endcase
 		end else begin
