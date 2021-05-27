@@ -37,6 +37,9 @@ port(
 	HSYNC		:out std_logic;
 	VSYNC		:out std_logic;
 	
+	HBLANK      :out std_logic;
+	VBLANK      :out std_logic;
+	
 	HMODE		:in std_logic_vector(1 downto 0);		-- "00":256 "01":512 "10":768 "11":768
 	VMODE		:in std_logic;		-- 1:512 0:256
 
@@ -157,6 +160,8 @@ port(
 
 	HSYNC	:out std_logic;
 	VSYNC	:out std_logic;
+	HBLANK  :out std_logic;
+	VBLANK  :out std_logic;
 	VISIBLE	:out std_logic;
 	
 	HRTC	:out std_logic;
@@ -188,6 +193,8 @@ signal HCOMPw	:std_logic;
 signal VCOMPw	:std_logic;
 signal HCOMPb	:std_logic;
 signal VCOMPb	:std_logic;
+signal HBL      :std_logic;
+signal VBL      :std_logic;
 signal VISIBLE	:std_logic;
 signal lVISIBLE	:std_logic;
 signal	LSEL	:std_logic;
@@ -250,7 +257,7 @@ begin
 		HSY		=>HSY,
 		VFP		=>VFP,
 		VSY		=>VSY
-	) port map(UCOUNT,HUCOUNT,VCOUNT,HCOMPw,VCOMPw,HSYNC,VSYNC,VISIBLE,HRTC,VRTC,clk2,rstn);
+	) port map(UCOUNT,HUCOUNT,VCOUNT,HCOMPw,VCOMPw,HSYNC,VSYNC,HBL,VBL,VISIBLE,HRTC,VRTC,clk2,rstn);
 
 	TXT	:textscrv generic map(
 		DOTPU	=>DOTPU,
@@ -308,6 +315,8 @@ begin
 --	vdelay	:delayer generic map(1) port map(VISIBLE,lVISIBLE,gclk,rstn);
 	lVISIBLE<=VISIBLE;
 	VIDEN<=VISIBLE;
+	HBLANK<=HBL;
+	VBLANK<=VBL;
 	
 	Rdat<=LRAMDAT(10 downto 6);
 	Gdat<=LRAMDAT(15 downto 11);

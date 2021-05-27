@@ -8,6 +8,7 @@ module cpu_wrapper (
 	input  logic        cpu_select,
 	input  logic        reset_n,
 	input  logic        buserr,
+	input  logic        iackbe,
 	input  logic [15:0] din,
 	input  logic        dTACK_n,
 	input  logic        dma_active_n,
@@ -31,8 +32,6 @@ module cpu_wrapper (
 	logic        tg_LDSn, fx_LDSn;
 	logic  [2:0] tg_FC, fx_FC;
 
-
-
 	assign tg_FC = 3'd0;
 	TG68 MPU (
 		.clk           (clk10m),
@@ -50,35 +49,6 @@ module cpu_wrapper (
 		.drive_data    (tg_OE)
 	);
 	
-	// drive data set on falling edge clk when state is 01 and clkena_in is 1
-	// CPU :TG68KdotC_Kernel
-	// port map(
-	// 		clk             =>sysclk; --: in std_logic;
-	// 		nReset          =>srstn; --	: in std_logic;			--low active
-	// 		clkena_in       =>mpu_clke; --	: in std_logic:='1';
-	// 		data_in         =>dbus; --	: in std_logic_vector(15 downto 0);
-	// 		IPL             =>mpu_ipl; --	: in std_logic_vector(2 downto 0):="111";
-	// 		IPL_autovector  =>'0'; --	: in std_logic:='0';
-	// 		berr            =>'0'; --		: in std_logic:='0';					-- only 68000 Stackpointer dummy
-	// 		CPU             =>"00"; --	: in std_logic_vector(1 downto 0):="00";  -- 00->68000  01->68010  11->68020(only some parts - yet)
-	// 		addr_out        =>mpu_addr; --		: out std_logic_vector(31 downto 0);
-	// 		data_write      =>mpu_od; --	: out std_logic_vector(15 downto 0);
-	// 		nWr             =>mpu_rwn; --	: out std_logic;
-	// 		nUDS            =>mpu_udsn; --		: out std_logic;
-	// 		nLDS            =>mpu_ldsn; --		: out std_logic;
-	// 		busstate        =>open; --		: out std_logic_vector(1 downto 0);	-- 00-> fetch code 10->read data 11->write data 01->no memaccess
-	// 		longword        =>open; --		: out std_logic;
-	// 		nResetOut       =>open; --	: out std_logic;
-	// 		FC              =>mpu_fc; --		: out std_logic_vector(2 downto 0);
-	// 		clr_berr        =>open; --		: out std_logic;
-	// 		skipFetch       =>open; --	: out std_logic;
-	// 		regin_out       =>open; --	: out std_logic_vector(31 downto 0);
-	// 		CACR_out        =>open; --		: out std_logic_vector( 3 downto 0);
-	// 		VBR_out         =>open --	: out std_logic_vector(31 downto 0)
-	// 	);
-	
-	//wire mpu_oe <= not mpu_rwn when mpu_clke = '1';
-
 	//assign fx_addr[0] = 0;
 	fx68k CPU (
 		.clk        (clk),               // in CLK 2x the target cpu speed
@@ -92,7 +62,7 @@ module cpu_wrapper (
 		.LDSn       (fx_LDSn),           // out Lower data strobe
 		.UDSn       (fx_UDSn),           // out Upper data strobe
 		.E          (),                  // out Enable
-		.VMAn       (fx_addr[0]),                  // out Valid Memory Address
+		.VMAn       (fx_addr[0]),        // out Valid Memory Address
 		.FC0        (fx_FC[0]),          // out Processor status
 		.FC1        (fx_FC[1]),          // out Processor status
 		.FC2        (fx_FC[2]),          // out Processor status

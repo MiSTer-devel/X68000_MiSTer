@@ -770,8 +770,8 @@ begin
 		end if;
 	end process;
 	
-	rastnum<=	vaddrm;-- when hfreq='1' else
-					--('0' & vaddrm(9 downto 1));-- when xinter='0' else
+	rastnum<=	vaddrm when hfreq='1' else
+					('0' & vaddrm(9 downto 1));-- when xinter='0' else
 --					('0' & vaddrm(9 downto 1)) + vtotal;
 
 	rint<='1' when rintline=rastnum and intfil='1' else '0';

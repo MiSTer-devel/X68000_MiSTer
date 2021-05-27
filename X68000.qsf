@@ -52,6 +52,1254 @@ set_global_assignment -name PLACEMENT_EFFORT_MULTIPLIER 4.0
 set_global_assignment -name SEED 1
 
 source sys/sys.tcl
+set_global_assignment -name FAMILY "Cyclone V"
+set_global_assignment -name DEVICE 5CSEBA6U23I7
+set_global_assignment -name DEVICE_FILTER_PACKAGE UFBGA
+set_global_assignment -name DEVICE_FILTER_PIN_COUNT 672
+set_global_assignment -name DEVICE_FILTER_SPEED_GRADE 7
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ADC_CONVST
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ADC_SCK
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ADC_SDI
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ADC_SDO
+set_location_assignment PIN_U9 -to ADC_CONVST
+set_location_assignment PIN_V10 -to ADC_SCK
+set_location_assignment PIN_AC4 -to ADC_SDI
+set_location_assignment PIN_AD4 -to ADC_SDO
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to ARDUINO_IO[*]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to ARDUINO_IO[*]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to ARDUINO_IO[*]
+set_location_assignment PIN_U14 -to IO_SCL
+set_location_assignment PIN_AG9 -to IO_SDA
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to IO_S*
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to IO_S*
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to IO_S*
+set_location_assignment PIN_AF17 -to USER_IO[6]
+set_location_assignment PIN_AF15 -to USER_IO[5]
+set_location_assignment PIN_AG16 -to USER_IO[4]
+set_location_assignment PIN_AH11 -to USER_IO[3]
+set_location_assignment PIN_AH12 -to USER_IO[2]
+set_location_assignment PIN_AH9 -to USER_IO[1]
+set_location_assignment PIN_AG11 -to USER_IO[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to USER_IO[*]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to USER_IO[*]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to USER_IO[*]
+set_location_assignment PIN_AH7 -to SDCD_SPDIF
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to SDCD_SPDIF
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SDCD_SPDIF
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to SDCD_SPDIF
+set_location_assignment PIN_Y11 -to SDRAM_A[0]
+set_location_assignment PIN_AA26 -to SDRAM_A[1]
+set_location_assignment PIN_AA13 -to SDRAM_A[2]
+set_location_assignment PIN_AA11 -to SDRAM_A[3]
+set_location_assignment PIN_W11 -to SDRAM_A[4]
+set_location_assignment PIN_Y19 -to SDRAM_A[5]
+set_location_assignment PIN_AB23 -to SDRAM_A[6]
+set_location_assignment PIN_AC23 -to SDRAM_A[7]
+set_location_assignment PIN_AC22 -to SDRAM_A[8]
+set_location_assignment PIN_C12 -to SDRAM_A[9]
+set_location_assignment PIN_AB26 -to SDRAM_A[10]
+set_location_assignment PIN_AD17 -to SDRAM_A[11]
+set_location_assignment PIN_D12 -to SDRAM_A[12]
+set_location_assignment PIN_Y17 -to SDRAM_BA[0]
+set_location_assignment PIN_AB25 -to SDRAM_BA[1]
+set_location_assignment PIN_E8 -to SDRAM_DQ[0]
+set_location_assignment PIN_V12 -to SDRAM_DQ[1]
+set_location_assignment PIN_D11 -to SDRAM_DQ[2]
+set_location_assignment PIN_W12 -to SDRAM_DQ[3]
+set_location_assignment PIN_AH13 -to SDRAM_DQ[4]
+set_location_assignment PIN_D8 -to SDRAM_DQ[5]
+set_location_assignment PIN_AH14 -to SDRAM_DQ[6]
+set_location_assignment PIN_AF7 -to SDRAM_DQ[7]
+set_location_assignment PIN_AE24 -to SDRAM_DQ[8]
+set_location_assignment PIN_AD23 -to SDRAM_DQ[9]
+set_location_assignment PIN_AE6 -to SDRAM_DQ[10]
+set_location_assignment PIN_AE23 -to SDRAM_DQ[11]
+set_location_assignment PIN_AG14 -to SDRAM_DQ[12]
+set_location_assignment PIN_AD5 -to SDRAM_DQ[13]
+set_location_assignment PIN_AF4 -to SDRAM_DQ[14]
+set_location_assignment PIN_AH3 -to SDRAM_DQ[15]
+set_location_assignment PIN_AG13 -to SDRAM_DQML
+set_location_assignment PIN_AF13 -to SDRAM_DQMH
+set_location_assignment PIN_AD20 -to SDRAM_CLK
+set_location_assignment PIN_AG10 -to SDRAM_CKE
+set_location_assignment PIN_AA19 -to SDRAM_nWE
+set_location_assignment PIN_AA18 -to SDRAM_nCAS
+set_location_assignment PIN_Y18 -to SDRAM_nCS
+set_location_assignment PIN_W14 -to SDRAM_nRAS
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SDRAM_*
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to SDRAM_*
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to SDRAM_*
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to SDRAM_DQ[*]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to SDRAM_DQ[*]
+set_instance_assignment -name ALLOW_SYNCH_CTRL_USAGE OFF -to *|SDRAM_*
+set_location_assignment PIN_AE15 -to SD_SPI_CS
+set_location_assignment PIN_AH8 -to SD_SPI_MISO
+set_location_assignment PIN_AG8 -to SD_SPI_CLK
+set_location_assignment PIN_U13 -to SD_SPI_MOSI
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to SD_SPI*
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SD_SPI*
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to SD_SPI*
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to FPGA_CLK1_50
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to FPGA_CLK2_50
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to FPGA_CLK3_50
+set_location_assignment PIN_V11 -to FPGA_CLK1_50
+set_location_assignment PIN_Y13 -to FPGA_CLK2_50
+set_location_assignment PIN_E11 -to FPGA_CLK3_50
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HDMI_I2C_*
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HDMI_I2S
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HDMI_LRCLK
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HDMI_MCLK
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HDMI_SCLK
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HDMI_TX_*
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to HDMI_TX_D[*]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to HDMI_TX_DE
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to HDMI_TX_HS
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to HDMI_TX_VS
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to HDMI_TX_CLK
+set_location_assignment PIN_U10 -to HDMI_I2C_SCL
+set_location_assignment PIN_AA4 -to HDMI_I2C_SDA
+set_location_assignment PIN_T13 -to HDMI_I2S
+set_location_assignment PIN_T11 -to HDMI_LRCLK
+set_location_assignment PIN_U11 -to HDMI_MCLK
+set_location_assignment PIN_T12 -to HDMI_SCLK
+set_location_assignment PIN_AG5 -to HDMI_TX_CLK
+set_location_assignment PIN_AD19 -to HDMI_TX_DE
+set_location_assignment PIN_AD12 -to HDMI_TX_D[0]
+set_location_assignment PIN_AE12 -to HDMI_TX_D[1]
+set_location_assignment PIN_W8 -to HDMI_TX_D[2]
+set_location_assignment PIN_Y8 -to HDMI_TX_D[3]
+set_location_assignment PIN_AD11 -to HDMI_TX_D[4]
+set_location_assignment PIN_AD10 -to HDMI_TX_D[5]
+set_location_assignment PIN_AE11 -to HDMI_TX_D[6]
+set_location_assignment PIN_Y5 -to HDMI_TX_D[7]
+set_location_assignment PIN_AF10 -to HDMI_TX_D[8]
+set_location_assignment PIN_Y4 -to HDMI_TX_D[9]
+set_location_assignment PIN_AE9 -to HDMI_TX_D[10]
+set_location_assignment PIN_AB4 -to HDMI_TX_D[11]
+set_location_assignment PIN_AE7 -to HDMI_TX_D[12]
+set_location_assignment PIN_AF6 -to HDMI_TX_D[13]
+set_location_assignment PIN_AF8 -to HDMI_TX_D[14]
+set_location_assignment PIN_AF5 -to HDMI_TX_D[15]
+set_location_assignment PIN_AE4 -to HDMI_TX_D[16]
+set_location_assignment PIN_AH2 -to HDMI_TX_D[17]
+set_location_assignment PIN_AH4 -to HDMI_TX_D[18]
+set_location_assignment PIN_AH5 -to HDMI_TX_D[19]
+set_location_assignment PIN_AH6 -to HDMI_TX_D[20]
+set_location_assignment PIN_AG6 -to HDMI_TX_D[21]
+set_location_assignment PIN_AF9 -to HDMI_TX_D[22]
+set_location_assignment PIN_AE8 -to HDMI_TX_D[23]
+set_location_assignment PIN_T8 -to HDMI_TX_HS
+set_location_assignment PIN_AF11 -to HDMI_TX_INT
+set_location_assignment PIN_V13 -to HDMI_TX_VS
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to KEY[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to KEY[1]
+set_location_assignment PIN_AH17 -to KEY[0]
+set_location_assignment PIN_AH16 -to KEY[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LED[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LED[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LED[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LED[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LED[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LED[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LED[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LED[7]
+set_location_assignment PIN_W15 -to LED[0]
+set_location_assignment PIN_AA24 -to LED[1]
+set_location_assignment PIN_V16 -to LED[2]
+set_location_assignment PIN_V15 -to LED[3]
+set_location_assignment PIN_AF26 -to LED[4]
+set_location_assignment PIN_AE26 -to LED[5]
+set_location_assignment PIN_Y16 -to LED[6]
+set_location_assignment PIN_AA23 -to LED[7]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SW[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SW[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SW[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SW[3]
+set_location_assignment PIN_Y24 -to SW[0]
+set_location_assignment PIN_W24 -to SW[1]
+set_location_assignment PIN_W21 -to SW[2]
+set_location_assignment PIN_W20 -to SW[3]
+set_hps_location_assignment HPSINTERFACEPERIPHERALSPIMASTER_X52_Y72_N111 -to spi
+set_hps_location_assignment HPSINTERFACEPERIPHERALUART_X52_Y67_N111 -to uart
+set_hps_location_assignment HPSINTERFACEPERIPHERALI2C_X52_Y60_N111 -to hdmi_i2c
+set_global_assignment -name PRE_FLOW_SCRIPT_FILE "quartus_sh:sys/build_id.tcl"
+set_global_assignment -name CDF_FILE jtag.cdf
+set_global_assignment -name QIP_FILE sys/sys.qip
 source sys/sys_analog.tcl
+set_location_assignment PIN_AF25 -to SDIO_DAT[0]
+set_location_assignment PIN_AF23 -to SDIO_DAT[1]
+set_location_assignment PIN_AD26 -to SDIO_DAT[2]
+set_location_assignment PIN_AF28 -to SDIO_DAT[3]
+set_location_assignment PIN_AF27 -to SDIO_CMD
+set_location_assignment PIN_AH26 -to SDIO_CLK
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to SDIO_*
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SDIO_*
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to SDIO_DAT[*]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to SDIO_CMD
+set_location_assignment PIN_AE17 -to VGA_R[0]
+set_location_assignment PIN_AE20 -to VGA_R[1]
+set_location_assignment PIN_AF20 -to VGA_R[2]
+set_location_assignment PIN_AH18 -to VGA_R[3]
+set_location_assignment PIN_AH19 -to VGA_R[4]
+set_location_assignment PIN_AF21 -to VGA_R[5]
+set_location_assignment PIN_AE19 -to VGA_G[0]
+set_location_assignment PIN_AG15 -to VGA_G[1]
+set_location_assignment PIN_AF18 -to VGA_G[2]
+set_location_assignment PIN_AG18 -to VGA_G[3]
+set_location_assignment PIN_AG19 -to VGA_G[4]
+set_location_assignment PIN_AG20 -to VGA_G[5]
+set_location_assignment PIN_AG21 -to VGA_B[0]
+set_location_assignment PIN_AA20 -to VGA_B[1]
+set_location_assignment PIN_AE22 -to VGA_B[2]
+set_location_assignment PIN_AF22 -to VGA_B[3]
+set_location_assignment PIN_AH23 -to VGA_B[4]
+set_location_assignment PIN_AH21 -to VGA_B[5]
+set_location_assignment PIN_AH22 -to VGA_HS
+set_location_assignment PIN_AG24 -to VGA_VS
+set_location_assignment PIN_AH27 -to VGA_EN
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to VGA_EN
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_*
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to VGA_*
+set_location_assignment PIN_AC24 -to AUDIO_L
+set_location_assignment PIN_AE25 -to AUDIO_R
+set_location_assignment PIN_AG26 -to AUDIO_SPDIF
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to AUDIO_*
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to AUDIO_*
+set_location_assignment PIN_Y15 -to LED_USER
+set_location_assignment PIN_AA15 -to LED_HDD
+set_location_assignment PIN_AG28 -to LED_POWER
+set_location_assignment PIN_AH24 -to BTN_USER
+set_location_assignment PIN_AG25 -to BTN_OSD
+set_location_assignment PIN_AG23 -to BTN_RESET
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LED_*
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to BTN_*
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to BTN_*
 source files.qip
+set_global_assignment -name QIP_FILE rtl/pll.qip
+set_global_assignment -name VHDL_FILE rtl/CPU/TG68.vhd
+set_global_assignment -name VHDL_FILE rtl/CPU/TG68_fast.vhd
+set_global_assignment -name VHDL_FILE rtl/DMAC/DMA63450.vhd
+set_global_assignment -name VHDL_FILE rtl/DMAC/dma1ch.vhd
+set_global_assignment -name VHDL_FILE rtl/FDC/crctest.vhd
+set_global_assignment -name VHDL_FILE rtl/FDC/FDCs.vhd
+set_global_assignment -name VHDL_FILE rtl/FDC/FDC_sectinfo.vhd
+set_global_assignment -name VHDL_FILE rtl/FDC/FDC_timing.vhd
+set_global_assignment -name VHDL_FILE rtl/FDC/fmdem.vhd
+set_global_assignment -name VHDL_FILE rtl/FDC/fmmod.vhd
+set_global_assignment -name VHDL_FILE rtl/FDC/headseek.vhd
+set_global_assignment -name VHDL_FILE rtl/FDC/mfmdem.vhd
+set_global_assignment -name VHDL_FILE rtl/FDC/mfmmod.vhd
+set_global_assignment -name VHDL_FILE rtl/FDC/nrdet.vhd
+set_global_assignment -name VHDL_FILE rtl/FDC/dskchk.vhd
+set_global_assignment -name VHDL_FILE rtl/FDC/dskchk2d.vhd
+set_global_assignment -name VHDL_FILE rtl/SASIIF/sasiif.vhd
+set_global_assignment -name HEX_FILE rtl/diskemu/sramdefault.hex
+set_global_assignment -name VHDL_FILE rtl/diskemu/wrotecont.vhd
+set_global_assignment -name VHDL_FILE rtl/diskemu/tracktable.vhd
+set_global_assignment -name VHDL_FILE rtl/diskemu/sramram.vhd
+set_global_assignment -name QIP_FILE rtl/diskemu/sramram.qip
+set_global_assignment -name SOURCE_FILE rtl/diskemu/sramram.cmp
+set_global_assignment -name VHDL_FILE rtl/diskemu/sramcont.vhd
+set_global_assignment -name VHDL_FILE rtl/diskemu/sectram.vhd
+set_global_assignment -name QIP_FILE rtl/diskemu/sectram.qip
+set_global_assignment -name SOURCE_FILE rtl/diskemu/sectram.cmp
+set_global_assignment -name VHDL_FILE rtl/diskemu/sasidev.vhd
+set_global_assignment -name VHDL_FILE rtl/diskemu/mkgapsync.vhd
+set_global_assignment -name VHDL_FILE rtl/diskemu/fecbuf.vhd
+set_global_assignment -name QIP_FILE rtl/diskemu/fecbuf.qip
+set_global_assignment -name SOURCE_FILE rtl/diskemu/fecbuf.cmp
+set_global_assignment -name VHDL_FILE rtl/diskemu/FDemu.vhd
+set_global_assignment -name VHDL_FILE rtl/diskemu/diskemu.vhd
+set_global_assignment -name VHDL_FILE rtl/rtc/rtcbody.vhd
+set_global_assignment -name VHDL_FILE rtl/rtc/rp5c15.vhd
+set_global_assignment -name VHDL_FILE rtl/SCC/scc.vhd
+set_global_assignment -name VHDL_FILE rtl/SCC/sccreg.vhd
+set_global_assignment -name VHDL_FILE rtl/MFP/MFP.vhd
+set_global_assignment -name VHDL_FILE rtl/MFP/GPIP.vhd
+set_global_assignment -name VHDL_FILE rtl/MFP/KBIF/KBCONV.vhd
+set_global_assignment -name SOURCE_FILE rtl/MFP/KBIF/ktble0.cmp
+set_global_assignment -name VHDL_FILE rtl/MFP/KBIF/ktble0.vhd
+set_global_assignment -name SOURCE_FILE rtl/MFP/KBIF/ktbln.cmp
+set_global_assignment -name VHDL_FILE rtl/MFP/KBIF/ktbln.vhd
+set_global_assignment -name HEX_FILE rtl/MFP/KBIF/ktbln.hex
+set_global_assignment -name HEX_FILE rtl/MFP/KBIF/ktble0.hex
+set_global_assignment -name VHDL_FILE rtl/MFP/MFPint.vhd
+set_global_assignment -name VHDL_FILE rtl/MFP/MFPtimer.vhd
+set_global_assignment -name VHDL_FILE rtl/MFP/MFPtimerS.vhd
+set_global_assignment -name VHDL_FILE rtl/PS2IF/PS2IF.vhd
+set_global_assignment -name VHDL_FILE rtl/SCC/MOUSEIF/MOUSECONV.vhd
+set_global_assignment -name QIP_FILE rtl/GPALETTE/gpram.qip
+set_global_assignment -name VHDL_FILE rtl/GPALETTE/grpal.vhd
+set_global_assignment -name VHDL_FILE rtl/sound/adpcm6258/tbl6258.vhd
+set_global_assignment -name VHDL_FILE rtl/sound/adpcm6258/e6258.vhd
+set_global_assignment -name MIF_FILE rtl/sound/adpcm6258/tbl6258.mif
+set_global_assignment -name VHDL_FILE rtl/sound/adpcm6258/calcadpcm.vhd
+set_global_assignment -name VHDL_FILE rtl/sound/OPM/parrmwram.vhd
+set_global_assignment -name VHDL_FILE rtl/sound/OPM/OPMsreg.vhd
+set_global_assignment -name VHDL_FILE rtl/sound/OPM/OPMcreg.vhd
+set_global_assignment -name VHDL_FILE rtl/sound/OPM/KEY2FNUM.vhd
+set_global_assignment -name QIP_FILE rtl/sound/OPM/KEY2FNUM.qip
+set_global_assignment -name MIF_FILE rtl/sound/OPM/key2fnum.mif
+set_global_assignment -name VHDL_FILE rtl/sound/OPM/OPM.vhd
+set_global_assignment -name VHDL_FILE rtl/sound/FMcommon/TLtbl.vhd
+set_global_assignment -name QIP_FILE rtl/sound/FMcommon/TLtbl.qip
+set_global_assignment -name MIF_FILE rtl/sound/FMcommon/TL.mif
+set_global_assignment -name VHDL_FILE rtl/sound/FMcommon/muls16xu16.vhd
+set_global_assignment -name VHDL_FILE rtl/sound/FMcommon/MUL16x17.vhd
+set_global_assignment -name QIP_FILE rtl/sound/FMcommon/MUL16x17.qip
+set_global_assignment -name VHDL_FILE rtl/sound/FMcommon/fmparram.vhd
+set_global_assignment -name VHDL_FILE rtl/sound/FMcommon/envtest.vhd
+set_global_assignment -name VHDL_FILE rtl/sound/FMcommon/envelope_pkg.vhd
+set_global_assignment -name VHDL_FILE rtl/sound/FMcommon/envcont.vhd
+set_global_assignment -name VHDL_FILE rtl/sound/noisegen.vhd
+set_global_assignment -name VHDL_FILE rtl/sound/cosnrom.vhd
+set_global_assignment -name QIP_FILE rtl/sound/cosnrom.qip
+set_global_assignment -name VHDL_FILE rtl/sound/sinwrom.vhd
+set_global_assignment -name QIP_FILE rtl/sound/sinwrom.qip
+set_global_assignment -name VHDL_FILE rtl/sound/sintbl.vhd
+set_global_assignment -name VHDL_FILE rtl/sound/sinnrom.vhd
+set_global_assignment -name QIP_FILE rtl/sound/sinnrom.qip
+set_global_assignment -name MIF_FILE rtl/sound/sinw.mif
+set_global_assignment -name MIF_FILE rtl/sound/sinn.mif
+set_global_assignment -name MIF_FILE rtl/sound/cosn.mif
+set_global_assignment -name VHDL_FILE rtl/sound/mult16.vhd
+set_global_assignment -name VHDL_FILE rtl/sound/midiif/em3802.vhd
+set_global_assignment -name VHDL_FILE rtl/SPRITE/sprreg.vhd
+set_global_assignment -name VHDL_FILE rtl/SPRITE/sprram.vhd
+set_global_assignment -name VHDL_FILE rtl/SPRITE/spritec.vhd
+set_global_assignment -name VHDL_FILE rtl/SPRITE/slinebuf.vhd
+set_global_assignment -name VHDL_FILE rtl/SPRITE/sline.vhd
+set_global_assignment -name VHDL_FILE rtl/SPRITE/pcgram.vhd
+set_global_assignment -name VHDL_FILE rtl/SPRITE/bgvram.vhd
+set_global_assignment -name VHDL_FILE rtl/SPRITE/sprregs.vhd
+set_global_assignment -name VHDL_FILE rtl/USART/txframe.vhd
+set_global_assignment -name VHDL_FILE rtl/USART/rxframe.vhd
+set_global_assignment -name VHDL_FILE rtl/VIDEO/video_timing_800x600_pkg.vhd
+set_global_assignment -name VHDL_FILE rtl/VIDEO/video_timing_640x400_pkg.vhd
+set_global_assignment -name VHDL_FILE rtl/VIDEO/synccont.vhd
+set_global_assignment -name VHDL_FILE rtl/VIDEO/VTIMING.vhd
+set_global_assignment -name VHDL_FILE rtl/VIDEO/VTIMINGX68.vhd
+set_global_assignment -name QIP_FILE rtl/VIDEO/font/fontrom.qip
+set_global_assignment -name VHDL_FILE rtl/VIDEO/font/fontrom.vhd
+set_global_assignment -name VHDL_FILE rtl/VIDEO/CRTCX68TXT.vhd
+set_global_assignment -name VHDL_FILE rtl/VIDEO/textscrv.vhd
+set_global_assignment -name VHDL_FILE rtl/cycV/CACHEMEMW.vhd
+set_global_assignment -name QIP_FILE rtl/cycV/CACHEMEMW.qip
+set_global_assignment -name QIP_FILE rtl/cycV/vnmeml.qip
+set_global_assignment -name QIP_FILE rtl/cycV/VLINEBUF.qip
+set_global_assignment -name QIP_FILE rtl/cycV/txtpram.qip
+set_global_assignment -name QIP_FILE rtl/cycV/nvmemu.qip
+set_global_assignment -name QIP_FILE rtl/cycV/nvmeml.qip
+set_global_assignment -name QIP_FILE rtl/cycV/nvmem.qip
+set_global_assignment -name QIP_FILE rtl/cycV/mainpll.qip
+set_global_assignment -name QIP_FILE rtl/cycV/CACHEMEMWQ.qip
+set_global_assignment -name QIP_FILE rtl/cycV/CACHEMEMWH.qip
+set_global_assignment -name QIP_FILE rtl/cycV/CACHEMEM.qip
+set_global_assignment -name QIP_FILE rtl/cycV/CACHEFLAG.qip
+set_global_assignment -name VHDL_FILE rtl/cycV/vnmeml.vhd
+set_global_assignment -name VHDL_FILE rtl/cycV/txtpram.vhd
+set_global_assignment -name VHDL_FILE rtl/cycV/nvmemu.vhd
+set_global_assignment -name VHDL_FILE rtl/cycV/nvmeml.vhd
+set_global_assignment -name VHDL_FILE rtl/cycV/nvmem.vhd
+set_global_assignment -name VHDL_FILE rtl/cycV/CACHEMEMWQ.vhd
+set_global_assignment -name VHDL_FILE rtl/cycV/CACHEMEMWH.vhd
+set_global_assignment -name VHDL_FILE rtl/cycV/CACHEMEM.vhd
+set_global_assignment -name VHDL_FILE rtl/cycV/CACHEFLAG.vhd
+set_global_assignment -name VHDL_FILE rtl/cycV/VLINEBUF.vhd
+set_global_assignment -name VHDL_FILE rtl/cycV/CACHEMEMN.vhd
+set_global_assignment -name VHDL_FILE rtl/cycV/CACHEMEMWN.vhd
+set_global_assignment -name VHDL_FILE rtl/LIB/addsat.vhd
+set_global_assignment -name VHDL_FILE rtl/LIB/iir.vhd
+set_global_assignment -name VHDL_FILE rtl/LIB/g_srff.vhd
+set_global_assignment -name VHDL_FILE rtl/LIB/HEX2SEG.vhd
+set_global_assignment -name VHDL_FILE rtl/LIB/signext.vhd
+set_global_assignment -name VHDL_FILE rtl/LIB/CRCGENN.vhd
+set_global_assignment -name VHDL_FILE rtl/LIB/sftdiv.vhd
+set_global_assignment -name VHDL_FILE rtl/LIB/sftgen.vhd
+set_global_assignment -name VHDL_FILE rtl/LIB/sftclk.vhd
+set_global_assignment -name VHDL_FILE rtl/LIB/HEX2SEGn.vhd
+set_global_assignment -name VHDL_FILE rtl/LIB/PARITYG.vhd
+set_global_assignment -name VHDL_FILE rtl/LIB/PARGEN.vhd
+set_global_assignment -name VHDL_FILE rtl/LIB/unchchata.vhd
+set_global_assignment -name VHDL_FILE rtl/LIB/delayer.vhd
+set_global_assignment -name VHDL_FILE rtl/LIB/digifilters.vhd
+set_global_assignment -name VHDL_FILE rtl/LIB/digifilter.vhd
+set_global_assignment -name VHDL_FILE rtl/LIB/delayon.vhd
+set_global_assignment -name VHDL_FILE rtl/LIB/deltasigmadac.vhd
+set_global_assignment -name VHDL_FILE rtl/LIB/clkdiv.vhd
+set_global_assignment -name VHDL_FILE rtl/LIB/clktx.vhd
+set_global_assignment -name VHDL_FILE rtl/LIB/datfifo.vhd
+set_global_assignment -name VHDL_FILE rtl/LIB/datlatch.vhd
+set_global_assignment -name VHDL_FILE rtl/LIB/e8255.vhd
+set_global_assignment -name VHDL_FILE rtl/SDRAMC.vhd
+set_global_assignment -name VHDL_FILE rtl/memcont.vhd
+set_global_assignment -name VHDL_FILE rtl/mputest.vhd
+set_global_assignment -name VHDL_FILE rtl/pcmclk.vhd
+set_global_assignment -name VHDL_FILE rtl/cachecont.vhd
+set_global_assignment -name VHDL_FILE rtl/cachesel.vhd
+set_global_assignment -name VHDL_FILE rtl/contrast.vhd
+set_global_assignment -name VHDL_FILE rtl/contcont.vhd
+set_global_assignment -name VHDL_FILE rtl/cacheextr.vhd
+set_global_assignment -name VHDL_FILE rtl/X68mmapCV.vhd
+set_global_assignment -name VHDL_FILE rtl/vrcack.vhd
+set_global_assignment -name VHDL_FILE rtl/cacheext.vhd
+set_global_assignment -name VHDL_FILE rtl/cereg.vhd
+set_global_assignment -name VHDL_FILE rtl/INTcont.vhd
+set_global_assignment -name VHDL_FILE rtl/vidcont.vhd
+set_global_assignment -name VHDL_FILE rtl/vcreg.vhd
+set_global_assignment -name VHDL_FILE rtl/vcaddr_pkg.vhd
+set_global_assignment -name VHDL_FILE rtl/rastercopy.vhd
+set_global_assignment -name VHDL_FILE rtl/txtpal.vhd
+set_global_assignment -name QIP_FILE rtl/txtpraml.qip
+set_global_assignment -name QIP_FILE rtl/txtpramh.qip
+set_global_assignment -name VHDL_FILE rtl/FDtiming.vhd
+set_global_assignment -name VHDL_FILE rtl/ramreg.vhd
+set_global_assignment -name VHDL_FILE rtl/wrreg.vhd
+set_global_assignment -name VHDL_FILE rtl/bwlatch.vhd
+set_global_assignment -name VHDL_FILE rtl/nvram.vhd
+set_global_assignment -name MIF_FILE rtl/SRAMU.mif
+set_global_assignment -name MIF_FILE rtl/SRAML.mif
+set_global_assignment -name VHDL_FILE rtl/pwrcont.vhd
+set_global_assignment -name VHDL_FILE rtl/IOcont.vhd
+set_global_assignment -name VHDL_FILE rtl/X68K_top.vhd
+set_global_assignment -name SDC_FILE X68000.sdc
+set_global_assignment -name SYSTEMVERILOG_FILE X68000.sv
+set_global_assignment -name ENABLE_SIGNALTAP ON
+set_global_assignment -name USE_SIGNALTAP_FILE stp1.stp
+set_global_assignment -name SIGNALTAP_FILE stp1.stp
+set_global_assignment -name SLD_NODE_CREATOR_ID 110 -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_ENTITY_NAME sld_signaltap -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_RAM_BLOCK_TYPE=AUTO" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_NODE_INFO=805334528" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_POWER_UP_TRIGGER=0" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_STORAGE_QUALIFIER_INVERSION_MASK_LENGTH=0" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_SEGMENT_SIZE=4096" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_ATTRIBUTE_MEM_MODE=OFF" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_STATE_FLOW_USE_GENERATED=0" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_STATE_BITS=11" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_BUFFER_FULL_STOP=1" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_CURRENT_RESOURCE_WIDTH=1" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_INCREMENTAL_ROUTING=1" -section_id auto_signaltap_0
+set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT crc[1] -to auto_signaltap_0|vcc -section_id auto_signaltap_0
+set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT crc[16] -to auto_signaltap_0|gnd -section_id auto_signaltap_0
+set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT crc[23] -to auto_signaltap_0|vcc -section_id auto_signaltap_0
+set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT crc[24] -to auto_signaltap_0|vcc -section_id auto_signaltap_0
+set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT crc[26] -to auto_signaltap_0|gnd -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_TRIGGER_LEVEL=1" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_SAMPLE_DEPTH=4096" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_TRIGGER_IN_ENABLED=0" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_TRIGGER_PIPELINE=0" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_RAM_PIPELINE=0" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_COUNTER_PIPELINE=0" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_ADVANCED_TRIGGER_ENTITY=basic,1," -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_TRIGGER_LEVEL_PIPELINE=1" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_ENABLE_ADVANCED_TRIGGER=0" -section_id auto_signaltap_0
+set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT crc[7] -to auto_signaltap_0|vcc -section_id auto_signaltap_0
+set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT crc[3] -to auto_signaltap_0|vcc -section_id auto_signaltap_0
+set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT crc[5] -to auto_signaltap_0|gnd -section_id auto_signaltap_0
+set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT crc[9] -to auto_signaltap_0|gnd -section_id auto_signaltap_0
+set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT crc[12] -to auto_signaltap_0|gnd -section_id auto_signaltap_0
+set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT crc[14] -to auto_signaltap_0|gnd -section_id auto_signaltap_0
+set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT crc[19] -to auto_signaltap_0|gnd -section_id auto_signaltap_0
+set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT crc[22] -to auto_signaltap_0|vcc -section_id auto_signaltap_0
+set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT crc[27] -to auto_signaltap_0|gnd -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_clk -to "emu:emu|X68K_top:X68K_top|vidclk" -section_id auto_signaltap_0
+set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT crc[0] -to auto_signaltap_0|gnd -section_id auto_signaltap_0
+set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT crc[4] -to auto_signaltap_0|vcc -section_id auto_signaltap_0
+set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT crc[11] -to auto_signaltap_0|gnd -section_id auto_signaltap_0
+set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT crc[8] -to auto_signaltap_0|vcc -section_id auto_signaltap_0
+set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT crc[25] -to auto_signaltap_0|gnd -section_id auto_signaltap_0
+set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT crc[13] -to auto_signaltap_0|gnd -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[0] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|HSYNC" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[1] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HIR" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[2] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[3] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[10]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[4] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[11]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[5] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[12]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[6] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[13]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[7] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[14]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[8] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[15]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[9] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[16]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[10] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[17]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[11] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[18]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[12] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[19]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[13] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[14] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[20]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[15] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[21]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[16] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[22]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[17] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[23]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[18] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[24]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[19] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[25]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[20] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[26]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[21] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[27]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[22] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[28]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[23] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[29]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[24] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[25] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[30]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[26] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[31]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[27] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[28] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[29] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[30] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[31] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[32] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[8]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[33] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[9]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[34] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[35] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[10]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[36] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[11]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[37] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[12]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[38] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[13]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[39] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[14]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[40] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[15]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[41] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[16]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[42] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[17]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[43] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[18]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[44] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[19]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[45] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[46] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[20]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[47] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[21]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[48] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[22]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[49] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[23]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[50] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[24]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[51] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[25]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[52] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[26]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[53] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[27]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[54] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[28]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[55] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[29]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[56] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[57] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[30]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[58] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[31]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[59] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[60] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[61] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[62] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[63] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[64] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[8]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[65] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[9]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[66] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[67] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[10]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[68] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[11]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[69] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[12]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[70] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[13]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[71] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[14]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[72] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[15]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[73] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[16]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[74] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[17]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[75] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[18]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[76] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[19]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[77] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[78] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[20]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[79] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[21]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[80] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[22]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[81] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[23]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[82] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[24]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[83] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[25]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[84] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[26]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[85] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[27]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[86] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[28]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[87] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[29]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[88] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[89] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[30]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[90] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[31]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[91] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[92] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[93] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[94] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[95] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[96] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[8]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[97] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[9]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[98] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[99] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[10]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[100] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[11]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[101] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[12]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[102] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[13]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[103] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[14]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[104] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[15]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[105] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[16]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[106] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[17]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[107] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[18]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[108] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[19]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[109] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[110] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[20]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[111] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[21]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[112] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[22]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[113] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[23]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[114] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[24]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[115] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[25]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[116] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[26]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[117] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[27]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[118] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[28]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[119] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[29]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[120] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[121] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[30]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[122] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[31]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[123] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[124] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[125] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[126] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[127] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[128] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[8]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[129] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[9]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[130] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[131] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[10]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[132] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[11]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[133] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[12]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[134] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[13]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[135] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[14]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[136] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[15]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[137] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[16]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[138] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[17]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[139] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[18]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[140] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[19]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[141] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[142] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[20]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[143] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[21]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[144] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[22]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[145] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[23]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[146] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[24]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[147] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[25]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[148] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[26]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[149] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[27]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[150] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[28]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[151] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[29]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[152] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[153] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[30]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[154] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[31]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[155] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[156] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[157] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[158] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[159] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[160] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[8]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[161] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[9]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[162] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VIR" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[163] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[164] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[10]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[165] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[11]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[166] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[12]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[167] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[13]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[168] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[14]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[169] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[15]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[170] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[16]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[171] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[17]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[172] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[18]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[173] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[19]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[174] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[175] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[20]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[176] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[21]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[177] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[22]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[178] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[23]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[179] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[24]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[180] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[25]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[181] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[26]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[182] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[27]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[183] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[28]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[184] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[29]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[185] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[186] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[30]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[187] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[31]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[188] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[189] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[190] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[191] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[192] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[193] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[8]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[194] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[9]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[195] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|VSYNC" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[196] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|dclk" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[197] -to "emu:emu|X68K_top:X68K_top|pSndL[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[198] -to "emu:emu|X68K_top:X68K_top|pSndL[10]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[199] -to "emu:emu|X68K_top:X68K_top|pSndL[11]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[200] -to "emu:emu|X68K_top:X68K_top|pSndL[12]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[201] -to "emu:emu|X68K_top:X68K_top|pSndL[13]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[202] -to "emu:emu|X68K_top:X68K_top|pSndL[14]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[203] -to "emu:emu|X68K_top:X68K_top|pSndL[15]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[204] -to "emu:emu|X68K_top:X68K_top|pSndL[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[205] -to "emu:emu|X68K_top:X68K_top|pSndL[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[206] -to "emu:emu|X68K_top:X68K_top|pSndL[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[207] -to "emu:emu|X68K_top:X68K_top|pSndL[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[208] -to "emu:emu|X68K_top:X68K_top|pSndL[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[209] -to "emu:emu|X68K_top:X68K_top|pSndL[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[210] -to "emu:emu|X68K_top:X68K_top|pSndL[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[211] -to "emu:emu|X68K_top:X68K_top|pSndL[8]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[212] -to "emu:emu|X68K_top:X68K_top|pSndL[9]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[213] -to "emu:emu|X68K_top:X68K_top|pSndPCML[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[214] -to "emu:emu|X68K_top:X68K_top|pSndPCML[10]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[215] -to "emu:emu|X68K_top:X68K_top|pSndPCML[11]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[216] -to "emu:emu|X68K_top:X68K_top|pSndPCML[12]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[217] -to "emu:emu|X68K_top:X68K_top|pSndPCML[13]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[218] -to "emu:emu|X68K_top:X68K_top|pSndPCML[14]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[219] -to "emu:emu|X68K_top:X68K_top|pSndPCML[15]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[220] -to "emu:emu|X68K_top:X68K_top|pSndPCML[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[221] -to "emu:emu|X68K_top:X68K_top|pSndPCML[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[222] -to "emu:emu|X68K_top:X68K_top|pSndPCML[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[223] -to "emu:emu|X68K_top:X68K_top|pSndPCML[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[224] -to "emu:emu|X68K_top:X68K_top|pSndPCML[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[225] -to "emu:emu|X68K_top:X68K_top|pSndPCML[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[226] -to "emu:emu|X68K_top:X68K_top|pSndPCML[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[227] -to "emu:emu|X68K_top:X68K_top|pSndPCML[8]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[228] -to "emu:emu|X68K_top:X68K_top|pSndPCML[9]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[229] -to "emu:emu|X68K_top:X68K_top|pSndPCMR[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[230] -to "emu:emu|X68K_top:X68K_top|pSndPCMR[10]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[231] -to "emu:emu|X68K_top:X68K_top|pSndPCMR[11]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[232] -to "emu:emu|X68K_top:X68K_top|pSndPCMR[12]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[233] -to "emu:emu|X68K_top:X68K_top|pSndPCMR[13]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[234] -to "emu:emu|X68K_top:X68K_top|pSndPCMR[14]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[235] -to "emu:emu|X68K_top:X68K_top|pSndPCMR[15]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[236] -to "emu:emu|X68K_top:X68K_top|pSndPCMR[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[237] -to "emu:emu|X68K_top:X68K_top|pSndPCMR[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[238] -to "emu:emu|X68K_top:X68K_top|pSndPCMR[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[239] -to "emu:emu|X68K_top:X68K_top|pSndPCMR[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[240] -to "emu:emu|X68K_top:X68K_top|pSndPCMR[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[241] -to "emu:emu|X68K_top:X68K_top|pSndPCMR[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[242] -to "emu:emu|X68K_top:X68K_top|pSndPCMR[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[243] -to "emu:emu|X68K_top:X68K_top|pSndPCMR[8]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[244] -to "emu:emu|X68K_top:X68K_top|pSndPCMR[9]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[245] -to "emu:emu|X68K_top:X68K_top|pSndR[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[246] -to "emu:emu|X68K_top:X68K_top|pSndR[10]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[247] -to "emu:emu|X68K_top:X68K_top|pSndR[11]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[248] -to "emu:emu|X68K_top:X68K_top|pSndR[12]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[249] -to "emu:emu|X68K_top:X68K_top|pSndR[13]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[250] -to "emu:emu|X68K_top:X68K_top|pSndR[14]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[251] -to "emu:emu|X68K_top:X68K_top|pSndR[15]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[252] -to "emu:emu|X68K_top:X68K_top|pSndR[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[253] -to "emu:emu|X68K_top:X68K_top|pSndR[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[254] -to "emu:emu|X68K_top:X68K_top|pSndR[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[255] -to "emu:emu|X68K_top:X68K_top|pSndR[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[256] -to "emu:emu|X68K_top:X68K_top|pSndR[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[257] -to "emu:emu|X68K_top:X68K_top|pSndR[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[258] -to "emu:emu|X68K_top:X68K_top|pSndR[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[259] -to "emu:emu|X68K_top:X68K_top|pSndR[8]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[260] -to "emu:emu|X68K_top:X68K_top|pSndR[9]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[261] -to "emu:emu|X68K_top:X68K_top|pSndYML[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[262] -to "emu:emu|X68K_top:X68K_top|pSndYML[10]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[263] -to "emu:emu|X68K_top:X68K_top|pSndYML[11]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[264] -to "emu:emu|X68K_top:X68K_top|pSndYML[12]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[265] -to "emu:emu|X68K_top:X68K_top|pSndYML[13]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[266] -to "emu:emu|X68K_top:X68K_top|pSndYML[14]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[267] -to "emu:emu|X68K_top:X68K_top|pSndYML[15]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[268] -to "emu:emu|X68K_top:X68K_top|pSndYML[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[269] -to "emu:emu|X68K_top:X68K_top|pSndYML[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[270] -to "emu:emu|X68K_top:X68K_top|pSndYML[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[271] -to "emu:emu|X68K_top:X68K_top|pSndYML[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[272] -to "emu:emu|X68K_top:X68K_top|pSndYML[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[273] -to "emu:emu|X68K_top:X68K_top|pSndYML[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[274] -to "emu:emu|X68K_top:X68K_top|pSndYML[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[275] -to "emu:emu|X68K_top:X68K_top|pSndYML[8]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[276] -to "emu:emu|X68K_top:X68K_top|pSndYML[9]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[277] -to "emu:emu|X68K_top:X68K_top|pSndYMR[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[278] -to "emu:emu|X68K_top:X68K_top|pSndYMR[10]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[279] -to "emu:emu|X68K_top:X68K_top|pSndYMR[11]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[280] -to "emu:emu|X68K_top:X68K_top|pSndYMR[12]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[281] -to "emu:emu|X68K_top:X68K_top|pSndYMR[13]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[282] -to "emu:emu|X68K_top:X68K_top|pSndYMR[14]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[283] -to "emu:emu|X68K_top:X68K_top|pSndYMR[15]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[284] -to "emu:emu|X68K_top:X68K_top|pSndYMR[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[285] -to "emu:emu|X68K_top:X68K_top|pSndYMR[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[286] -to "emu:emu|X68K_top:X68K_top|pSndYMR[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[287] -to "emu:emu|X68K_top:X68K_top|pSndYMR[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[288] -to "emu:emu|X68K_top:X68K_top|pSndYMR[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[289] -to "emu:emu|X68K_top:X68K_top|pSndYMR[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[290] -to "emu:emu|X68K_top:X68K_top|pSndYMR[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[291] -to "emu:emu|X68K_top:X68K_top|pSndYMR[8]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[292] -to "emu:emu|X68K_top:X68K_top|pSndYMR[9]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[293] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|AP[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[294] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|AP[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[295] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|AP[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[296] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|AP[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[297] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|HD[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[298] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|HD[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[299] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|HF" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[300] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|MEN" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[301] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|SA" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[302] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|TXTEN" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[303] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|VD[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[304] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|VD[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[305] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hadj[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[306] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hadj[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[307] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hadj[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[308] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hadj[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[309] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hadj[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[310] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hadj[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[311] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hadj[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[312] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hadj[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[313] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hsync[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[314] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hsync[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[315] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hsync[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[316] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hsync[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[317] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hsync[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[318] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hsync[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[319] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hsync[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[320] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hsync[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[321] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|htotal[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[322] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|htotal[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[323] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|htotal[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[324] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|htotal[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[325] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|htotal[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[326] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|htotal[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[327] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|htotal[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[328] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|htotal[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[329] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hvbgn[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[330] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hvbgn[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[331] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hvbgn[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[332] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hvbgn[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[333] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hvbgn[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[334] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hvbgn[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[335] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hvbgn[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[336] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hvbgn[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[337] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hvend[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[338] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hvend[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[339] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hvend[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[340] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hvend[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[341] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hvend[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[342] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hvend[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[343] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hvend[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[344] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hvend[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[345] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|siz" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[346] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vsync[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[347] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vsync[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[348] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vsync[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[349] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vsync[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[350] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vsync[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[351] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vsync[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[352] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vsync[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[353] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vsync[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[354] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vsync[8]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[355] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vsync[9]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[356] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vtotal[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[357] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vtotal[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[358] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vtotal[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[359] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vtotal[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[360] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vtotal[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[361] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vtotal[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[362] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vtotal[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[363] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vtotal[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[364] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vtotal[8]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[365] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vtotal[9]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[366] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvbgn[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[367] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvbgn[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[368] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvbgn[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[369] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvbgn[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[370] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvbgn[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[371] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvbgn[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[372] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvbgn[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[373] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvbgn[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[374] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvbgn[8]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[375] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvbgn[9]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[376] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvend[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[377] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvend[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[378] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvend[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[379] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvend[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[380] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvend[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[381] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvend[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[382] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvend[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[383] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvend[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[384] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvend[8]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[385] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvend[9]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_trigger_in[386] -to "emu:emu|X68K_top:X68K_top|vr_GREN" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[0] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|HSYNC" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[1] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HIR" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[2] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[3] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[10]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[4] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[11]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[5] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[12]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[6] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[13]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[7] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[14]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[8] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[15]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[9] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[16]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[10] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[17]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[11] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[18]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[12] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[19]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[13] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[14] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[20]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[15] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[21]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[16] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[22]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[17] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[23]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[18] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[24]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[19] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[25]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[20] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[26]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[21] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[27]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[22] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[28]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[23] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[29]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[24] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[25] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[30]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[26] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[31]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[27] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[28] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[29] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[30] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[31] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[32] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[8]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[33] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUCOUNT[9]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[34] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[35] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[10]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[36] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[11]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[37] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[12]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[38] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[13]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[39] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[14]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[40] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[15]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[41] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[16]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[42] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[17]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[43] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[18]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[44] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[19]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[45] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[46] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[20]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[47] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[21]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[48] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[22]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[49] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[23]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[50] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[24]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[51] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[25]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[52] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[26]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[53] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[27]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[54] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[28]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[55] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[29]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[56] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[57] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[30]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[58] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[31]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[59] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[60] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[61] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[62] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[63] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[64] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[8]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[65] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HUVIS[9]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[66] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[67] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[10]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[68] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[11]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[69] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[12]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[70] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[13]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[71] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[14]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[72] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[15]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[73] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[16]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[74] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[17]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[75] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[18]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[76] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[19]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[77] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[78] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[20]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[79] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[21]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[80] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[22]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[81] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[23]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[82] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[24]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[83] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[25]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[84] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[26]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[85] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[27]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[86] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[28]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[87] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[29]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[88] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[89] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[30]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[90] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[31]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[91] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[92] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[93] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[94] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[95] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[96] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[8]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[97] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|HVCOUNT[9]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[98] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[99] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[10]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[100] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[11]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[101] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[12]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[102] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[13]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[103] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[14]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[104] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[15]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[105] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[16]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[106] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[17]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[107] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[18]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[108] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[19]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[109] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[110] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[20]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[111] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[21]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[112] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[22]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[113] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[23]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[114] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[24]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[115] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[25]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[116] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[26]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[117] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[27]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[118] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[28]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[119] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[29]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[120] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[121] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[30]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[122] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[31]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[123] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[124] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[125] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[126] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[127] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[128] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[8]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[129] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|UCOUNT[9]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[130] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[131] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[10]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[132] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[11]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[133] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[12]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[134] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[13]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[135] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[14]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[136] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[15]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[137] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[16]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[138] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[17]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[139] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[18]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[140] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[19]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[141] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[142] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[20]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[143] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[21]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[144] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[22]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[145] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[23]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[146] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[24]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[147] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[25]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[148] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[26]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[149] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[27]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[150] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[28]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[151] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[29]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[152] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[153] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[30]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[154] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[31]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[155] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[156] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[157] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[158] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[159] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[160] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[8]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[161] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VCOUNT[9]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[162] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VIR" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[163] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[164] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[10]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[165] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[11]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[166] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[12]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[167] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[13]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[168] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[14]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[169] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[15]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[170] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[16]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[171] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[17]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[172] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[18]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[173] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[19]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[174] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[175] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[20]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[176] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[21]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[177] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[22]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[178] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[23]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[179] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[24]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[180] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[25]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[181] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[26]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[182] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[27]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[183] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[28]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[184] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[29]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[185] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[186] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[30]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[187] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[31]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[188] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[189] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[190] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[191] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[192] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[193] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[8]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[194] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|TEXTSCRv_m:textscr|VVCOUNT[9]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[195] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|VSYNC" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[196] -to "emu:emu|X68K_top:X68K_top|mister_sync:CRTC|dclk" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[197] -to "emu:emu|X68K_top:X68K_top|pSndL[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[198] -to "emu:emu|X68K_top:X68K_top|pSndL[10]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[199] -to "emu:emu|X68K_top:X68K_top|pSndL[11]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[200] -to "emu:emu|X68K_top:X68K_top|pSndL[12]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[201] -to "emu:emu|X68K_top:X68K_top|pSndL[13]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[202] -to "emu:emu|X68K_top:X68K_top|pSndL[14]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[203] -to "emu:emu|X68K_top:X68K_top|pSndL[15]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[204] -to "emu:emu|X68K_top:X68K_top|pSndL[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[205] -to "emu:emu|X68K_top:X68K_top|pSndL[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[206] -to "emu:emu|X68K_top:X68K_top|pSndL[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[207] -to "emu:emu|X68K_top:X68K_top|pSndL[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[208] -to "emu:emu|X68K_top:X68K_top|pSndL[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[209] -to "emu:emu|X68K_top:X68K_top|pSndL[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[210] -to "emu:emu|X68K_top:X68K_top|pSndL[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[211] -to "emu:emu|X68K_top:X68K_top|pSndL[8]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[212] -to "emu:emu|X68K_top:X68K_top|pSndL[9]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[213] -to "emu:emu|X68K_top:X68K_top|pSndPCML[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[214] -to "emu:emu|X68K_top:X68K_top|pSndPCML[10]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[215] -to "emu:emu|X68K_top:X68K_top|pSndPCML[11]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[216] -to "emu:emu|X68K_top:X68K_top|pSndPCML[12]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[217] -to "emu:emu|X68K_top:X68K_top|pSndPCML[13]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[218] -to "emu:emu|X68K_top:X68K_top|pSndPCML[14]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[219] -to "emu:emu|X68K_top:X68K_top|pSndPCML[15]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[220] -to "emu:emu|X68K_top:X68K_top|pSndPCML[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[221] -to "emu:emu|X68K_top:X68K_top|pSndPCML[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[222] -to "emu:emu|X68K_top:X68K_top|pSndPCML[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[223] -to "emu:emu|X68K_top:X68K_top|pSndPCML[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[224] -to "emu:emu|X68K_top:X68K_top|pSndPCML[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[225] -to "emu:emu|X68K_top:X68K_top|pSndPCML[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[226] -to "emu:emu|X68K_top:X68K_top|pSndPCML[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[227] -to "emu:emu|X68K_top:X68K_top|pSndPCML[8]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[228] -to "emu:emu|X68K_top:X68K_top|pSndPCML[9]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[229] -to "emu:emu|X68K_top:X68K_top|pSndPCMR[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[230] -to "emu:emu|X68K_top:X68K_top|pSndPCMR[10]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[231] -to "emu:emu|X68K_top:X68K_top|pSndPCMR[11]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[232] -to "emu:emu|X68K_top:X68K_top|pSndPCMR[12]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[233] -to "emu:emu|X68K_top:X68K_top|pSndPCMR[13]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[234] -to "emu:emu|X68K_top:X68K_top|pSndPCMR[14]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[235] -to "emu:emu|X68K_top:X68K_top|pSndPCMR[15]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[236] -to "emu:emu|X68K_top:X68K_top|pSndPCMR[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[237] -to "emu:emu|X68K_top:X68K_top|pSndPCMR[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[238] -to "emu:emu|X68K_top:X68K_top|pSndPCMR[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[239] -to "emu:emu|X68K_top:X68K_top|pSndPCMR[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[240] -to "emu:emu|X68K_top:X68K_top|pSndPCMR[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[241] -to "emu:emu|X68K_top:X68K_top|pSndPCMR[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[242] -to "emu:emu|X68K_top:X68K_top|pSndPCMR[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[243] -to "emu:emu|X68K_top:X68K_top|pSndPCMR[8]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[244] -to "emu:emu|X68K_top:X68K_top|pSndPCMR[9]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[245] -to "emu:emu|X68K_top:X68K_top|pSndR[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[246] -to "emu:emu|X68K_top:X68K_top|pSndR[10]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[247] -to "emu:emu|X68K_top:X68K_top|pSndR[11]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[248] -to "emu:emu|X68K_top:X68K_top|pSndR[12]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[249] -to "emu:emu|X68K_top:X68K_top|pSndR[13]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[250] -to "emu:emu|X68K_top:X68K_top|pSndR[14]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[251] -to "emu:emu|X68K_top:X68K_top|pSndR[15]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[252] -to "emu:emu|X68K_top:X68K_top|pSndR[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[253] -to "emu:emu|X68K_top:X68K_top|pSndR[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[254] -to "emu:emu|X68K_top:X68K_top|pSndR[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[255] -to "emu:emu|X68K_top:X68K_top|pSndR[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[256] -to "emu:emu|X68K_top:X68K_top|pSndR[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[257] -to "emu:emu|X68K_top:X68K_top|pSndR[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[258] -to "emu:emu|X68K_top:X68K_top|pSndR[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[259] -to "emu:emu|X68K_top:X68K_top|pSndR[8]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[260] -to "emu:emu|X68K_top:X68K_top|pSndR[9]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[261] -to "emu:emu|X68K_top:X68K_top|pSndYML[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[262] -to "emu:emu|X68K_top:X68K_top|pSndYML[10]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[263] -to "emu:emu|X68K_top:X68K_top|pSndYML[11]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[264] -to "emu:emu|X68K_top:X68K_top|pSndYML[12]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[265] -to "emu:emu|X68K_top:X68K_top|pSndYML[13]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[266] -to "emu:emu|X68K_top:X68K_top|pSndYML[14]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[267] -to "emu:emu|X68K_top:X68K_top|pSndYML[15]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[268] -to "emu:emu|X68K_top:X68K_top|pSndYML[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[269] -to "emu:emu|X68K_top:X68K_top|pSndYML[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[270] -to "emu:emu|X68K_top:X68K_top|pSndYML[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[271] -to "emu:emu|X68K_top:X68K_top|pSndYML[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[272] -to "emu:emu|X68K_top:X68K_top|pSndYML[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[273] -to "emu:emu|X68K_top:X68K_top|pSndYML[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[274] -to "emu:emu|X68K_top:X68K_top|pSndYML[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[275] -to "emu:emu|X68K_top:X68K_top|pSndYML[8]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[276] -to "emu:emu|X68K_top:X68K_top|pSndYML[9]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[277] -to "emu:emu|X68K_top:X68K_top|pSndYMR[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[278] -to "emu:emu|X68K_top:X68K_top|pSndYMR[10]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[279] -to "emu:emu|X68K_top:X68K_top|pSndYMR[11]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[280] -to "emu:emu|X68K_top:X68K_top|pSndYMR[12]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[281] -to "emu:emu|X68K_top:X68K_top|pSndYMR[13]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[282] -to "emu:emu|X68K_top:X68K_top|pSndYMR[14]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[283] -to "emu:emu|X68K_top:X68K_top|pSndYMR[15]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[284] -to "emu:emu|X68K_top:X68K_top|pSndYMR[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[285] -to "emu:emu|X68K_top:X68K_top|pSndYMR[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[286] -to "emu:emu|X68K_top:X68K_top|pSndYMR[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[287] -to "emu:emu|X68K_top:X68K_top|pSndYMR[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[288] -to "emu:emu|X68K_top:X68K_top|pSndYMR[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[289] -to "emu:emu|X68K_top:X68K_top|pSndYMR[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[290] -to "emu:emu|X68K_top:X68K_top|pSndYMR[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[291] -to "emu:emu|X68K_top:X68K_top|pSndYMR[8]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[292] -to "emu:emu|X68K_top:X68K_top|pSndYMR[9]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[293] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|AP[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[294] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|AP[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[295] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|AP[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[296] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|AP[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[297] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|HD[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[298] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|HD[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[299] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|HF" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[300] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|MEN" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[301] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|SA" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[302] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|TXTEN" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[303] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|VD[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[304] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|VD[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[305] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hadj[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[306] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hadj[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[307] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hadj[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[308] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hadj[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[309] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hadj[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[310] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hadj[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[311] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hadj[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[312] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hadj[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[313] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hsync[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[314] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hsync[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[315] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hsync[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[316] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hsync[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[317] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hsync[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[318] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hsync[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[319] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hsync[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[320] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hsync[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[321] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|htotal[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[322] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|htotal[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[323] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|htotal[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[324] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|htotal[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[325] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|htotal[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[326] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|htotal[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[327] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|htotal[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[328] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|htotal[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[329] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hvbgn[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[330] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hvbgn[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[331] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hvbgn[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[332] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hvbgn[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[333] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hvbgn[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[334] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hvbgn[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[335] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hvbgn[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[336] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hvbgn[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[337] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hvend[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[338] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hvend[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[339] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hvend[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[340] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hvend[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[341] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hvend[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[342] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hvend[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[343] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hvend[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[344] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|hvend[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[345] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|siz" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[346] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vsync[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[347] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vsync[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[348] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vsync[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[349] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vsync[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[350] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vsync[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[351] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vsync[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[352] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vsync[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[353] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vsync[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[354] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vsync[8]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[355] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vsync[9]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[356] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vtotal[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[357] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vtotal[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[358] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vtotal[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[359] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vtotal[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[360] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vtotal[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[361] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vtotal[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[362] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vtotal[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[363] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vtotal[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[364] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vtotal[8]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[365] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vtotal[9]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[366] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvbgn[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[367] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvbgn[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[368] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvbgn[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[369] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvbgn[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[370] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvbgn[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[371] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvbgn[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[372] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvbgn[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[373] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvbgn[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[374] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvbgn[8]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[375] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvbgn[9]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[376] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvend[0]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[377] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvend[1]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[378] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvend[2]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[379] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvend[3]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[380] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvend[4]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[381] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvend[5]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[382] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvend[6]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[383] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvend[7]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[384] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvend[8]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[385] -to "emu:emu|X68K_top:X68K_top|vcreg:vreg|vvend[9]" -section_id auto_signaltap_0
+set_instance_assignment -name CONNECT_TO_SLD_NODE_ENTITY_PORT acq_data_in[386] -to "emu:emu|X68K_top:X68K_top|vr_GREN" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_DATA_BITS=387" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_TRIGGER_BITS=387" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_STORAGE_QUALIFIER_BITS=387" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_INVERSION_MASK=00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" -section_id auto_signaltap_0
+set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_INVERSION_MASK_LENGTH=1187" -section_id auto_signaltap_0
+set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT crc[2] -to auto_signaltap_0|gnd -section_id auto_signaltap_0
+set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT crc[6] -to auto_signaltap_0|vcc -section_id auto_signaltap_0
+set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT crc[10] -to auto_signaltap_0|vcc -section_id auto_signaltap_0
+set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT crc[15] -to auto_signaltap_0|vcc -section_id auto_signaltap_0
+set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT crc[17] -to auto_signaltap_0|vcc -section_id auto_signaltap_0
+set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT crc[18] -to auto_signaltap_0|gnd -section_id auto_signaltap_0
+set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT crc[20] -to auto_signaltap_0|vcc -section_id auto_signaltap_0
+set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT crc[21] -to auto_signaltap_0|vcc -section_id auto_signaltap_0
+set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT crc[28] -to auto_signaltap_0|gnd -section_id auto_signaltap_0
+set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT crc[29] -to auto_signaltap_0|gnd -section_id auto_signaltap_0
+set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT crc[30] -to auto_signaltap_0|vcc -section_id auto_signaltap_0
+set_instance_assignment -name POST_FIT_CONNECT_TO_SLD_NODE_ENTITY_PORT crc[31] -to auto_signaltap_0|gnd -section_id auto_signaltap_0
+set_global_assignment -name SLD_FILE db/stp1_auto_stripped.stp
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

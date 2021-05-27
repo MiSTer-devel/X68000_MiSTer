@@ -14,17 +14,27 @@ generic(
 	HSY		:integer	:=12;
 	VFP		:integer	:=51;
 	VSY		:integer	:=2
-);	
+);
 port(
 	VCOUNT	:out integer range 0 to VWIDTH-1;
 	HUCOUNT	:out integer range 0 to (HWIDTH/DOTPU)-1;
 	UCOUNT	:out integer range 0 to DOTPU-1;
-	
+
 	HCOMP	:out std_logic;
 	VCOMP	:out std_logic;
-	
+
+	htotal	:in std_logic_vector(7 downto 0);
+	hsync	:in std_logic_vector(7 downto 0);
+	hvbgn	:in std_logic_vector(7 downto 0);
+	hvend	:in std_logic_vector(7 downto 0);
+	vtotal	:in std_logic_vector(9 downto 0);
+	vsync	:in std_logic_vector(9 downto 0);
+	vvbgn	:in std_logic_vector(9 downto 0);
+	vvend	:in std_logic_vector(9 downto 0);
+	hadj	:in std_logic_vector(7 downto 0);
+
 	clk2	:out std_logic;
-	
+
 	clk		:in std_logic;
 	rstn	:in std_logic
 );
@@ -75,7 +85,7 @@ begin
 					if(vcounter=VWIDTH-1)then
 						vcounter<=0;
 						vcompb<='1';
-					else 
+					else
 						vcounter<=vcounter+1;
 					end if;
 				else
@@ -86,8 +96,8 @@ begin
 			end if;
 		end if;
 	end process;
-	
-	
+
+
 	process(clk,rstn)begin
 		if(rstn='0')then
 			VCOUNT<=0;
@@ -105,7 +115,7 @@ begin
 	end process;
 
 end MAIN;
-					
-			
-			
-	
+
+
+
+

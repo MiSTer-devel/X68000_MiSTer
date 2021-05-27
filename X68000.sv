@@ -202,7 +202,7 @@ assign AUDIO_MIX = status[3:2];
 // 0         1         2         3          4         5         6
 // 01234567890123456789012345678901 23456789012345678901234567890123
 // 0123456789ABCDEFGHIJKLMNOPQRSTUV 0123456789ABCDEFGHIJKLMNOPQRSTUV
-// X XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX XXXX    XXX XXXX
+// X XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX         XXX    X
 
 `define DEBUG_X68K
 
@@ -224,16 +224,8 @@ parameter CONF_STR1 = {
 	"RD,Load SRAM from SD Card;",
 	"RE,Save SRAM to SD Card;",
 	"-;",
-	"oCD,HMode,0,1,2,3;",
-	"oE,VMode,0,1;",
-	"-;",
 `ifdef DEBUG_X68K
 	"oF,CPU Select,TG68,fx68k;",
-	"P2,DIP Switches;",
-	"P2o0,Dip 0,Down,Up;",
-	"P2o1,Dip 1,Down,Up;",
-	"P2o2,Dip 2,Down,Up;",
-	"P2o3,Dip 3,Down,Up;",
 `endif
 	"P1,Audio & Video;",
 	"P1-;",
@@ -535,15 +527,7 @@ wire mt32_lcd = mt32_lcd_on & mt32_lcd_en;
 //
 
 ///////////////////////////////////////////////////
-wire [15:0] aud_r, aud_l;
-reg [15:0] out_l, out_r;
-
-always @(posedge CLK_AUDIO) begin
-	reg [16:0] tmp_l, tmp_r;
-
-	out_l <= aud_l[15:0] + mt32_i2s_l[15:0];
-	out_r <= aud_r[15:0] + mt32_i2s_r[15:0];
-end
+wire [15:0] aud_r, aud_l, pcm_r, pcm_l, ym_r, ym_l;
 
 wire NMI = status[7];
 wire POWER = status[8];
@@ -551,10 +535,6 @@ wire [1:0] fdsync = status[10:9];
 wire [1:0] fdeject = status[12:11];
 wire sramld	= status[13];
 wire sramst = status[14];
-wire [3:0] pdip = status[35:32];
-
-assign AUDIO_R = out_r;
-assign AUDIO_L = out_l;
 
 assign CLK_VIDEO = clk_vid;
 assign AUDIO_S = 1;
@@ -636,7 +616,7 @@ X68K_top X68K_top
 	.pFDEJECT(fdeject),
 
 	.pLed(disk_led),
-	.pDip(pdip),
+	.pDip(4'b0000),
 	.pPsw({~NMI,~POWER}),
 	.pSramld(sramld),
 	.pSramst(sramst),
@@ -656,6 +636,11 @@ X68K_top X68K_top
 
 	.pSndL(aud_r),
 	.pSndR(aud_l),
+	
+	.pSndYML(ym_l),
+	.pSndYMR(ym_r),
+	.pSndPCML(pcm_l),
+	.pSNDPCMR(pcm_r),
 
 	.rstn(reset_n & ~reset),
 	.dHMode(status[45:44]),
@@ -676,6 +661,61 @@ always @(posedge clk_sys) begin
 
 	if(old_download & ~ioctl_download) ldr_done <= 1;
 end
+
+////////////////////////////  AUDIO  ////////////////////////////////////
+wire [17:0] mix_r, mix_l;
+reg [16:0] out_l, out_r;
+
+localparam [3:0] comp_f1 = 4;
+localparam [3:0] comp_a1 = 2;
+localparam       comp_x1 = ((32767 * (comp_f1 - 1)) / ((comp_f1 * comp_a1) - 1)) + 1; // +1 to make sure it won't overflow
+localparam       comp_b1 = comp_x1 * comp_a1;
+
+localparam [3:0] comp_f2 = 8;
+localparam [3:0] comp_a2 = 4;
+localparam       comp_x2 = ((32767 * (comp_f2 - 1)) / ((comp_f2 * comp_a2) - 1)) + 1; // +1 to make sure it won't overflow
+localparam       comp_b2 = comp_x2 * comp_a2;
+
+function [15:0] compr; input [15:0] inp;
+	reg [15:0] v, v1, v2;
+	begin
+		v  = inp[15] ? (~inp) + 1'd1 : inp;
+		v1 = (v < comp_x1[15:0]) ? (v * comp_a1) : (((v - comp_x1[15:0])/comp_f1) + comp_b1[15:0]);
+		v2 = (v < comp_x2[15:0]) ? (v * comp_a2) : (((v - comp_x2[15:0])/comp_f2) + comp_b2[15:0]);
+		v  = status[21] ? v2 : v1;
+		compr = inp[15] ? ~(v-1'd1) : v;
+	end
+endfunction 
+
+reg [15:0] cmp_l, cmp_r;
+
+always @(posedge CLK_AUDIO) begin
+	reg signed [17:0] tmp_l, tmp_r;
+
+	out_l <= aud_l + mt32_i2s_l;
+	out_r <= aud_r + mt32_i2s_r;
+	
+	// tmp_l <= $signed(pcm_l[15:1]) + $signed(ym_l[15:1]) + $signed(mt32_i2s_l);
+	// tmp_r <= $signed(pcm_r[15:1]) + $signed(ym_r[15:1]) + $signed(mt32_i2s_r);
+		
+	// tmp_l <= aud_l + mt32_i2s_l;
+	// tmp_r <= aud_r + mt32_i2s_r;
+	
+
+	// tmp_l <= {pcm_l, {2{pcm_l[0]}}} + ym_l + (mt32_mute ? 17'd0 : {mt32_i2s_l[15],mt32_i2s_l});
+	// tmp_r <= {pcm_r, {2{pcm_r[0]}}} + ym_r + (mt32_mute ? 17'd0 : {mt32_i2s_r[15],mt32_i2s_r});
+
+	// // clamp the output
+	// out_l <= (^tmp_l[17:16]) ? {tmp_l[17], {15{tmp_l[16]}}} : tmp_l[17:2];
+	// out_r <= (^tmp_r[17:16]) ? {tmp_r[17], {15{tmp_r[16]}}} : tmp_r[17:2];
+
+	cmp_l <= compr(tmp_l);
+	cmp_r <= compr(tmp_r);
+end
+
+
+assign AUDIO_R = out_r;
+assign AUDIO_L = out_l;
 
 ////////////////////////////  VIDEO  ////////////////////////////////////
 

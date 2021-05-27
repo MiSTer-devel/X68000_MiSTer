@@ -24,6 +24,8 @@ port(
 
 	HSYNC	:out std_logic;
 	VSYNC	:out std_logic;
+	HBLANK  :out std_logic;
+	VBLANK  :out std_logic;
 	VISIBLE	:out std_logic;
 	
 	HRTC	:out std_logic;
@@ -60,6 +62,8 @@ begin
 					'1';
 	VRTC		<=	'1' when VCOUNT<VIV else '0';
 	HRTC		<=	'1' when HUCOUNT<HIV else '0';
+	VBLANK      <= '1' when VCOUNT<VIV else '0';
+	HBLANK      <= '1' when HUCOUNT<HIV else '0';
 	
 	process	(clk,rstn)begin
 		if(rstn='0')then

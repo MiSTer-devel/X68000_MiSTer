@@ -249,7 +249,7 @@ begin
 						if(pri0(1 downto 0)/="00")then
 							pri0(1 downto 0)<=pri0(1 downto 0)-"01";
 						end if;
-						if(pri2(1 downto 0)/="00")then
+						if(pri1(1 downto 0)/="00")then
 							pri1(1 downto 0)<=pri1(1 downto 0)-"01";
 						end if;
 						if(pri3(1 downto 0)/="00")then

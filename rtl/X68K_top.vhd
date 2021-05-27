@@ -3803,8 +3803,8 @@ begin
 		rstn		=>srstn
 	);
 	
-	pcm_sndL<=(pcm_snd(11) & pcm_snd(11) & pcm_snd & "00") when pcm_enL='1' else (others=>'0');
-	pcm_sndR<=(pcm_snd(11) & pcm_snd(11) & pcm_snd & "00") when pcm_enR='1' else (others=>'0');
+	pcm_sndL<=(pcm_snd(11) & pcm_snd & "000") when pcm_enL='1' else (others=>'0');
+	pcm_sndR<=(pcm_snd(11) & pcm_snd & "000") when pcm_enR='1' else (others=>'0');
 	
 	process(sndclk,srstn)
 	begin
