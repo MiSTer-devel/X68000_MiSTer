@@ -38,6 +38,7 @@ port(
 	siden	:in std_logic;		--pin32
 
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end FDemu;
@@ -262,36 +263,38 @@ end component;
 
 begin
 	process(clk,rstn)begin
-		if(rstn='0')then
-			fdmode0<="00";
-			fdmode1<="00";
-			fdmode2<="00";
-			fdmode3<="00";
-		elsif(clk' event and clk='1')then
-			if(modeset(0)='1')then
-				fdmode0<=rdfdmode(1 downto 0);
-			end if;
-			if(modeset(1)='1')then
-				fdmode1<=rdfdmode(3 downto 2);
-			end if;
-			if(modeset(2)='1')then
-				fdmode2<=rdfdmode(5 downto 4);
-			end if;
-			if(modeset(3)='1')then
-				fdmode3<=rdfdmode(7 downto 6);
-			end if;
-			if(rxed='1')then
-				case USEL is
-				when "00" =>
-					fdmode0<=WRFDMODE;
-				when "01" =>
-					fdmode1<=WRFDMODE;
-				when "10" =>
-					fdmode2<=WRFDMODE;
-				when "11" =>
-					fdmode3<=WRFDMODE;
-				when others =>
-				end case;
+		if rising_edge(clk) then
+			if(rstn='0')then
+				fdmode0<="00";
+				fdmode1<="00";
+				fdmode2<="00";
+				fdmode3<="00";
+			elsif(ce = '1')then
+				if(modeset(0)='1')then
+					fdmode0<=rdfdmode(1 downto 0);
+				end if;
+				if(modeset(1)='1')then
+					fdmode1<=rdfdmode(3 downto 2);
+				end if;
+				if(modeset(2)='1')then
+					fdmode2<=rdfdmode(5 downto 4);
+				end if;
+				if(modeset(3)='1')then
+					fdmode3<=rdfdmode(7 downto 6);
+				end if;
+				if(rxed='1')then
+					case USEL is
+					when "00" =>
+						fdmode0<=WRFDMODE;
+					when "01" =>
+						fdmode1<=WRFDMODE;
+					when "10" =>
+						fdmode2<=WRFDMODE;
+					when "11" =>
+						fdmode3<=WRFDMODE;
+					when others =>
+					end case;
+				end if;
 			end if;
 		end if;
 	end process;
@@ -336,14 +339,16 @@ begin
 	tracklen<=tracklenx;
 
 	process(clk,rstn)begin
-		if(rstn='0')then
-			txwr<='0';
-		elsif(clk' event and clk='1')then
-			txwr<='0';
-			if(MOTOR='1')then
-				if(WRENn='1' and txemp='1')then
-					if(WRENn='1')then
-						txwr<='1';
+		if rising_edge(clk) then
+			if(rstn='0')then
+				txwr<='0';
+			elsif(ce = '1')then
+				txwr<='0';
+				if(MOTOR='1')then
+					if(WRENn='1' and txemp='1')then
+						if(WRENn='1')then
+							txwr<='1';
+						end if;
 					end if;
 				end if;
 			end if;
@@ -351,14 +356,16 @@ begin
 	end process;
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			curpos<=(others=>'0');
-		elsif(clk' event and clk='1')then
-			if(txwr='1' or (WRENn='0' and rxed='1'))then
-				if(curpos>=tracklenx-1)then
-					curpos<=(others=>'0');
-				else
-					curpos<=curpos+1;
+		if rising_edge(clk) then
+			if(rstn='0')then
+				curpos<=(others=>'0');
+			elsif(ce = '1')then
+				if(txwr='1' or (WRENn='0' and rxed='1'))then
+					if(curpos>=tracklenx-1)then
+						curpos<=(others=>'0');
+					else
+						curpos<=curpos+1;
+					end if;
 				end if;
 			end if;
 		end if;
@@ -460,21 +467,23 @@ begin
 	process(clk,rstn)
 	variable lREADY	:std_logic;
 	begin
-		if(rstn='0')then
-			lREADY:='0';
-			fmdeminit<='0';
-			mfmdeminit<='0';
-		elsif(clk' event and clk='1')then
-			fmdeminit<='0';
-			mfmdeminit<='0';
-			if(MOTOR='1' and lREADY='0')then
-				if(WRMFM='0')then
-					fmdeminit<='1';
-				else
-					mfmdeminit<='1';
+		if rising_edge(clk) then
+			if(rstn='0')then
+				lREADY:='0';
+				fmdeminit<='0';
+				mfmdeminit<='0';
+			elsif(ce = '1')then
+				fmdeminit<='0';
+				mfmdeminit<='0';
+				if(MOTOR='1' and lREADY='0')then
+					if(WRMFM='0')then
+						fmdeminit<='1';
+					else
+						mfmdeminit<='1';
+					end if;
 				end if;
+				lREADY:=MOTOR;
 			end if;
-			lREADY:=MOTOR;
 		end if;
 	end process;
 	
@@ -544,24 +553,26 @@ begin
 	variable wrbusy	:std_logic;
 	variable mwait		:integer range 0 to 3;
 	begin
-		if(rstn='0')then
-			ramwr<='0';
-			rxed<='0';
-			wrbusy:='0';
-			mwait:=0;
-		elsif(clk' event and clk='1')then
-			rxed<='0';
-			if(rxwr='1')then
-				wrbusy:='1';
-				ramwr<='1';
-				mwait:=3;
-			elsif(mwait>0)then
-				mwait:=mwait-1;
-			elsif(wrbusy='1')then
-				if(ramwait='0')then
-					ramwr<='0';
-					rxed<='1';
-					wrbusy:='0';
+		if rising_edge(clk) then
+			if(rstn='0')then
+				ramwr<='0';
+				rxed<='0';
+				wrbusy:='0';
+				mwait:=0;
+			elsif(ce = '1')then
+				rxed<='0';
+				if(rxwr='1')then
+					wrbusy:='1';
+					ramwr<='1';
+					mwait:=3;
+				elsif(mwait>0)then
+					mwait:=mwait-1;
+				elsif(wrbusy='1')then
+					if(ramwait='0')then
+						ramwr<='0';
+						rxed<='1';
+						wrbusy:='0';
+					end if;
 				end if;
 			end if;
 		end if;
@@ -570,53 +581,55 @@ begin
 	
 	process(clk,rstn)
 	begin
-		if(rstn='0')then
-			ramwdat<=(others=>'0');
-			rxwr<='0';
-			wrote<=(others=>'0');
-		elsif(clk' event and clk='1')then
-			rxwr<='0';
-			wrote<=(others=>'0');
-			if(wprot(conv_integer(USEL))='0')then
-				if(WRMFM='0')then
-					if(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1' or fmrxed='1' or GSwrite='1')then
-						if(fmmf8det='1')then
-							ramwdat<=x"05f8";
+		if rising_edge(clk) then
+			if(rstn='0')then
+				ramwdat<=(others=>'0');
+				rxwr<='0';
+				wrote<=(others=>'0');
+			elsif(ce = '1')then
+				rxwr<='0';
+				wrote<=(others=>'0');
+				if(wprot(conv_integer(USEL))='0')then
+					if(WRMFM='0')then
+						if(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1' or fmrxed='1' or GSwrite='1')then
+							if(fmmf8det='1')then
+								ramwdat<=x"05f8";
+							end if;
+							if(fmmfbdet='1')then
+								ramwdat<=x"05fb";
+							end if;
+							if(fmmfcdet='1')then
+								ramwdat<=x"05fc";
+							end if;
+							if(fmmfedet='1')then
+								ramwdat<=x"05fe";
+							end if;
+							if(fmrxed='1')then
+								ramwdat<=x"04" & fmrxdat;
+							end if;
+							if(GSwrite='1')then
+								ramwdat<=x"04" & GSDAT;
+							end if;
+							rxwr<='1';
+							wrote(conv_integer(USEL))<='1';
 						end if;
-						if(fmmfbdet='1')then
-							ramwdat<=x"05fb";
+					else
+						if(mfmma1det='1' or mfmmc2det='1' or mfmrxed='1' or GSwrite='1')then
+							if(mfmma1det='1')then
+								ramwdat<=x"07a1";
+							end if;
+							if(mfmmc2det='1')then
+								ramwdat<=x"07c2";
+							end if;
+							if(mfmrxed='1')then
+								ramwdat<=x"06" & mfmrxdat;
+							end if;
+							if(GSwrite='1')then
+								ramwdat<=x"06" & GSDAT;
+							end if;
+							rxwr<='1';
+							wrote(conv_integer(USEL))<='1';
 						end if;
-						if(fmmfcdet='1')then
-							ramwdat<=x"05fc";
-						end if;
-						if(fmmfedet='1')then
-							ramwdat<=x"05fe";
-						end if;
-						if(fmrxed='1')then
-							ramwdat<=x"04" & fmrxdat;
-						end if;
-						if(GSwrite='1')then
-							ramwdat<=x"04" & GSDAT;
-						end if;
-						rxwr<='1';
-						wrote(conv_integer(USEL))<='1';
-					end if;
-				else
-					if(mfmma1det='1' or mfmmc2det='1' or mfmrxed='1' or GSwrite='1')then
-						if(mfmma1det='1')then
-							ramwdat<=x"07a1";
-						end if;
-						if(mfmmc2det='1')then
-							ramwdat<=x"07c2";
-						end if;
-						if(mfmrxed='1')then
-							ramwdat<=x"06" & mfmrxdat;
-						end if;
-						if(GSwrite='1')then
-							ramwdat<=x"06" & GSDAT;
-						end if;
-						rxwr<='1';
-						wrote(conv_integer(USEL))<='1';
 					end if;
 				end if;
 			end if;
@@ -626,49 +639,51 @@ begin
 	process(clk,rstn)
 	variable lSTEPn		:std_logic;
 	begin
-		if(rstn='0')then
-			curtrack0<=(others=>'1');
-			curtrack1<=(others=>'1');
-			curtrack2<=(others=>'1');
-			curtrack3<=(others=>'1');
-			lSTEPn:='1';
-		elsif(clk' event and clk='1')then
-			if(lSTEPn='1' and STEPn='0')then
-				if(SDIRn='0')then
-					case USEL is
-					when "00" =>
-						curtrack0<=curtrack0+1;
-					when "01" =>
-						curtrack1<=curtrack1+1;
-					when "10" =>
-						curtrack2<=curtrack2+1;
-					when "11" =>
-						curtrack3<=curtrack3+1;
-					when others =>
-					end case;
-				else
-					case USEL is
-					when "00" =>
-						if(curtrack0>0)then
-							curtrack0<=curtrack0-1;
-						end if;
-					when "01" =>
-						if(curtrack1>0)then
-							curtrack1<=curtrack1-1;
-						end if;
-					when "10" =>
-						if(curtrack2>0)then
-							curtrack2<=curtrack2-1;
-						end if;
-					when "11" =>
-						if(curtrack3>0)then
-							curtrack3<=curtrack3-1;
-						end if;
-					when others =>
-					end case;
+		if rising_edge(clk) then
+			if(rstn='0')then
+				curtrack0<=(others=>'1');
+				curtrack1<=(others=>'1');
+				curtrack2<=(others=>'1');
+				curtrack3<=(others=>'1');
+				lSTEPn:='1';
+			elsif(ce = '1')then
+				if(lSTEPn='1' and STEPn='0')then
+					if(SDIRn='0')then
+						case USEL is
+						when "00" =>
+							curtrack0<=curtrack0+1;
+						when "01" =>
+							curtrack1<=curtrack1+1;
+						when "10" =>
+							curtrack2<=curtrack2+1;
+						when "11" =>
+							curtrack3<=curtrack3+1;
+						when others =>
+						end case;
+					else
+						case USEL is
+						when "00" =>
+							if(curtrack0>0)then
+								curtrack0<=curtrack0-1;
+							end if;
+						when "01" =>
+							if(curtrack1>0)then
+								curtrack1<=curtrack1-1;
+							end if;
+						when "10" =>
+							if(curtrack2>0)then
+								curtrack2<=curtrack2-1;
+							end if;
+						when "11" =>
+							if(curtrack3>0)then
+								curtrack3<=curtrack3-1;
+							end if;
+						when others =>
+						end case;
+					end if;
 				end if;
+				lSTEPn:=STEPn;
 			end if;
-			lSTEPn:=STEPn;
 		end if;
 	end process;
 	

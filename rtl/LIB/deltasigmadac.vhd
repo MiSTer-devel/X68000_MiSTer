@@ -18,6 +18,7 @@ entity deltasigmadac is
 		
 		sft		:in std_logic;
 		clk		:in std_logic;
+		ce      :in std_logic := '1';
 		rstn	:in std_logic
 	);
 end deltasigmadac;
@@ -32,14 +33,16 @@ begin
 	sigma<=delta+sigmalat;
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			sigmalat(width+1)<='1';
-			sigmalat(width downto 0)<=(others=>'0');
-			datum<='0';
-		elsif(clk' event and clk='1')then
-			if(sft='1')then
-				sigmalat<=sigma;
-				datum<=sigmalat(width);
+		if rising_edge(clk) then
+			if(rstn='0')then
+				sigmalat(width+1)<='1';
+				sigmalat(width downto 0)<=(others=>'0');
+				datum<='0';
+			elsif(clk' event and clk='1')then
+				if(sft='1')then
+					sigmalat<=sigma;
+					datum<=sigmalat(width);
+				end if;
 			end if;
 		end if;
 	end process;

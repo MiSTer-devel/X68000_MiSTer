@@ -51,6 +51,7 @@ port(
 	GPIPR0	:out std_logic;
 
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end GPIP;
@@ -58,55 +59,61 @@ architecture rtl of GPIP is
 signal	GPI,sGPI,lGPI,GPO,GPD,GPR,GPE	:std_logic_vector(7 downto 0);
 begin
 	process(clk,rstn)begin
-		if(rstn='0')then
-			GPO<=(others=>'0');
-			GPD<=(others=>'0');
-			GPE<=(others=>'0');
-		elsif(clk' event and clk='1')then
-			if(GPIW='1')then
-				GPO<=wdat;
-			end if;
-			if(GPIDW='1')then
-				GPD<=wdat;
-			end if;
-			if(GPIEW='1')then
-				GPE<=wdat;
+		if rising_edge(clk) then
+			if(rstn='0')then
+				GPO<=(others=>'0');
+				GPD<=(others=>'0');
+				GPE<=(others=>'0');
+			elsif(ce = '1')then
+				if(GPIW='1')then
+					GPO<=wdat;
+				end if;
+				if(GPIDW='1')then
+					GPD<=wdat;
+				end if;
+				if(GPIEW='1')then
+					GPE<=wdat;
+				end if;
 			end if;
 		end if;
 	end process;
 	
 	GPI<=GPIPI7 & GPIPI6 & GPIPI5 & GPIPI4 & GPIPI3 & GPIPI2 & GPIPI1 & GPIPI0;
 	process(clk,rstn)begin
-		if(rstn='0')then
-			sGPI<=(others=>'0');
-			lGPI<=(others=>'0');
-		elsif(clk' event and clk='1')then
-			lGPI<=sGPI;
-			for i in 0 to 7 loop
-				if(GPD(i)='1')then
-					sGPI(i)<=GPO(i);
-				else
-					sGPI(i)<=GPI(i);
-				end if;
-			end loop;
+		if rising_edge(clk) then
+			if(rstn='0')then
+				sGPI<=(others=>'0');
+				lGPI<=(others=>'0');
+			elsif(ce = '1')then
+				lGPI<=sGPI;
+				for i in 0 to 7 loop
+					if(GPD(i)='1')then
+						sGPI(i)<=GPO(i);
+					else
+						sGPI(i)<=GPI(i);
+					end if;
+				end loop;
+			end if;
 		end if;
 	end process;
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			GPR<=(others=>'0');
-		elsif(clk' event and clk='1')then
-			for i in 0 to 7 loop
-				if(sGPI(i)/=lGPI(i))then
-					if(sGPI(i)=GPE(i))then
-						GPR(i)<='1';
+		if rising_edge(clk) then
+			if(rstn='0')then
+				GPR<=(others=>'0');
+			elsif(ce = '1')then
+				for i in 0 to 7 loop
+					if(sGPI(i)/=lGPI(i))then
+						if(sGPI(i)=GPE(i))then
+							GPR(i)<='1';
+						else
+							GPR(i)<='0';
+						end if;
 					else
 						GPR(i)<='0';
 					end if;
-				else
-					GPR(i)<='0';
-				end if;
-			end loop;
+				end loop;
+			end if;
 		end if;
 	end process;
 	

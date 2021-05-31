@@ -43,6 +43,7 @@ port(
 	debugsel	:in std_logic_vector(1 downto 0)	:="11";
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end spritec;
@@ -140,30 +141,32 @@ end component;
 begin
 	change<=hcomp;
 	process(clk,rstn)begin
-		if(rstn='0')then
-			state<=st_IDLE;
-			proc_begin<='0';
-		elsif(clk' event and clk='1')then
-			proc_begin<='0';
-			if(hcomp='1')then
-				state<=st_BG0;
-				proc_begin<='1';
-			elsif(state=st_BG0)then
-				if(bg_state=bg_END)then
-					state<=st_BG1;
+		if rising_edge(clk) then
+			if(rstn='0')then
+				state<=st_IDLE;
+				proc_begin<='0';
+			elsif(ce = '1')then
+				proc_begin<='0';
+				if(hcomp='1')then
+					state<=st_BG0;
 					proc_begin<='1';
-				end if;
-			elsif(state=st_BG1)then
-				if(bg_state=bg_END)then
-					state<=st_SPRITE;
-					proc_begin<='1';
-				end if;
-			elsif(state=st_SPRITE)then
-				if(sp_state=sp_END)then
+				elsif(state=st_BG0)then
+					if(bg_state=bg_END)then
+						state<=st_BG1;
+						proc_begin<='1';
+					end if;
+				elsif(state=st_BG1)then
+					if(bg_state=bg_END)then
+						state<=st_SPRITE;
+						proc_begin<='1';
+					end if;
+				elsif(state=st_SPRITE)then
+					if(sp_state=sp_END)then
+						state<=st_IDLE;
+					end if;
+				else
 					state<=st_IDLE;
 				end if;
-			else
-				state<=st_IDLE;
 			end if;
 		end if;
 	end process;
@@ -227,60 +230,64 @@ begin
 	variable	bg_xd1		:std_logic_vector(8 downto 0);
 
 	begin
-		if(clk' event and clk='1')then
-			bg0wr<=bg0wrdly;
-			bg1wr<=bg1wrdly;
-			bg_xmodd<=bg_xmod;
-			bg_waddr<=bg_waddrd1;
-			sp_waddrd<=sp_waddr(8 downto 0);
-			sp_xposd<=sp_xposd1;
-			bg_xd<=bg_xd1;
-			bgCOLORd<=bgCOLOR;
-			sprCOLORd<=	sprCOLOR;
-			if(state=st_BG0)then
-				bg0wrdly:='1';
-			else
-				bg0wrdly:='0';
+		if rising_edge(clk) then
+			if(ce = '1')then
+				bg0wr<=bg0wrdly;
+				bg1wr<=bg1wrdly;
+				bg_xmodd<=bg_xmod;
+				bg_waddr<=bg_waddrd1;
+				sp_waddrd<=sp_waddr(8 downto 0);
+				sp_xposd<=sp_xposd1;
+				bg_xd<=bg_xd1;
+				bgCOLORd<=bgCOLOR;
+				sprCOLORd<=	sprCOLOR;
+				if(state=st_BG0)then
+					bg0wrdly:='1';
+				else
+					bg0wrdly:='0';
+				end if;
+				if(state=st_BG1)then
+					bg1wrdly:='1';
+				else
+					bg1wrdly:='0';
+				end if;
+				bg_waddrd1:=bg_x;
+				if(sp_state=sp_copy)then
+					spwrdly:=sp_wren;
+					sp_wr<=sp_wren;
+				else
+					spwrdly:='0';
+					sp_wr<='0';
+				end if;
+				sp_waddrd1:=sp_waddr(8 downto 0);
+				sp_xposd1:=sp_xpos;
+				bg_xd1:=bg_x;
 			end if;
-			if(state=st_BG1)then
-				bg1wrdly:='1';
-			else
-				bg1wrdly:='0';
-			end if;
-			bg_waddrd1:=bg_x;
-			if(sp_state=sp_copy)then
-				spwrdly:=sp_wren;
-				sp_wr<=sp_wren;
-			else
-				spwrdly:='0';
-				sp_wr<='0';
-			end if;
-			sp_waddrd1:=sp_waddr(8 downto 0);
-			sp_xposd1:=sp_xpos;
-			bg_xd1:=bg_x;
 		end if;
 	end process;
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			bg_state<=bg_IDLE;
-			bg_x<=(others=>'0');
-		elsif(clk' event and clk='1')then
-			case bg_state is
-			when bg_IDLE =>
-				if((state=st_BG0 or state=st_BG1) and proc_begin='1')then
-					bg_x<=(others=>'0');
-					bg_state<=bg_BUSY;
-				end if;
-			when bg_BUSY =>
-				if(bg_x<lastx)then
-					bg_x<=bg_x+1;
-				else
-					bg_state<=bg_END;
-				end if;
-			when others =>
+		if rising_edge(clk) then
+			if(rstn='0')then
 				bg_state<=bg_IDLE;
-			end case;
+				bg_x<=(others=>'0');
+			elsif(ce = '1')then
+				case bg_state is
+				when bg_IDLE =>
+					if((state=st_BG0 or state=st_BG1) and proc_begin='1')then
+						bg_x<=(others=>'0');
+						bg_state<=bg_BUSY;
+					end if;
+				when bg_BUSY =>
+					if(bg_x<lastx)then
+						bg_x<=bg_x+1;
+					else
+						bg_state<=bg_END;
+					end if;
+				when others =>
+					bg_state<=bg_IDLE;
+				end case;
+			end if;
 		end if;
 	end process;
 	
@@ -290,51 +297,53 @@ begin
 	process(clk,rstn)
 	variable	sp_yposl	:std_logic_vector(9 downto 0);
 	begin
-		if(rstn='0')then
-			sp_no<=(others=>'0');
-			sp_state<=sp_IDLE;
-			sp_xpos<=(others=>'0');
-		elsif(clk' event and clk='1')then
-			if(hcomp='1')then
+		if rising_edge(clk) then
+			if(rstn='0')then
+				sp_no<=(others=>'0');
 				sp_state<=sp_IDLE;
-			else
-				case sp_state is
-				when sp_IDLE =>
-					if(state=st_SPRITE and proc_begin='1')then
-						sp_no<=(others=>'1');
-						sp_state<=sp_setno;
-					end if;
-				when sp_setno =>
-					sp_state<=sp_check;
-				when sp_check =>
-					if(sprPRI="00" or sprypos<=linenum or sprypos>sp_linenum)then
-						if(sp_no>lastspno)then
-							sp_no<=sp_no-1;
-							sp_state<=sp_setno;
-						else
-							sp_state<=sp_END;
-						end if;
-					else
-						sp_yposl:=('0' & linenum)-sprypos;
-						sp_ypos<=sp_yposl(3 downto 0);
-						sp_xpos<=(others=>'0');
-						sp_state<=sp_copy;
-					end if;
-				when sp_copy =>
-					if(sp_xpos<x"f")then
-						sp_xpos<=sp_xpos+x"1";
-					else
-						if(sp_no>lastspno)then
-							sp_no<=sp_no-1;
-							sp_state<=sp_setno;
-						else
-							sp_state<=sp_END;
-						end if;
-						sp_xpos<=(others=>'0');
-					end if;
-				when others =>
+				sp_xpos<=(others=>'0');
+			elsif(ce = '1')then
+				if(hcomp='1')then
 					sp_state<=sp_IDLE;
-				end case;
+				else
+					case sp_state is
+					when sp_IDLE =>
+						if(state=st_SPRITE and proc_begin='1')then
+							sp_no<=(others=>'1');
+							sp_state<=sp_setno;
+						end if;
+					when sp_setno =>
+						sp_state<=sp_check;
+					when sp_check =>
+						if(sprPRI="00" or sprypos<=linenum or sprypos>sp_linenum)then
+							if(sp_no>lastspno)then
+								sp_no<=sp_no-1;
+								sp_state<=sp_setno;
+							else
+								sp_state<=sp_END;
+							end if;
+						else
+							sp_yposl:=('0' & linenum)-sprypos;
+							sp_ypos<=sp_yposl(3 downto 0);
+							sp_xpos<=(others=>'0');
+							sp_state<=sp_copy;
+						end if;
+					when sp_copy =>
+						if(sp_xpos<x"f")then
+							sp_xpos<=sp_xpos+x"1";
+						else
+							if(sp_no>lastspno)then
+								sp_no<=sp_no-1;
+								sp_state<=sp_setno;
+							else
+								sp_state<=sp_END;
+							end if;
+							sp_xpos<=(others=>'0');
+						end if;
+					when others =>
+						sp_state<=sp_IDLE;
+					end case;
+				end if;
 			end if;
 		end if;
 	end process;

@@ -682,21 +682,6 @@ signal	contc_doe	:std_logic;
 signal	dwait		:std_logic;
 signal	dsprbgen	:std_logic_vector(1 downto 0);
 
-component mainpll10nanodemu
-	port (
-		refclk   : in  std_logic := '0'; --  refclk.clk
-		rst      : in  std_logic := '0'; --   reset.reset
-		outclk_0 : out std_logic;        -- outclk0.clk
-		outclk_1 : out std_logic;        -- outclk1.clk
-		outclk_2 : out std_logic;        -- outclk2.clk
-		outclk_3 : out std_logic;        -- outclk3.clk
-		outclk_4 : out std_logic;        -- outclk4.clk
-		outclk_5 : out std_logic;        -- outclk5.clk
-		outclk_6 : out std_logic;        -- outclk6.clk
-		locked   : out std_logic         --  locked.export
-	);
-end component;
-
 component TG68
    port(        
 		clk           : in std_logic;
@@ -735,40 +720,6 @@ component cpu_wrapper
 		UDS_n        :out std_logic;
 		LDS_n        :out std_logic;
 		OE           :out std_logic
-	);
-end component;
-
-component fx68k
-	port(
-		clk        :in std_logic;
-		HALTn      :in std_logic;
-		extReset   :in std_logic;   
-		pwrUp      :in std_logic;   
-		enPhi1     :in std_logic;   
-		enPhi2     :in std_logic;   
-		eRWn       :out std_logic;  
-		ASn        :out std_logic;  
-		LDSn       :out std_logic;  
-		UDSn       :out std_logic;  
-		E          :out std_logic;  
-		VMAn       :out std_logic;  
-		FC0        :out std_logic;  
-		FC1        :out std_logic;  
-		FC2        :out std_logic;  
-		BGn        :out std_logic;  
-		oRESETn    :out std_logic;  
-		oHALTEDn   :out std_logic;  
-		DTACKn     :in std_logic;   
-		VPAn       :in std_logic;   
-		BERRn      :in std_logic;   
-		BRn        :in std_logic;   
-		BGACKn     :in std_logic;   
-		IPL0n      :in std_logic;   
-		IPL1n      :in std_logic;   
-		IPL2n      :in std_logic;   
-		iEdb       :in std_logic_vector(15 downto 0);
-		oEdb       :out std_logic_vector(15 downto 0);
-		eab        :out std_logic_vector(23 downto 1)
 	);
 end component;
 
@@ -896,9 +847,13 @@ port(
 	
 	initdone:out std_logic;
 	sclk	:in std_logic;
+	sys_ce  :in std_logic := '1';
 	vclk	:in std_logic;
+	vid_ce  :in std_logic := '1';
 	fclk	:in std_logic;
+	fd_ce   :in std_logic := '1';
 	rclk	:in std_logic;
+	ram_ce  :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -3766,10 +3721,10 @@ begin
 		ct2      => opm_ct2,
 		irq_n    => opm_intn,
 		sample   => open,
-		left     => open,
-		right    => open,
-		xleft    => opm_sndl,
-		xright   => opm_sndr,
+		left     => opm_sndl,
+		right    => opm_sndr,
+		xleft    => open,
+		xright   => open,
 		dacleft  => open,
 		dacright => open
 	);

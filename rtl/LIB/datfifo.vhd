@@ -21,6 +21,7 @@ port(
 	clr		:in std_logic	:='0';
 	
 	clk		:in std_logic;
+	ce      :in std_logic;
 	rstn		:in std_logic
 );
 end datfifo;
@@ -37,17 +38,19 @@ begin
 	empty<='1' when rdaddr=wraddr else '0';
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			wraddr<=0;
-		elsif(clk' event and clk='1')then
-			if(clr='1')then
+		if rising_edge(clk) then
+			if(rstn='0')then
 				wraddr<=0;
-			elsif(datwr='1')then
-				RAM(wraddr)<=datin;
-				if((wraddr+1)=depth)then
+			elsif(ce = '1')then
+				if(clr='1')then
 					wraddr<=0;
-				else
-					wraddr<=wraddr+1;
+				elsif(datwr='1')then
+					RAM(wraddr)<=datin;
+					if((wraddr+1)=depth)then
+						wraddr<=0;
+					else
+						wraddr<=wraddr+1;
+					end if;
 				end if;
 			end if;
 		end if;
@@ -55,16 +58,18 @@ begin
 	
 	datout<=RAM(rdaddr);
 	process(clk,rstn)begin
-		if(rstn='0')then
-			rdaddr<=0;
-		elsif(clk' event and clk='1')then
-			if(clr='1')then
+		if rising_edge(clk) then
+			if(rstn='0')then
 				rdaddr<=0;
-			elsif(datrd='1')then
-				if((rdaddr+1)=depth)then
+			elsif(ce = '1')then
+				if(clr='1')then
 					rdaddr<=0;
-				else
-					rdaddr<=rdaddr+1;
+				elsif(datrd='1')then
+					if((rdaddr+1)=depth)then
+						rdaddr<=0;
+					else
+						rdaddr<=rdaddr+1;
+					end if;
 				end if;
 			end if;
 		end if;

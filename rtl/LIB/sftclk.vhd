@@ -13,6 +13,7 @@ port(
 	SFT		:out std_logic;
 
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end SFTCLK;
@@ -24,23 +25,25 @@ signal	selcounter :std_logic_vector(selWIDTH-1 downto 0);
 constant selallzero	:std_logic_vector(selWIDTH-1 downto 0)	:=(others=>'0');
 begin
 	process(clk,rstn)begin
-		if(rstn='0')then
-			counter<=count-1;
-			SFT<='0';
-			selcounter<=(others=>'0');
-		elsif(clk' event and clk='1')then
-			if(counter=0)then
-				if(selcounter=selallzero)then
-					selcounter<=sel;
-					SFT<='1';
-				else
-					selcounter<=selcounter-1;
-					SFT<='0';
-				end if;
+		if rising_edge(clk) then
+			if(rstn='0')then
 				counter<=count-1;
-			else
 				SFT<='0';
-				counter<=counter-1;
+				selcounter<=(others=>'0');
+			elsif(ce = '1')then
+				if(counter=0)then
+					if(selcounter=selallzero)then
+						selcounter<=sel;
+						SFT<='1';
+					else
+						selcounter<=selcounter-1;
+						SFT<='0';
+					end if;
+					counter<=count-1;
+				else
+					SFT<='0';
+					counter<=counter-1;
+				end if;
 			end if;
 		end if;
 	end process;

@@ -384,7 +384,9 @@ port(
 	masken	:in std_logic;
 	
 	wclk	:in std_logic;
+	ram_ce  :in std_logic := '1';
 	rclk	:in std_logic;
+	sys_ce  :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -1007,7 +1009,8 @@ begin
 	bfaddr<=b_addr(brsize-1 downto 0);
 
 	bcgen	:for i in 0 to brblocks-1 generate
-		brcache_extF0	:cacheext generic map(brsize) port map(ramaddrrc(brsize-1 downto 0),brcache_extwr(i),brcache_clr(i),brcache_busyv(i),bfaddr,brcache_ext(i),'1',rclk,sclk,rstn);
+	--FIXME: is ram clock supposed to be used as wclk, and sys clk as rclk?
+		brcache_extF0	:cacheext generic map(brsize) port map(ramaddrrc(brsize-1 downto 0),brcache_extwr(i),brcache_clr(i),brcache_busyv(i),bfaddr,brcache_ext(i),'1',rclk, ram_ce, sclk, sys_ce, rstn);
 		BRcache0h:CACHEMEMN generic map(brsize,8)port map(ramaddrrc(brsize-1 downto 0),b_addr(brsize-1 downto 0),rclk,sclk,brwdath,b_wdatm(15 downto 8),brwr(i),brwrb(i)(1),open,brdath(i));
 		BRcache0l:CACHEMEMN generic map(brsize,8)port map(ramaddrrc(brsize-1 downto 0),b_addr(brsize-1 downto 0),rclk,sclk,brwdatl,b_wdatm(7 downto 0),brwr(i),brwrb(i)(0),open,brdatl(i));
 	end generate;
@@ -1130,10 +1133,10 @@ begin
 	bwwr0m<=bwwr0 or (b_cwr0 & b_cwr0);
 	bwwr1m<=bwwr1 or (b_cwr1 & b_cwr1);
 	BWewaddr<= ramaddrrc when RAM_STATE=ST_BCREAD else b_addr(7 downto 0);
-	BWext0h	:cacheext generic map(brsize) port map(ramaddrwex(brsize-1 downto 0),bwwr0m(1),bwcache_clr0,bwcache_busy0,ramaddrwc(brsize-1 downto 0),bwwe0(1),'0',rclk,rclk,rstn);
-	BWext0l	:cacheext generic map(brsize) port map(ramaddrwex(brsize-1 downto 0),bwwr0m(0),bwcache_clr0,open,         ramaddrwc(brsize-1 downto 0),bwwe0(0),'0',rclk,rclk,rstn);
-	BWext1h	:cacheext generic map(brsize) port map(ramaddrwex(brsize-1 downto 0),bwwr1m(1),bwcache_clr1,bwcache_busy1,ramaddrwc(brsize-1 downto 0),bwwe1(1),'0',rclk,rclk,rstn);
-	BWext1l	:cacheext generic map(brsize) port map(ramaddrwex(brsize-1 downto 0),bwwr1m(0),bwcache_clr1,open,         ramaddrwc(brsize-1 downto 0),bwwe1(0),'0',rclk,rclk,rstn);
+	BWext0h	:cacheext generic map(brsize) port map(ramaddrwex(brsize-1 downto 0),bwwr0m(1),bwcache_clr0,bwcache_busy0,ramaddrwc(brsize-1 downto 0),bwwe0(1),'0',rclk, ram_ce, rclk, ram_ce, rstn);
+	BWext0l	:cacheext generic map(brsize) port map(ramaddrwex(brsize-1 downto 0),bwwr0m(0),bwcache_clr0,open,         ramaddrwc(brsize-1 downto 0),bwwe0(0),'0',rclk, ram_ce, rclk, ram_ce, rstn);
+	BWext1h	:cacheext generic map(brsize) port map(ramaddrwex(brsize-1 downto 0),bwwr1m(1),bwcache_clr1,bwcache_busy1,ramaddrwc(brsize-1 downto 0),bwwe1(1),'0',rclk, ram_ce, rclk, ram_ce, rstn);
+	BWext1l	:cacheext generic map(brsize) port map(ramaddrwex(brsize-1 downto 0),bwwr1m(0),bwcache_clr1,open,         ramaddrwc(brsize-1 downto 0),bwwe1(0),'0',rclk, ram_ce, rclk, ram_ce, rstn);
 	bwcache_busy<=bwcache_busy0 or bwcache_busy1;
 	
 	BWcache0h	:CACHEMEMN generic map(brsize,8)port map(ramaddrwcb(brsize-1 downto 0),b_addr(brsize-1 downto 0),rclk,sclk,ramrdat(15 downto 8),b_wdatm(15 downto 8),b_cwr0,bwwr0(1),bwwdat0h,open);

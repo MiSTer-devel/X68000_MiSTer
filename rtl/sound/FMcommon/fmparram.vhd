@@ -15,11 +15,13 @@ port(
 	wrdat		:in std_logic_vector(PARWIDTH-1 downto 0);
 	wr			:in std_logic;
 	clkw		:in std_logic;
+	cew         :in std_logic := '1';
 	
 	rdchannel	:in integer range 0 to CHANNELS-1;
 	rdslot		:in integer range 0 to SLOTS-1;
 	rddat		:out std_logic_vector(PARWIDTH-1 downto 0);
-	clkr		:in std_logic
+	clkr		:in std_logic;
+	cer         :in std_logic := '1'
 );
 end fmparram;
 
@@ -31,16 +33,20 @@ signal	RAM	:DAT_LAT_ARRAY(0 to ramsize-1);
 
 begin
 	process(clkw)begin
-		if(clkw' event and clkw='1')then
-			if(wr='1')then
-				RAM((wrchannel*SLOTS)+wrslot)<=wrdat;
+		if rising_edge(clkw) then
+			if(cew = '1')then
+				if(wr='1')then
+					RAM((wrchannel*SLOTS)+wrslot)<=wrdat;
+				end if;
 			end if;
 		end if;
 	end process;
 	
 	process(clkr)begin
-		if(clkr' event and clkr='1')then
-			rddat<=RAM((rdchannel*SLOTS)+rdslot);
+		if rising_edge(clkr) then
+			if(cer = '1')then
+				rddat<=RAM((rdchannel*SLOTS)+rdslot);
+			end if;
 		end if;
 	end process;
 end rtl;

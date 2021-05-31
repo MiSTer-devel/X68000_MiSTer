@@ -13,6 +13,7 @@ port(
 	rddat	:out std_logic_vector(7 downto 0);
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end sline;
@@ -36,13 +37,15 @@ component slinebuf
 END component;
 begin
 	process(clk,rstn)begin
-		if(rstn='0')then
-			sel<='0';
-		elsif(clk' event and clk='1')then
-			if(change='1')then
-				sel<=not sel;
+		if rising_edge(clk) then
+			if(rstn='0')then
+				sel<='0';
+			elsif(ce = '1')then
+				if(change='1')then
+					sel<=not sel;
+				end if;
 			end if;
-		end if;
+			end if;
 	end process;
 	
 	wr0<=	'1' when sel='0' and clr='1' else

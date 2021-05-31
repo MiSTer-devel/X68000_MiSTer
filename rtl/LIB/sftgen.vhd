@@ -11,6 +11,7 @@ port(
 	sft		:out std_logic;
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end sftgen;
@@ -18,16 +19,18 @@ architecture rtl of sftgen is
 signal	count	:integer range 0 to maxlen;
 begin
 	process(clk,rstn)begin
-		if(rstn='0')then
-			count<=0;
-			sft<='0';
-		elsif(clk' event and clk='1')then
-			if(count>1)then
-				count<=count-1;
+		if rising_edge(clk) then
+			if(rstn='0')then
+				count<=0;
 				sft<='0';
-			else
-				sft<='1';
-				count<=len;
+			elsif(ce = '1')then
+				if(count>1)then
+					count<=count-1;
+					sft<='0';
+				else
+					sft<='1';
+					count<=len;
+				end if;
 			end if;
 		end if;
 	end process;

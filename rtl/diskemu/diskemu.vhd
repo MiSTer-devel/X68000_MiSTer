@@ -90,8 +90,11 @@ port(
 	initdone	:out std_logic;
 	busy		:out std_logic;
 	fclk		:in std_logic;
+	fd_ce       :in std_logic := '1';
 	sclk		:in std_logic;
+	sys_ce      :in std_logic := '1';
 	rclk		:in std_logic;
+	ram_ce      :in std_logic := '1';
 	rstn		:in std_logic
 );
 end diskemu;
@@ -530,163 +533,165 @@ begin
 	variable sasirpend	:std_logic;
 	variable sasispend	:std_logic;
 	begin
-		if(rstn='0')then
-			lmount:=(others=>'0');
-			emustate<=es_IDLE;
-			proc_begin<='0';
-			fdload:=(others=>'0');
-			fdstore:=(others=>'0');
-			sstore:='0';
-			sload:='0';
-			fdc_indiskb<="00";
-			sasiwpend:='0';
-			sasirpend:='0';
-			sasispend:='0';
-			sasi_bufbusy<='0';
-			sasi_rdreq2<='0';
-			sasi_wrreq2<='0';
-			sasi_syreq2<='0';
-			sram_ldreq<='0';
-			sram_streq<='0';
-			sramen<='0';
-			sasien<='0';
-		elsif(sclk' event and sclk='1')then
-			proc_begin<='0';
-			sasi_rdreq2<='0';
-			sasi_wrreq2<='0';
-			sasi_syreq2<='0';
-			sram_ldreq<='0';
-			sram_streq<='0';
-			if(mist_mounted(bit_fd0)='1' and lmount(bit_fd0)='0')then
-				if(mist_imgsize=x"00000000")then
-					fdc_indiskb(0)<='0';
-				else
-					fdc_indiskb(0)<='0';
-					fdload(0):='1';
-				end if;
-			end if;
-			if(mist_mounted(bit_fd1)='1' and lmount(bit_fd1)='0')then
-				if(mist_imgsize=x"00000000")then
-					fdc_indiskb(1)<='0';
-				else
-					fdc_indiskb(1)<='0';
-					fdload(1):='1';
-				end if;
-			end if;
-			
-			if(mist_mounted(bit_sasi)='1' and lmount(bit_sasi)='0')then
-				if(mist_imgsize=x"00000000")then
-					sasien<='0';
-				else
-					sasien<='1';
-				end if;
-				sasi_cap<=mist_imgsize;
-			end if;
-			
-			if(mist_mounted(bit_sram)='1' and lmount(bit_sram)='0')then
-				if(mist_imgsize=x"00000000")then
-					sramen<='0';
-				else
-					sramen<='1';
-				end if;
-			end if;
-			
-			if(storef0='1')then
-				fdstore(0):='1';
-			end if;
-			if(storef1='1')then
-				fdstore(1):='1';
-			end if;
-			
-			if(sram_ld='1' and sramen='1')then
-				sload:='1';
-			end if;
-			if(sram_st='1' and sramen='1')then
-				sstore:='1';
-			end if;
-			
-			if(fdc_eject(0)='1' and fdc_indiskb(0)='1')then
-				fdstore(0):='1';
-				fdc_indiskb(0)<='0';
-			end if;
-			if(fdc_eject(1)='1' and fdc_indiskb(1)='1')then
-				fdstore(1):='1';
-				fdc_indiskb(1)<='0';
-			end if;
-			
-			if(sasi_rdreq='1')then
-				sasirpend:='1';
-				sasi_bufbusy<='1';
-			elsif(sasi_wrreq='1')then
-				sasiwpend:='1';
-				sasi_bufbusy<='1';
-			elsif(sasi_syncreq='1')then
-				sasispend:='1';
-			end if;
-			
-			lmount:=mist_mounted;
-			case emustate is
-			when es_IDLE =>
-				if(sasirpend='1')then
-					sasirpend:='0';
-					emustate<=es_sasi;
-					sasi_rdreq2<='1';
-				elsif(sasiwpend='1')then
-					sasiwpend:='0';
-					emustate<=es_sasi;
-					sasi_wrreq2<='1';
-				elsif(sasispend='1')then
-					sasispend:='0';
-					emustate<=es_sasi;
-					sasi_syreq2<='1';
-				elsif(fdload(0)='1')then
-					emustate<=es_fload0;
-					proc_begin<='1';
-					fdload(0):='0';
-				elsif(fdload(1)='1')then
-					emustate<=es_fload1;
-					proc_begin<='1';
-					fdload(1):='0';
-				elsif(fdstore(0)='1' and fdc_indiskb(0)='1')then
-					emustate<=es_fsave0;
-					proc_begin<='1';
-					fdstore(0):='0';
-				elsif(fdstore(1)='1' and fdc_indiskb(1)='1')then
-					emustate<=es_fsave1;
-					proc_begin<='1';
-					fdstore(1):='0';
-				elsif(sload='1')then
-					emustate<=es_sload;
-					sram_ldreq<='1';
-					sload:='0';
-				elsif(sstore='1')then
-					emustate<=es_ssave;
-					sram_streq<='1';
-					sstore:='0';
-				end if;
-			when es_fload0 | es_fload1 | es_fsave0 | es_fsave1 =>
-				if(fddone='1')then
-					emustate<=es_IDLE;
-					case emustate is
-					when es_fload0 =>
-						fdc_indiskb(0)<='1';
-					when es_fload1 =>
-						fdc_indiskb(1)<='1';
-					when others =>
-					end case;
-				end if;
-			when es_sasi =>
-				if(sasidone='1')then
-					sasi_bufbusy<='0';
-					emustate<=es_IDLE;
-				end if;
-			when es_sload | es_ssave =>
-				if(sramdone='1')then
-					emustate<=es_IDLE;
-				end if;
-			when others =>
+		if rising_edge(sclk) then
+			if(rstn='0')then
+				lmount:=(others=>'0');
 				emustate<=es_IDLE;
-			end case;
+				proc_begin<='0';
+				fdload:=(others=>'0');
+				fdstore:=(others=>'0');
+				sstore:='0';
+				sload:='0';
+				fdc_indiskb<="00";
+				sasiwpend:='0';
+				sasirpend:='0';
+				sasispend:='0';
+				sasi_bufbusy<='0';
+				sasi_rdreq2<='0';
+				sasi_wrreq2<='0';
+				sasi_syreq2<='0';
+				sram_ldreq<='0';
+				sram_streq<='0';
+				sramen<='0';
+				sasien<='0';
+			elsif(sys_ce = '1')then
+				proc_begin<='0';
+				sasi_rdreq2<='0';
+				sasi_wrreq2<='0';
+				sasi_syreq2<='0';
+				sram_ldreq<='0';
+				sram_streq<='0';
+				if(mist_mounted(bit_fd0)='1' and lmount(bit_fd0)='0')then
+					if(mist_imgsize=x"00000000")then
+						fdc_indiskb(0)<='0';
+					else
+						fdc_indiskb(0)<='0';
+						fdload(0):='1';
+					end if;
+				end if;
+				if(mist_mounted(bit_fd1)='1' and lmount(bit_fd1)='0')then
+					if(mist_imgsize=x"00000000")then
+						fdc_indiskb(1)<='0';
+					else
+						fdc_indiskb(1)<='0';
+						fdload(1):='1';
+					end if;
+				end if;
+				
+				if(mist_mounted(bit_sasi)='1' and lmount(bit_sasi)='0')then
+					if(mist_imgsize=x"00000000")then
+						sasien<='0';
+					else
+						sasien<='1';
+					end if;
+					sasi_cap<=mist_imgsize;
+				end if;
+				
+				if(mist_mounted(bit_sram)='1' and lmount(bit_sram)='0')then
+					if(mist_imgsize=x"00000000")then
+						sramen<='0';
+					else
+						sramen<='1';
+					end if;
+				end if;
+				
+				if(storef0='1')then
+					fdstore(0):='1';
+				end if;
+				if(storef1='1')then
+					fdstore(1):='1';
+				end if;
+				
+				if(sram_ld='1' and sramen='1')then
+					sload:='1';
+				end if;
+				if(sram_st='1' and sramen='1')then
+					sstore:='1';
+				end if;
+				
+				if(fdc_eject(0)='1' and fdc_indiskb(0)='1')then
+					fdstore(0):='1';
+					fdc_indiskb(0)<='0';
+				end if;
+				if(fdc_eject(1)='1' and fdc_indiskb(1)='1')then
+					fdstore(1):='1';
+					fdc_indiskb(1)<='0';
+				end if;
+				
+				if(sasi_rdreq='1')then
+					sasirpend:='1';
+					sasi_bufbusy<='1';
+				elsif(sasi_wrreq='1')then
+					sasiwpend:='1';
+					sasi_bufbusy<='1';
+				elsif(sasi_syncreq='1')then
+					sasispend:='1';
+				end if;
+				
+				lmount:=mist_mounted;
+				case emustate is
+				when es_IDLE =>
+					if(sasirpend='1')then
+						sasirpend:='0';
+						emustate<=es_sasi;
+						sasi_rdreq2<='1';
+					elsif(sasiwpend='1')then
+						sasiwpend:='0';
+						emustate<=es_sasi;
+						sasi_wrreq2<='1';
+					elsif(sasispend='1')then
+						sasispend:='0';
+						emustate<=es_sasi;
+						sasi_syreq2<='1';
+					elsif(fdload(0)='1')then
+						emustate<=es_fload0;
+						proc_begin<='1';
+						fdload(0):='0';
+					elsif(fdload(1)='1')then
+						emustate<=es_fload1;
+						proc_begin<='1';
+						fdload(1):='0';
+					elsif(fdstore(0)='1' and fdc_indiskb(0)='1')then
+						emustate<=es_fsave0;
+						proc_begin<='1';
+						fdstore(0):='0';
+					elsif(fdstore(1)='1' and fdc_indiskb(1)='1')then
+						emustate<=es_fsave1;
+						proc_begin<='1';
+						fdstore(1):='0';
+					elsif(sload='1')then
+						emustate<=es_sload;
+						sram_ldreq<='1';
+						sload:='0';
+					elsif(sstore='1')then
+						emustate<=es_ssave;
+						sram_streq<='1';
+						sstore:='0';
+					end if;
+				when es_fload0 | es_fload1 | es_fsave0 | es_fsave1 =>
+					if(fddone='1')then
+						emustate<=es_IDLE;
+						case emustate is
+						when es_fload0 =>
+							fdc_indiskb(0)<='1';
+						when es_fload1 =>
+							fdc_indiskb(1)<='1';
+						when others =>
+						end case;
+					end if;
+				when es_sasi =>
+					if(sasidone='1')then
+						sasi_bufbusy<='0';
+						emustate<=es_IDLE;
+					end if;
+				when es_sload | es_ssave =>
+					if(sramdone='1')then
+						emustate<=es_IDLE;
+					end if;
+				when others =>
+					emustate<=es_IDLE;
+				end case;
+			end if;
 		end if;
 	end process;
 	
@@ -740,143 +745,145 @@ begin
 	process(sclk,rstn)
 	variable wrote	:std_logic;
 	begin
-		if(rstn='0')then
-			sbufstate<=ss_idle;
-			lba_fdd<=(others=>'0');
-			mist_rd(bit_fd1 downto bit_fd0)<=(others=>'0');
-			mist_wr(bit_fd1 downto bit_fd0)<=(others=>'0');
-			cur_lba<=(others=>'1');
-			cur_unit<='0';
-			sbufwr<='0';
-			wrote:='0';
-		elsif(sclk' event and sclk='1')then
-			sbufwr<='0';
-			case sbufstate is
-			when ss_idle =>
-				if(img_rd='1')then
-					if(img_addr(31 downto 9)/=cur_lba(22 downto 0) or img_unit/=cur_unit)then
+		if rising_edge(sclk) then
+			if(rstn='0')then
+				sbufstate<=ss_idle;
+				lba_fdd<=(others=>'0');
+				mist_rd(bit_fd1 downto bit_fd0)<=(others=>'0');
+				mist_wr(bit_fd1 downto bit_fd0)<=(others=>'0');
+				cur_lba<=(others=>'1');
+				cur_unit<='0';
+				sbufwr<='0';
+				wrote:='0';
+			elsif(sys_ce = '1')then
+				sbufwr<='0';
+				case sbufstate is
+				when ss_idle =>
+					if(img_rd='1')then
+						if(img_addr(31 downto 9)/=cur_lba(22 downto 0) or img_unit/=cur_unit)then
+							if(wrote='1')then
+								if(img_unit='0')then
+									mist_wr(bit_fd0)<='1';
+								else
+									mist_wr(bit_fd1)<='1';
+								end if;
+								sbufstate<=ss_rwrite;
+							else
+								cur_lba<="000000000" & img_addr(31 downto 9);
+								cur_unit<=img_unit;
+								lba_fdd<="000000000" & img_addr(31 downto 9);
+								if(img_unit='0')then
+									mist_rd(bit_fd0)<='1';
+								else
+									mist_rd(bit_fd1)<='1';
+								end if;
+								sbufstate<=ss_read;
+							end if;
+						end if;
+					elsif(img_wr='1')then
+						if(img_addr(31 downto 9)=cur_lba(22 downto 0) and img_unit=cur_unit)then
+							sbufwr<='1';
+							wrote:='1';
+						else
+							if(wrote='1')then
+								if(cur_unit='0')then
+									mist_wr(bit_fd0)<='1';
+								else
+									mist_wr(bit_fd1)<='1';
+								end if;
+								sbufstate<=ss_write;
+							else
+								cur_lba<="000000000" & img_addr(31 downto 9);
+								cur_unit<=img_unit;
+								lba_fdd<="000000000" & img_addr(31 downto 9);
+								if(img_unit='0')then
+									mist_rd(bit_fd0)<='1';
+								else
+									mist_rd(bit_fd1)<='1';
+								end if;
+								sbufstate<=ss_wread;
+							end if;
+						end if;
+					elsif(img_sync='1')then
 						if(wrote='1')then
 							if(img_unit='0')then
 								mist_wr(bit_fd0)<='1';
 							else
 								mist_wr(bit_fd1)<='1';
 							end if;
-							sbufstate<=ss_rwrite;
-						else
-							cur_lba<="000000000" & img_addr(31 downto 9);
-							cur_unit<=img_unit;
-							lba_fdd<="000000000" & img_addr(31 downto 9);
-							if(img_unit='0')then
-								mist_rd(bit_fd0)<='1';
-							else
-								mist_rd(bit_fd1)<='1';
-							end if;
-							sbufstate<=ss_read;
+							sbufstate<=ss_sync;
 						end if;
 					end if;
-				elsif(img_wr='1')then
-					if(img_addr(31 downto 9)=cur_lba(22 downto 0) and img_unit=cur_unit)then
+				when ss_rwrite =>
+					if(mist_ack(bit_fd0)='1')then
+						mist_wr(bit_fd1 downto bit_fd0)<="00";
+						sbufstate<=ss_rwrite2;
+					end if;
+				when ss_rwrite2 =>
+					if(mist_ack(bit_fd0)='0')then
+						wrote:='0';
+						cur_lba<="000000000" & img_addr(31 downto 9);
+						cur_unit<=img_unit;
+						lba_fdd<="000000000" & img_addr(31 downto 9);
+						if(img_unit='0')then
+							mist_rd(bit_fd0)<='1';
+						else
+							mist_rd(bit_fd1)<='1';
+						end if;
+						sbufstate<=ss_read;
+					end if;
+				when ss_read =>
+					if(mist_ack(bit_fd0)='1')then
+						mist_rd(bit_fd1 downto bit_fd0)<="00";
+						sbufstate<=ss_read2;
+					end if;
+				when ss_read2 =>
+					if(mist_ack(bit_fd0)='0')then
+						sbufstate<=ss_idle;
+					end if;
+				when ss_write =>
+					if(mist_ack(bit_fd0)='1')then
+						mist_wr(bit_fd1 downto bit_fd0)<="00";
+						sbufstate<=ss_write2;
+					end if;
+				when ss_write2 =>
+					if(mist_ack(bit_fd0)='0')then
+						lba_fdd<="000000000" & img_addr(31 downto 9);
+						cur_lba<="000000000" & img_addr(31 downto 9);
+						cur_unit<=img_unit;
+						if(img_unit='0')then
+							mist_rd(bit_fd0)<='1';
+						else
+							mist_rd(bit_fd1)<='1';
+						end if;
+						wrote:='0';
+						sbufstate<=ss_wread;
+					end if;
+				when ss_wread =>
+					if(mist_ack(bit_fd0)='1')then
+						mist_rd(bit_fd1 downto bit_fd0)<="00";
+						sbufstate<=ss_wread2;
+					end if;
+				when ss_wread2 =>
+					if(mist_ack(bit_fd0)='0')then
 						sbufwr<='1';
 						wrote:='1';
-					else
-						if(wrote='1')then
-							if(cur_unit='0')then
-								mist_wr(bit_fd0)<='1';
-							else
-								mist_wr(bit_fd1)<='1';
-							end if;
-							sbufstate<=ss_write;
-						else
-							cur_lba<="000000000" & img_addr(31 downto 9);
-							cur_unit<=img_unit;
-							lba_fdd<="000000000" & img_addr(31 downto 9);
-							if(img_unit='0')then
-								mist_rd(bit_fd0)<='1';
-							else
-								mist_rd(bit_fd1)<='1';
-							end if;
-							sbufstate<=ss_wread;
-						end if;
+						sbufstate<=ss_idle;
 					end if;
-				elsif(img_sync='1')then
-					if(wrote='1')then
-						if(img_unit='0')then
-							mist_wr(bit_fd0)<='1';
-						else
-							mist_wr(bit_fd1)<='1';
-						end if;
-						sbufstate<=ss_sync;
+				when ss_sync =>
+					if(mist_ack(bit_fd0)='1')then
+						mist_wr(bit_fd1 downto bit_fd0)<="00";
+						sbufstate<=ss_sync2;
 					end if;
-				end if;
-			when ss_rwrite =>
-				if(mist_ack(bit_fd0)='1')then
-					mist_wr(bit_fd1 downto bit_fd0)<="00";
-					sbufstate<=ss_rwrite2;
-				end if;
-			when ss_rwrite2 =>
-				if(mist_ack(bit_fd0)='0')then
-					wrote:='0';
-					cur_lba<="000000000" & img_addr(31 downto 9);
-					cur_unit<=img_unit;
-					lba_fdd<="000000000" & img_addr(31 downto 9);
-					if(img_unit='0')then
-						mist_rd(bit_fd0)<='1';
-					else
-						mist_rd(bit_fd1)<='1';
+				when ss_sync2 =>
+					if(mist_ack(bit_fd0)='0')then
+						wrote:='0';
+						sbufstate<=ss_idle;
 					end if;
-					sbufstate<=ss_read;
-				end if;
-			when ss_read =>
-				if(mist_ack(bit_fd0)='1')then
-					mist_rd(bit_fd1 downto bit_fd0)<="00";
-					sbufstate<=ss_read2;
-				end if;
-			when ss_read2 =>
-				if(mist_ack(bit_fd0)='0')then
+				when others =>
 					sbufstate<=ss_idle;
-				end if;
-			when ss_write =>
-				if(mist_ack(bit_fd0)='1')then
-					mist_wr(bit_fd1 downto bit_fd0)<="00";
-					sbufstate<=ss_write2;
-				end if;
-			when ss_write2 =>
-				if(mist_ack(bit_fd0)='0')then
-					lba_fdd<="000000000" & img_addr(31 downto 9);
-					cur_lba<="000000000" & img_addr(31 downto 9);
-					cur_unit<=img_unit;
-					if(img_unit='0')then
-						mist_rd(bit_fd0)<='1';
-					else
-						mist_rd(bit_fd1)<='1';
-					end if;
-					wrote:='0';
-					sbufstate<=ss_wread;
-				end if;
-			when ss_wread =>
-				if(mist_ack(bit_fd0)='1')then
-					mist_rd(bit_fd1 downto bit_fd0)<="00";
-					sbufstate<=ss_wread2;
-				end if;
-			when ss_wread2 =>
-				if(mist_ack(bit_fd0)='0')then
-					sbufwr<='1';
-					wrote:='1';
-					sbufstate<=ss_idle;
-				end if;
-			when ss_sync =>
-				if(mist_ack(bit_fd0)='1')then
-					mist_wr(bit_fd1 downto bit_fd0)<="00";
-					sbufstate<=ss_sync2;
-				end if;
-			when ss_sync2 =>
-				if(mist_ack(bit_fd0)='0')then
-					wrote:='0';
-					sbufstate<=ss_idle;
-				end if;
-			when others =>
-				sbufstate<=ss_idle;
-			end case;
+				end case;
+			end if;
 		end if;
 	end process;
 
@@ -890,503 +897,171 @@ begin
 	variable swait	:integer range 0 to 3;
 	variable ambuf0,ambuf1,ambuf2,ambuf3	:std_logic_vector(9 downto 0);
 	begin
-		if(rstn='0')then
-			fdstate<=fs_idle;
-			swait:=0;
-			mfm<='0';
-			mfm0<='0';
-			mfm1<='0';
-			trackno<=(others=>'0');
-			track_curaddr<=(others=>'0');
-			img_rd<='0';
-			img_wr<='0';
-			img_sync<='0';
-			img_wrdat<=(others=>'0');
-			trackrd<='0';
-			trackwr<='0';
-			tracksync<='0';
-			crcclr<='0';
-			crcwr<='0';
-			crcwrdat<=(others=>'0');
-			numsect<=(others=>'0');
-			sectcount<=(others=>'0');
-			fddone<='0';
-			diskmode0<="00";
-			diskmode1<="00";
-			diskmode<="00";
-			ambuf0:=(others=>'0');
-			ambuf1:=(others=>'0');
-			ambuf2:=(others=>'0');
-			ambuf3:=(others=>'0');
-			trackwrote<='0';
-			fde_modeset<="00";
-		elsif(sclk' event and sclk='1')then
-			img_rd<='0';
-			img_wr<='0';
-			img_sync<='0';
-			trackrd<='0';
-			trackwr<='0';
-			tracksync<='0';
-			crcclr<='0';
-			crcwr<='0';
-			fde_modeset<="00";
-			fddone<='0';
-			if(swait>0)then
-				swait:=swait-1;
-			else
-				case fdstate is
-				when fs_idle =>
-					if(proc_begin='1')then
+		if rising_edge(sclk) then
+			if(rstn='0')then
+				fdstate<=fs_idle;
+				swait:=0;
+				mfm<='0';
+				mfm0<='0';
+				mfm1<='0';
+				trackno<=(others=>'0');
+				track_curaddr<=(others=>'0');
+				img_rd<='0';
+				img_wr<='0';
+				img_sync<='0';
+				img_wrdat<=(others=>'0');
+				trackrd<='0';
+				trackwr<='0';
+				tracksync<='0';
+				crcclr<='0';
+				crcwr<='0';
+				crcwrdat<=(others=>'0');
+				numsect<=(others=>'0');
+				sectcount<=(others=>'0');
+				fddone<='0';
+				diskmode0<="00";
+				diskmode1<="00";
+				diskmode<="00";
+				ambuf0:=(others=>'0');
+				ambuf1:=(others=>'0');
+				ambuf2:=(others=>'0');
+				ambuf3:=(others=>'0');
+				trackwrote<='0';
+				fde_modeset<="00";
+			elsif(sys_ce = '1')then
+				img_rd<='0';
+				img_wr<='0';
+				img_sync<='0';
+				trackrd<='0';
+				trackwr<='0';
+				tracksync<='0';
+				crcclr<='0';
+				crcwr<='0';
+				fde_modeset<="00";
+				fddone<='0';
+				if(swait>0)then
+					swait:=swait-1;
+				else
+					case fdstate is
+					when fs_idle =>
+						if(proc_begin='1')then
+							case emustate is
+							when es_fload0 | es_fsave0 =>
+								img_addr<=x"00000000";
+								img_unit<='0';
+								img_rd<='1';
+								fdstate<=fs_loadtbl0;
+							when es_fload1 | es_fsave1 =>
+								img_addr<=x"00000000";
+								img_unit<='1';
+								img_rd<='1';
+								fdstate<=fs_loadtbl0;
+							when others=>
+							end case;
+						end if;
+					when fs_loadtbl0 =>
+						if(img_busy='0')then
+							img_addr<=x"00000200";
+							trackno<=(others=>'0');
+							img_rd<='1';
+							fdstate<=fs_loadtbl1;
+						end if;
+					when fs_loadtbl1 =>
+						if(img_busy='0')then
+							swait:=2;
+							case emustate is
+							when es_fload0 | es_fload1 =>
+								tbladdr<=x"06";
+								fdstate<=fs_loadmode;
+							when es_fsave0 | es_fsave1 =>
+								tbladdr<=x"08";
+								track_curaddr<=(others=>'0');
+								trackrd<='1';
+								ambuf0:=(others=>'0');
+								ambuf1:=(others=>'0');
+								ambuf2:=(others=>'0');
+								ambuf3:=(others=>'0');
+								trackwrote<='0';
+								fdstate<=fs_scantrack;
+							when others =>
+								fdstate<=fs_idle;
+							end case;
+							trackno<=(others=>'0');
+							sectcount<=(others=>'0');
+						end if;
+					when fs_loadmode =>
+						diskmode<=haddr(29 downto 28);
 						case emustate is
 						when es_fload0 | es_fsave0 =>
-							img_addr<=x"00000000";
-							img_unit<='0';
-							img_rd<='1';
-							fdstate<=fs_loadtbl0;
+							wrprot(0)<=haddr(20);
+							diskmode0<=haddr(29 downto 28);
+							fde_modeset(0)<='1';
 						when es_fload1 | es_fsave1 =>
-							img_addr<=x"00000000";
+							wrprot(1)<=haddr(20);
+							diskmode1<=haddr(29 downto 28);
+							fde_modeset(1)<='1';
+						when others =>
+						end case;
+						tbladdr<=trackno+x"08";
+						swait:=2;
+						fdstate<=fs_loadshead;
+					when fs_loadshead =>
+						cursecthead<=haddr;
+						case emustate is
+						when es_fload0 | es_fsave0 =>
+							img_unit<='0';
+						when es_fload1 | es_fsave1 =>
 							img_unit<='1';
-							img_rd<='1';
-							fdstate<=fs_loadtbl0;
 						when others=>
 						end case;
-					end if;
-				when fs_loadtbl0 =>
-					if(img_busy='0')then
-						img_addr<=x"00000200";
-						trackno<=(others=>'0');
+						img_addr<=haddr+x"08";
 						img_rd<='1';
-						fdstate<=fs_loadtbl1;
-					end if;
-				when fs_loadtbl1 =>
-					if(img_busy='0')then
-						swait:=2;
-						case emustate is
-						when es_fload0 | es_fload1 =>
-							tbladdr<=x"06";
-							fdstate<=fs_loadmode;
-						when es_fsave0 | es_fsave1 =>
-							tbladdr<=x"08";
+						fdstate<=fs_loadsheadw;
+					when fs_loadsheadw =>
+						if(img_busy='0')then
+							mfm<=not img_rddat(6);
+							case emustate is
+							when es_fload0 =>
+								mfm0<=not img_rddat(6);
+							when es_fload1 =>
+								mfm1<=not img_rddat(6);
+							when others =>
+							end case;
 							track_curaddr<=(others=>'0');
-							trackrd<='1';
-							ambuf0:=(others=>'0');
-							ambuf1:=(others=>'0');
-							ambuf2:=(others=>'0');
-							ambuf3:=(others=>'0');
-							trackwrote<='0';
-							fdstate<=fs_scantrack;
-						when others =>
-							fdstate<=fs_idle;
-						end case;
-						trackno<=(others=>'0');
-						sectcount<=(others=>'0');
-					end if;
-				when fs_loadmode =>
-					diskmode<=haddr(29 downto 28);
-					case emustate is
-					when es_fload0 | es_fsave0 =>
-						wrprot(0)<=haddr(20);
-						diskmode0<=haddr(29 downto 28);
-						fde_modeset(0)<='1';
-					when es_fload1 | es_fsave1 =>
-						wrprot(1)<=haddr(20);
-						diskmode1<=haddr(29 downto 28);
-						fde_modeset(1)<='1';
-					when others =>
-					end case;
-					tbladdr<=trackno+x"08";
-					swait:=2;
-					fdstate<=fs_loadshead;
-				when fs_loadshead =>
-					cursecthead<=haddr;
-					case emustate is
-					when es_fload0 | es_fsave0 =>
-						img_unit<='0';
-					when es_fload1 | es_fsave1 =>
-						img_unit<='1';
-					when others=>
-					end case;
-					img_addr<=haddr+x"08";
-					img_rd<='1';
-					fdstate<=fs_loadsheadw;
-				when fs_loadsheadw =>
-					if(img_busy='0')then
-						mfm<=not img_rddat(6);
-						case emustate is
-						when es_fload0 =>
-							mfm0<=not img_rddat(6);
-						when es_fload1 =>
-							mfm1<=not img_rddat(6);
-						when others =>
-						end case;
-						track_curaddr<=(others=>'0');
-						if(img_rddat(6)='1')then
-							bytecount<=80;
-							trackwrdat<=x"024e";
-						else
-							bytecount<=40;
-							trackwrdat<=x"00ff";
-						end if;
-						trackwr<='1';
-						swait:=1;
-						img_addr<=haddr+x"04";
-						img_rd<='1';
-						fdstate<=fs_loadsectorsl;
-					end if;
-				when fs_loadsectorsl =>
-					if(img_busy='0')then
-						numsect(7 downto 0)<=img_rddat;
-						img_addr<=haddr+x"05";
-						swait:=1;
-						fdstate<=fs_loadsectorsh;
-					end if;
-				when fs_loadsectorsh =>
-					if(img_busy='0')then
-						numsect(15 downto 8)<=img_rddat;
-						sectcount<=(others=>'0');
-						fdstate<=fs_gap0;
-					end if;
-				when fs_gap0 =>
-					if(trackbusy='0')then
-						if(bytecount>0)then
-							bytecount<=bytecount-1;
-							track_curaddr<=track_curaddr+1;
-							trackwr<='1';
-							swait:=1;
-						else
-							if(mfm='1')then
-								trackwrdat<=x"0200";
-								bytecount<=12;
-							else
-								trackwrdat<=x"0000";
-								bytecount<=6;
-							end if;
-							track_curaddr<=track_curaddr+1;
-							trackwr<='1';
-							swait:=1;
-							fdstate<=fs_synci;
-						end if;
-					end if;
-				when fs_synci =>
-					if(trackbusy='0')then
-						if(bytecount>0)then
-							bytecount<=bytecount-1;
-							track_curaddr<=track_curaddr+1;
-							trackwr<='1';
-							swait:=1;
-						else
-							track_curaddr<=track_curaddr+1;
-							crcclr<='1';
-							if(mfm='1')then
-								trackwrdat<=x"03a1";
-								crcwrdat<=x"a1";
-								fdstate<=fs_iam0;
-							else
-								trackwrdat<=x"01fe";
-								crcwrdat<=x"fe";
-								fdstate<=fs_C;
-							end if;
-							trackwr<='1';
-							crcwr<='1';
-							img_addr<=cursecthead+x"00";
-							img_rd<='1';
-							swait:=1;
-						end if;
-					end if;
-				when fs_iam0 =>
-					if(trackbusy='0' and crcbusy='0')then
-						track_curaddr<=track_curaddr+1;
-						trackwrdat<=x"03a1";
-						trackwr<='1';
-						crcwrdat<=x"a1";
-						crcwr<='1';
-						swait:=1;
-						fdstate<=fs_iam1;
-					end if;
-				when fs_iam1 =>
-					if(trackbusy='0' and crcbusy='0')then
-						track_curaddr<=track_curaddr+1;
-						trackwrdat<=x"03a1";
-						trackwr<='1';
-						crcwrdat<=x"a1";
-						crcwr<='1';
-						swait:=1;
-						fdstate<=fs_iam2;
-					end if;
-				when fs_iam2 =>
-					if(trackbusy='0' and crcbusy='0')then
-						track_curaddr<=track_curaddr+1;
-						trackwrdat<=x"02fe";
-						trackwr<='1';
-						crcwrdat<=x"fe";
-						crcwr<='1';
-						swait:=1;
-						fdstate<=fs_C;
-					end if;
-				when fs_C =>
-					if(trackbusy='0' and img_busy='0' and crcbusy='0')then
-						track_curaddr<=track_curaddr+1;
-						trackwrdat(15 downto 10)<=(others=>'0');
-						trackwrdat(9 downto 8)<=mfm & '0';
-						trackwrdat(7 downto 0)<=img_rddat;
-						trackwr<='1';
-						crcwrdat<=img_rddat;
-						crcwr<='1';
-						fdstate<=fs_H;
-						img_addr<=cursecthead+x"01";
-						swait:=1;
-					end if;
-				when fs_H =>
-					if(trackbusy='0' and img_busy='0' and crcbusy='0')then
-						track_curaddr<=track_curaddr+1;
-						trackwrdat(15 downto 10)<=(others=>'0');
-						trackwrdat(9 downto 8)<=mfm & '0';
-						trackwrdat(7 downto 0)<=img_rddat;
-						trackwr<='1';
-						crcwrdat<=img_rddat;
-						crcwr<='1';
-						fdstate<=fs_R;
-						img_addr<=cursecthead+x"02";
-						swait:=1;
-					end if;
-				when fs_R =>
-					if(trackbusy='0' and img_busy='0' and crcbusy='0')then
-						track_curaddr<=track_curaddr+1;
-						trackwrdat(15 downto 10)<=(others=>'0');
-						trackwrdat(9 downto 8)<=mfm & '0';
-						trackwrdat(7 downto 0)<=img_rddat;
-						trackwr<='1';
-						crcwrdat<=img_rddat;
-						crcwr<='1';
-						fdstate<=fs_N;
-						img_addr<=cursecthead+x"03";
-						swait:=1;
-					end if;
-				when fs_N =>
-					if(trackbusy='0' and img_busy='0' and crcbusy='0')then
-						track_curaddr<=track_curaddr+1;
-						trackwrdat(15 downto 10)<=(others=>'0');
-						trackwrdat(9 downto 8)<=mfm & '0';
-						trackwrdat(7 downto 0)<=img_rddat;
-						trackwr<='1';
-						crcwrdat<=img_rddat;
-						crcwr<='1';
-						fdstate<=fs_crci0;
-						img_addr<=cursecthead+x"08";
-						img_rd<='1';
-						swait:=1;
-					end if;
-				when fs_crci0 =>
-					if(trackbusy='0' and img_busy='0' and crcbusy='0')then
-						track_curaddr<=track_curaddr+1;
-						sectstatus<=img_rddat;
-						trackwrdat(15 downto 10)<=(others=>'0');
-						trackwrdat(9 downto 8)<=mfm & '0';
-						if(img_rddat=x"a0")then
-							trackwrdat(7 downto 0)<=not crcdat(15 downto 8);
-						else
-							trackwrdat(7 downto 0)<=crcdat(15 downto 8);
-						end if;
-						trackwr<='1';
-						img_addr<=cursecthead+x"07";
-						fdstate<=fs_crci1;
-						swait:=1;
-					end if;
-				when fs_crci1 =>
-					if(trackbusy='0' and img_busy='0')then
-						deleted<=img_rddat(4);
-						track_curaddr<=track_curaddr+1;
-						trackwrdat(15 downto 10)<=(others=>'0');
-						trackwrdat(9 downto 8)<=mfm & '0';
-						if(sectstatus=x"a0")then
-							trackwrdat(7 downto 0)<=not crcdat(7 downto 0);
-						else
-							trackwrdat(7 downto 0)<=crcdat(7 downto 0);
-						end if;
-						trackwr<='1';
-						img_addr<=cursecthead+x"0e";
-						img_rd<='1';
-						fdstate<=fs_ssizel;
-						swait:=1;
-					end if;
-				when fs_ssizel =>
-					if(img_busy='0')then
-						sectlen(7 downto 0)<=img_rddat;
-						img_addr<=cursecthead+x"0f";
-						img_rd<='1';
-						fdstate<=fs_ssizeh;
-					end if;
-				when fs_ssizeh =>
-					if(img_busy='0')then
-						sectlen(15 downto 8)<=img_rddat;
-						img_addr<=cursecthead+x"10";
-						img_rd<='1';
-						nxtsecthead<=cursecthead+(img_rddat & sectlen(7 downto 0))+x"10";
-						track_curaddr<=track_curaddr+1;
-						if(mfm='1')then
-							bytecount<=22;
-							trackwrdat<=x"024e";
-						else
-							bytecount<=11;
-							trackwrdat<=x"00ff";
-						end if;
-						trackwr<='1';
-						swait:=1;
-						fdstate<=fs_gap1;
-					end if;
-				when fs_gap1 =>
-					if(trackbusy='0')then
-						track_curaddr<=track_curaddr+1;
-						if(bytecount>0)then
-							bytecount<=bytecount-1;
-						else
-							if(mfm='1')then
-								bytecount<=12;
-								trackwrdat<=x"0200";
-							else
-								bytecount<=6;
-								trackwrdat<=x"0000";
-							end if;
-							fdstate<=fs_syncd;
-						end if;
-						trackwr<='1';
-						swait:=1;
-					end if;
-				when fs_syncd =>
-					if(trackbusy='0')then
-						track_curaddr<=track_curaddr+1;
-						if(bytecount>0)then
-							bytecount<=bytecount-1;
-						else
-							crcclr<='1';
-							if(mfm='1')then
-								trackwrdat<=x"03a1";
-								crcwrdat<=x"a1";
-								fdstate<=fs_dam0;
-							else
-								if(deleted='1')then
-									trackwrdat<=x"01f8";
-									crcwrdat<=x"f8";
-								else
-									trackwrdat<=x"01fb";
-									crcwrdat<=x"fb";
-								end if;
-								fdstate<=fs_dat;
-							end if;
-							crcwr<='1';
-						end if;
-						trackwr<='1';
-						swait:=1;
-					end if;
-				when fs_dam0 =>
-					if(trackbusy='0' and crcbusy='0')then
-						track_curaddr<=track_curaddr+1;
-						trackwrdat<=x"03a1";
-						crcwrdat<=x"a1";
-						trackwr<='1';
-						crcwr<='1';
-						fdstate<=fs_dam1;
-						swait:=1;
-					end if;
-				when fs_dam1 =>
-					if(trackbusy='0' and crcbusy='0')then
-						track_curaddr<=track_curaddr+1;
-						trackwrdat<=x"03a1";
-						crcwrdat<=x"a1";
-						trackwr<='1';
-						crcwr<='1';
-						fdstate<=fs_dam2;
-						swait:=1;
-					end if;
-				when fs_dam2 =>
-					if(trackbusy='0' and crcbusy='0')then
-						track_curaddr<=track_curaddr+1;
-						if(deleted='1')then
-							trackwrdat<=x"02f8";
-							crcwrdat<=x"f8";
-						else
-							trackwrdat<=x"02fb";
-							crcwrdat<=x"fb";
-						end if;
-						trackwr<='1';
-						crcwr<='1';
-						fdstate<=fs_dat;
-						swait:=1;
-					end if;
-				when fs_dat =>
-					if(trackbusy='0' and img_busy='0' and crcbusy='0')then
-						track_curaddr<=track_curaddr+1;
-						trackwrdat(15 downto 10)<=(others=>'0');
-						trackwrdat(9 downto 8)<=mfm & '0';
-						trackwrdat(7 downto 0)<=img_rddat;
-						crcwrdat<=img_rddat;
-						trackwr<='1';
-						crcwr<='1';
-						if(sectlen>x"0001")then
-							sectlen<=sectlen-1;
-							img_addr<=img_addr+1;
-							img_rd<='1';
-						else
-							fdstate<=fs_crcd0;
-						end if;
-						swait:=1;
-					end if;
-				when fs_crcd0 =>
-					if(trackbusy='0' and crcbusy='0')then
-						track_curaddr<=track_curaddr+1;
-						trackwrdat(15 downto 10)<=(others=>'0');
-						trackwrdat(9 downto 8)<=mfm & '0';
-						if(sectstatus=x"b0")then
-							trackwrdat(7 downto 0)<=not crcdat(15 downto 8);
-						else
-							trackwrdat(7 downto 0)<=crcdat(15 downto 8);
-						end if;
-						trackwr<='1';
-						fdstate<=fs_crcd1;
-						swait:=1;
-					end if;
-				when fs_crcd1 =>
-					if(trackbusy='0' and crcbusy='0')then
-						track_curaddr<=track_curaddr+1;
-						trackwrdat(15 downto 10)<=(others=>'0');
-						trackwrdat(9 downto 8)<=mfm & '0';
-						if(sectstatus=x"b0")then
-							trackwrdat(7 downto 0)<=not crcdat(7 downto 0);
-						else
-							trackwrdat(7 downto 0)<=crcdat(7 downto 0);
-						end if;
-						trackwr<='1';
-						fdstate<=fs_gap2;
-						if(mfm='1')then
-							bytecount<=10;
-						else
-							bytecount<=5;
-						end if;
-						swait:=1;
-					end if;
-				when fs_gap2 =>
-					if(trackbusy='0')then
-						track_curaddr<=track_curaddr+1;
-						if(bytecount>0)then
-							bytecount<=bytecount-1;
-							if(mfm='1')then
+							if(img_rddat(6)='1')then
+								bytecount<=80;
 								trackwrdat<=x"024e";
 							else
+								bytecount<=40;
 								trackwrdat<=x"00ff";
 							end if;
 							trackwr<='1';
-						else
-							if(numsect=(sectcount+1))then
-								if(mfm='1')then
-									trackwrdat<=x"024e";
-								else
-									trackwrdat<=x"00ff";
-								end if;
+							swait:=1;
+							img_addr<=haddr+x"04";
+							img_rd<='1';
+							fdstate<=fs_loadsectorsl;
+						end if;
+					when fs_loadsectorsl =>
+						if(img_busy='0')then
+							numsect(7 downto 0)<=img_rddat;
+							img_addr<=haddr+x"05";
+							swait:=1;
+							fdstate<=fs_loadsectorsh;
+						end if;
+					when fs_loadsectorsh =>
+						if(img_busy='0')then
+							numsect(15 downto 8)<=img_rddat;
+							sectcount<=(others=>'0');
+							fdstate<=fs_gap0;
+						end if;
+					when fs_gap0 =>
+						if(trackbusy='0')then
+							if(bytecount>0)then
+								bytecount<=bytecount-1;
+								track_curaddr<=track_curaddr+1;
 								trackwr<='1';
-								fdstate<=fs_gap3;
+								swait:=1;
 							else
-								sectcount<=sectcount+1;
-								cursecthead<=nxtsecthead;
 								if(mfm='1')then
 									trackwrdat<=x"0200";
 									bytecount<=12;
@@ -1394,68 +1069,679 @@ begin
 									trackwrdat<=x"0000";
 									bytecount<=6;
 								end if;
+								track_curaddr<=track_curaddr+1;
 								trackwr<='1';
 								swait:=1;
 								fdstate<=fs_synci;
 							end if;
 						end if;
-					end if;
-				when fs_gap3 =>
-					if(trackbusy='0')then
-						if(track_curaddr<tracklen)then
+					when fs_synci =>
+						if(trackbusy='0')then
+							if(bytecount>0)then
+								bytecount<=bytecount-1;
+								track_curaddr<=track_curaddr+1;
+								trackwr<='1';
+								swait:=1;
+							else
+								track_curaddr<=track_curaddr+1;
+								crcclr<='1';
+								if(mfm='1')then
+									trackwrdat<=x"03a1";
+									crcwrdat<=x"a1";
+									fdstate<=fs_iam0;
+								else
+									trackwrdat<=x"01fe";
+									crcwrdat<=x"fe";
+									fdstate<=fs_C;
+								end if;
+								trackwr<='1';
+								crcwr<='1';
+								img_addr<=cursecthead+x"00";
+								img_rd<='1';
+								swait:=1;
+							end if;
+						end if;
+					when fs_iam0 =>
+						if(trackbusy='0' and crcbusy='0')then
 							track_curaddr<=track_curaddr+1;
+							trackwrdat<=x"03a1";
 							trackwr<='1';
-						else
+							crcwrdat<=x"a1";
+							crcwr<='1';
+							swait:=1;
+							fdstate<=fs_iam1;
+						end if;
+					when fs_iam1 =>
+						if(trackbusy='0' and crcbusy='0')then
+							track_curaddr<=track_curaddr+1;
+							trackwrdat<=x"03a1";
+							trackwr<='1';
+							crcwrdat<=x"a1";
+							crcwr<='1';
+							swait:=1;
+							fdstate<=fs_iam2;
+						end if;
+					when fs_iam2 =>
+						if(trackbusy='0' and crcbusy='0')then
+							track_curaddr<=track_curaddr+1;
+							trackwrdat<=x"02fe";
+							trackwr<='1';
+							crcwrdat<=x"fe";
+							crcwr<='1';
+							swait:=1;
+							fdstate<=fs_C;
+						end if;
+					when fs_C =>
+						if(trackbusy='0' and img_busy='0' and crcbusy='0')then
+							track_curaddr<=track_curaddr+1;
+							trackwrdat(15 downto 10)<=(others=>'0');
+							trackwrdat(9 downto 8)<=mfm & '0';
+							trackwrdat(7 downto 0)<=img_rddat;
+							trackwr<='1';
+							crcwrdat<=img_rddat;
+							crcwr<='1';
+							fdstate<=fs_H;
+							img_addr<=cursecthead+x"01";
+							swait:=1;
+						end if;
+					when fs_H =>
+						if(trackbusy='0' and img_busy='0' and crcbusy='0')then
+							track_curaddr<=track_curaddr+1;
+							trackwrdat(15 downto 10)<=(others=>'0');
+							trackwrdat(9 downto 8)<=mfm & '0';
+							trackwrdat(7 downto 0)<=img_rddat;
+							trackwr<='1';
+							crcwrdat<=img_rddat;
+							crcwr<='1';
+							fdstate<=fs_R;
+							img_addr<=cursecthead+x"02";
+							swait:=1;
+						end if;
+					when fs_R =>
+						if(trackbusy='0' and img_busy='0' and crcbusy='0')then
+							track_curaddr<=track_curaddr+1;
+							trackwrdat(15 downto 10)<=(others=>'0');
+							trackwrdat(9 downto 8)<=mfm & '0';
+							trackwrdat(7 downto 0)<=img_rddat;
+							trackwr<='1';
+							crcwrdat<=img_rddat;
+							crcwr<='1';
+							fdstate<=fs_N;
+							img_addr<=cursecthead+x"03";
+							swait:=1;
+						end if;
+					when fs_N =>
+						if(trackbusy='0' and img_busy='0' and crcbusy='0')then
+							track_curaddr<=track_curaddr+1;
+							trackwrdat(15 downto 10)<=(others=>'0');
+							trackwrdat(9 downto 8)<=mfm & '0';
+							trackwrdat(7 downto 0)<=img_rddat;
+							trackwr<='1';
+							crcwrdat<=img_rddat;
+							crcwr<='1';
+							fdstate<=fs_crci0;
+							img_addr<=cursecthead+x"08";
+							img_rd<='1';
+							swait:=1;
+						end if;
+					when fs_crci0 =>
+						if(trackbusy='0' and img_busy='0' and crcbusy='0')then
+							track_curaddr<=track_curaddr+1;
+							sectstatus<=img_rddat;
+							trackwrdat(15 downto 10)<=(others=>'0');
+							trackwrdat(9 downto 8)<=mfm & '0';
+							if(img_rddat=x"a0")then
+								trackwrdat(7 downto 0)<=not crcdat(15 downto 8);
+							else
+								trackwrdat(7 downto 0)<=crcdat(15 downto 8);
+							end if;
+							trackwr<='1';
+							img_addr<=cursecthead+x"07";
+							fdstate<=fs_crci1;
+							swait:=1;
+						end if;
+					when fs_crci1 =>
+						if(trackbusy='0' and img_busy='0')then
+							deleted<=img_rddat(4);
+							track_curaddr<=track_curaddr+1;
+							trackwrdat(15 downto 10)<=(others=>'0');
+							trackwrdat(9 downto 8)<=mfm & '0';
+							if(sectstatus=x"a0")then
+								trackwrdat(7 downto 0)<=not crcdat(7 downto 0);
+							else
+								trackwrdat(7 downto 0)<=crcdat(7 downto 0);
+							end if;
+							trackwr<='1';
+							img_addr<=cursecthead+x"0e";
+							img_rd<='1';
+							fdstate<=fs_ssizel;
+							swait:=1;
+						end if;
+					when fs_ssizel =>
+						if(img_busy='0')then
+							sectlen(7 downto 0)<=img_rddat;
+							img_addr<=cursecthead+x"0f";
+							img_rd<='1';
+							fdstate<=fs_ssizeh;
+						end if;
+					when fs_ssizeh =>
+						if(img_busy='0')then
+							sectlen(15 downto 8)<=img_rddat;
+							img_addr<=cursecthead+x"10";
+							img_rd<='1';
+							nxtsecthead<=cursecthead+(img_rddat & sectlen(7 downto 0))+x"10";
+							track_curaddr<=track_curaddr+1;
+							if(mfm='1')then
+								bytecount<=22;
+								trackwrdat<=x"024e";
+							else
+								bytecount<=11;
+								trackwrdat<=x"00ff";
+							end if;
+							trackwr<='1';
+							swait:=1;
+							fdstate<=fs_gap1;
+						end if;
+					when fs_gap1 =>
+						if(trackbusy='0')then
+							track_curaddr<=track_curaddr+1;
+							if(bytecount>0)then
+								bytecount<=bytecount-1;
+							else
+								if(mfm='1')then
+									bytecount<=12;
+									trackwrdat<=x"0200";
+								else
+									bytecount<=6;
+									trackwrdat<=x"0000";
+								end if;
+								fdstate<=fs_syncd;
+							end if;
+							trackwr<='1';
+							swait:=1;
+						end if;
+					when fs_syncd =>
+						if(trackbusy='0')then
+							track_curaddr<=track_curaddr+1;
+							if(bytecount>0)then
+								bytecount<=bytecount-1;
+							else
+								crcclr<='1';
+								if(mfm='1')then
+									trackwrdat<=x"03a1";
+									crcwrdat<=x"a1";
+									fdstate<=fs_dam0;
+								else
+									if(deleted='1')then
+										trackwrdat<=x"01f8";
+										crcwrdat<=x"f8";
+									else
+										trackwrdat<=x"01fb";
+										crcwrdat<=x"fb";
+									end if;
+									fdstate<=fs_dat;
+								end if;
+								crcwr<='1';
+							end if;
+							trackwr<='1';
+							swait:=1;
+						end if;
+					when fs_dam0 =>
+						if(trackbusy='0' and crcbusy='0')then
+							track_curaddr<=track_curaddr+1;
+							trackwrdat<=x"03a1";
+							crcwrdat<=x"a1";
+							trackwr<='1';
+							crcwr<='1';
+							fdstate<=fs_dam1;
+							swait:=1;
+						end if;
+					when fs_dam1 =>
+						if(trackbusy='0' and crcbusy='0')then
+							track_curaddr<=track_curaddr+1;
+							trackwrdat<=x"03a1";
+							crcwrdat<=x"a1";
+							trackwr<='1';
+							crcwr<='1';
+							fdstate<=fs_dam2;
+							swait:=1;
+						end if;
+					when fs_dam2 =>
+						if(trackbusy='0' and crcbusy='0')then
+							track_curaddr<=track_curaddr+1;
+							if(deleted='1')then
+								trackwrdat<=x"02f8";
+								crcwrdat<=x"f8";
+							else
+								trackwrdat<=x"02fb";
+								crcwrdat<=x"fb";
+							end if;
+							trackwr<='1';
+							crcwr<='1';
+							fdstate<=fs_dat;
+							swait:=1;
+						end if;
+					when fs_dat =>
+						if(trackbusy='0' and img_busy='0' and crcbusy='0')then
+							track_curaddr<=track_curaddr+1;
+							trackwrdat(15 downto 10)<=(others=>'0');
+							trackwrdat(9 downto 8)<=mfm & '0';
+							trackwrdat(7 downto 0)<=img_rddat;
+							crcwrdat<=img_rddat;
+							trackwr<='1';
+							crcwr<='1';
+							if(sectlen>x"0001")then
+								sectlen<=sectlen-1;
+								img_addr<=img_addr+1;
+								img_rd<='1';
+							else
+								fdstate<=fs_crcd0;
+							end if;
+							swait:=1;
+						end if;
+					when fs_crcd0 =>
+						if(trackbusy='0' and crcbusy='0')then
+							track_curaddr<=track_curaddr+1;
+							trackwrdat(15 downto 10)<=(others=>'0');
+							trackwrdat(9 downto 8)<=mfm & '0';
+							if(sectstatus=x"b0")then
+								trackwrdat(7 downto 0)<=not crcdat(15 downto 8);
+							else
+								trackwrdat(7 downto 0)<=crcdat(15 downto 8);
+							end if;
+							trackwr<='1';
+							fdstate<=fs_crcd1;
+							swait:=1;
+						end if;
+					when fs_crcd1 =>
+						if(trackbusy='0' and crcbusy='0')then
+							track_curaddr<=track_curaddr+1;
+							trackwrdat(15 downto 10)<=(others=>'0');
+							trackwrdat(9 downto 8)<=mfm & '0';
+							if(sectstatus=x"b0")then
+								trackwrdat(7 downto 0)<=not crcdat(7 downto 0);
+							else
+								trackwrdat(7 downto 0)<=crcdat(7 downto 0);
+							end if;
+							trackwr<='1';
+							fdstate<=fs_gap2;
+							if(mfm='1')then
+								bytecount<=10;
+							else
+								bytecount<=5;
+							end if;
+							swait:=1;
+						end if;
+					when fs_gap2 =>
+						if(trackbusy='0')then
+							track_curaddr<=track_curaddr+1;
+							if(bytecount>0)then
+								bytecount<=bytecount-1;
+								if(mfm='1')then
+									trackwrdat<=x"024e";
+								else
+									trackwrdat<=x"00ff";
+								end if;
+								trackwr<='1';
+							else
+								if(numsect=(sectcount+1))then
+									if(mfm='1')then
+										trackwrdat<=x"024e";
+									else
+										trackwrdat<=x"00ff";
+									end if;
+									trackwr<='1';
+									fdstate<=fs_gap3;
+								else
+									sectcount<=sectcount+1;
+									cursecthead<=nxtsecthead;
+									if(mfm='1')then
+										trackwrdat<=x"0200";
+										bytecount<=12;
+									else
+										trackwrdat<=x"0000";
+										bytecount<=6;
+									end if;
+									trackwr<='1';
+									swait:=1;
+									fdstate<=fs_synci;
+								end if;
+							end if;
+						end if;
+					when fs_gap3 =>
+						if(trackbusy='0')then
+							if(track_curaddr<tracklen)then
+								track_curaddr<=track_curaddr+1;
+								trackwr<='1';
+							else
+								if(trackno<tracks)then
+									trackno<=trackno+1;
+									tbladdr<=trackno+x"09";
+									swait:=2;
+									fdstate<=fs_nxttrack;
+								else
+									tracksync<='1';
+									fddone<='1';
+									fdstate<=fs_IDLE;
+								end if;
+							end if;
+						end if;
+					when fs_nxttrack =>
+						if(haddr=x"00000000")then
 							if(trackno<tracks)then
 								trackno<=trackno+1;
 								tbladdr<=trackno+x"09";
 								swait:=2;
-								fdstate<=fs_nxttrack;
 							else
-								tracksync<='1';
 								fddone<='1';
 								fdstate<=fs_IDLE;
 							end if;
-						end if;
-					end if;
-				when fs_nxttrack =>
-					if(haddr=x"00000000")then
-						if(trackno<tracks)then
-							trackno<=trackno+1;
-							tbladdr<=trackno+x"09";
-							swait:=2;
 						else
-							fddone<='1';
-							fdstate<=fs_IDLE;
+							fdstate<=fs_loadshead;
 						end if;
-					else
-						fdstate<=fs_loadshead;
-					end if;
-				when fs_scantrack =>
-					if(trackbusy='0')then
-						if(haddr=x"00000000")then
-							fdstate<=fs_savenexttrack;
-						elsif(track_curaddr<tracklen)then
+					when fs_scantrack =>
+						if(trackbusy='0')then
+							if(haddr=x"00000000")then
+								fdstate<=fs_savenexttrack;
+							elsif(track_curaddr<tracklen)then
+								ambuf3:=ambuf2;
+								ambuf2:=ambuf1;
+								ambuf1:=ambuf0;
+								ambuf0:=trackrddat(9 downto 0);
+								
+								if(ambuf3=("11" & x"a1") and ambuf2=("11" & x"a1") and ambuf1=("11" & x"a1") and ambuf0=("10" & x"fe"))then
+									sectcount<=sectcount+1;
+								elsif(ambuf0=("01" & x"fe"))then
+									sectcount<=sectcount+1;
+								end if;
+								trackwrote<=trackwrote or trackrddat(10);
+								track_curaddr<=track_curaddr+1;
+								trackrd<='1';
+								swait:=2;
+							else
+								track_curaddr<=(others=>'0');
+								numsect<=sectcount;
+								sectcount<=(others=>'0');
+								cursecthead<=haddr;
+								if(trackwrote='1')then
+									ambuf0:=(others=>'0');
+									ambuf1:=(others=>'0');
+									ambuf2:=(others=>'0');
+									ambuf3:=(others=>'0');
+									trackrd<='1';
+									swait:=2;
+									fdstate<=fs_scaniam;
+								else
+									fdstate<=fs_savenexttrack;
+								end if;
+							end if;
+						end if;
+					when fs_scaniam =>
+						if(trackbusy='0' and crcbusy='0')then
 							ambuf3:=ambuf2;
 							ambuf2:=ambuf1;
 							ambuf1:=ambuf0;
 							ambuf0:=trackrddat(9 downto 0);
-							
+							crcclr<='1';
 							if(ambuf3=("11" & x"a1") and ambuf2=("11" & x"a1") and ambuf1=("11" & x"a1") and ambuf0=("10" & x"fe"))then
-								sectcount<=sectcount+1;
+								crcwrdat<=x"a1";
+								crcwr<='1';
+								fdstate<=fs_crciam0;
 							elsif(ambuf0=("01" & x"fe"))then
-								sectcount<=sectcount+1;
+								crcwrdat<=x"fe";
+								crcwr<='1';
+								fdstate<=fs_stC;
 							end if;
-							trackwrote<=trackwrote or trackrddat(10);
 							track_curaddr<=track_curaddr+1;
 							trackrd<='1';
 							swait:=2;
-						else
-							track_curaddr<=(others=>'0');
-							numsect<=sectcount;
-							sectcount<=(others=>'0');
-							cursecthead<=haddr;
-							if(trackwrote='1')then
+						end if;
+					when fs_crciam0 =>
+						if(crcbusy='0')then
+							crcwrdat<=x"a1";
+							crcwr<='1';
+							fdstate<=fs_crciam1;
+						end if;
+					when fs_crciam1 =>
+						if(crcbusy='0')then
+							crcwrdat<=x"a1";
+							crcwr<='1';
+							fdstate<=fs_crciam2;
+						end if;
+					when fs_crciam2 =>
+						if(crcbusy='0')then
+							crcwrdat<=x"fe";
+							crcwr<='1';
+							fdstate<=fs_stc;
+						end if;
+					when fs_stC =>
+						if(trackbusy='0' and img_busy='0' and crcbusy='0')then
+							img_addr<=cursecthead+x"00";
+							img_wrdat<=trackrddat(7 downto 0);
+							img_wr<='1';
+							crcwrdat<=trackrddat(7 downto 0);
+							crcwr<='1';
+							track_curaddr<=track_curaddr+1;
+							trackrd<='1';
+							swait:=2;
+							fdstate<=fs_stH;
+						end if;
+					when fs_stH =>
+						if(trackbusy='0' and img_busy='0' and crcbusy='0')then
+							img_addr<=cursecthead+x"01";
+							img_wrdat<=trackrddat(7 downto 0);
+							img_wr<='1';
+							crcwrdat<=trackrddat(7 downto 0);
+							crcwr<='1';
+							track_curaddr<=track_curaddr+1;
+							trackrd<='1';
+							swait:=2;
+							fdstate<=fs_stR;
+						end if;
+					when fs_stR =>
+						if(trackbusy='0' and img_busy='0' and crcbusy='0')then
+							img_addr<=cursecthead+x"02";
+							img_wrdat<=trackrddat(7 downto 0);
+							img_wr<='1';
+							crcwrdat<=trackrddat(7 downto 0);
+							crcwr<='1';
+							track_curaddr<=track_curaddr+1;
+							trackrd<='1';
+							swait:=2;
+							fdstate<=fs_stN;
+						end if;
+					when fs_stN =>
+						if(trackbusy='0' and img_busy='0' and crcbusy='0')then
+							img_addr<=cursecthead+x"03";
+							img_wrdat<=trackrddat(7 downto 0);
+							img_wr<='1';
+							crcwrdat<=trackrddat(7 downto 0);
+							crcwr<='1';
+							case trackrddat(7 downto 0) is
+							when x"00" =>
+								sectlen<=x"0080";
+							when x"01" =>
+								sectlen<=x"0100";
+							when x"02" =>
+								sectlen<=x"0200";
+							when x"03" =>
+								sectlen<=x"0400";
+							when x"04" =>
+								sectlen<=x"0800";
+							when x"05" =>
+								sectlen<=x"1000";
+							when x"06" =>
+								sectlen<=x"2000";
+							when x"07" =>
+								sectlen<=x"4000";
+							when others =>
+								sectlen<=x"0001";
+							end case;
+							track_curaddr<=track_curaddr+1;
+							trackrd<='1';
+							swait:=2;
+							fdstate<=fs_chkicrch;
+						end if;
+					when fs_chkicrch =>
+						if(trackbusy='0' and img_busy='0' and crcbusy='0')then
+							if(trackrddat(7 downto 0)/=crcdat(15 downto 8))then
+								sectstatus<=x"a0";
+							else
+								sectstatus<=x"00";
+							end if;
+							img_addr<=cursecthead+x"04";
+							img_wrdat<=numsect(7 downto 0);
+							img_wr<='1';
+							track_curaddr<=track_curaddr+1;
+							trackrd<='1';
+							swait:=2;
+							fdstate<=fs_chkicrcl;
+						end if;
+					when fs_chkicrcl =>
+						if(trackbusy='0' and img_busy='0')then
+							if(trackrddat(7 downto 0)/=crcdat(7 downto 0))then
+								sectstatus<=x"a0";
+							end if;
+							img_addr<=cursecthead+x"05";
+							img_wrdat<=numsect(15 downto 8);
+							img_wr<='1';
+							track_curaddr<=track_curaddr+1;
+							trackrd<='1';
+							swait:=2;
+							fdstate<=fs_stmod;
+						end if;
+					when fs_stmod =>
+						if(img_busy='0')then
+							img_addr<=cursecthead+x"06";
+							if(trackrddat(9)='1')then
+								img_wrdat<=x"00";
+							else
+								img_wrdat<=x"40";
+							end if;
+							img_wr<='1';
+							swait:=2;
+							fdstate<=fs_stsectsizel;
+						end if;
+					when fs_stsectsizel =>
+						if(img_busy='0')then
+							img_addr<=cursecthead+x"0e";
+							img_wrdat<=sectlen(7 downto 0);
+							img_wr<='1';
+							swait:=2;
+							fdstate<=fs_stsectsizeh;
+						end if;
+					when fs_stsectsizeh =>
+						if(img_busy='0')then
+							img_addr<=cursecthead+x"0f";
+							img_wrdat<=sectlen(15 downto 8);
+							img_wr<='1';
+							swait:=2;
+							fdstate<=fs_scandam;
+							ambuf0:=(others=>'0');
+							ambuf1:=(others=>'0');
+							ambuf2:=(others=>'0');
+							ambuf3:=(others=>'0');
+							crcclr<='1';
+						end if;
+					when fs_scandam =>
+						if(trackbusy='0' and crcbusy='0')then
+							ambuf3:=ambuf2;
+							ambuf2:=ambuf1;
+							ambuf1:=ambuf0;
+							ambuf0:=trackrddat(9 downto 0);
+							crcclr<='1';
+							if(ambuf3=("11" & x"a1") and ambuf2=("11" & x"a1") and ambuf1=("11" & x"a1") and ambuf0=("10" & x"f8"))then
+								deleted<='1';
+								crcwrdat<=x"a1";
+								crcwr<='1';
+								fdstate<=fs_crcdam0;
+							elsif(ambuf3=("11" & x"a1") and ambuf2=("11" & x"a1") and ambuf1=("11" & x"a1") and ambuf0=("10" & x"fb"))then
+								deleted<='0';
+								crcwrdat<=x"a1";
+								crcwr<='1';
+								fdstate<=fs_crcdam0;
+							elsif(ambuf0=("01" & x"f8"))then
+								deleted<='1';
+								fdstate<=fs_stdat;
+								crcwrdat<=x"f8";
+								crcwr<='1';
+							elsif(ambuf0=("01" & x"fb"))then
+								deleted<='0';
+								fdstate<=fs_stdat;
+								crcwrdat<=x"fb";
+								crcwr<='1';
+							end if;
+							track_curaddr<=track_curaddr+1;
+							trackrd<='1';
+							swait:=2;
+						end if;
+					when fs_crcdam0 =>
+						if(crcbusy='0')then
+							crcwrdat<=x"a1";
+							crcwr<='1';
+							fdstate<=fs_crcdam1;
+						end if;
+					when fs_crcdam1 =>
+						if(crcbusy='0')then
+							crcwrdat<=x"a1";
+							crcwr<='1';
+							fdstate<=fs_crcdam2;
+						end if;
+					when fs_crcdam2 =>
+						if(crcbusy='0')then
+							if(deleted='1')then
+								crcwrdat<=x"f8";
+							else
+								crcwrdat<=x"fb";
+							end if;
+							crcwr<='1';
+							fdstate<=fs_stdat;
+						end if;
+					when fs_stdat =>
+						if(trackbusy='0' and img_busy='0' and crcbusy='0')then
+							if(sectlen>x"0000")then
+								img_addr<=img_addr+1;
+								img_wrdat<=trackrddat(7 downto 0);
+								img_wr<='1';
+								crcwrdat<=trackrddat(7 downto 0);
+								crcwr<='1';
+								sectlen<=sectlen-1;
+							else
+								nxtsecthead<=img_addr+1;
+								if(deleted='1')then
+									sectstatus<=x"10";
+								elsif(trackrddat(7 downto 0)/=crcdat(15 downto 8))then
+									sectstatus<=x"b0";
+								end if;
+								fdstate<=fs_chkdatcrc;
+							end if;
+							track_curaddr<=track_curaddr+1;
+							trackrd<='1';
+						end if;
+					when fs_chkdatcrc =>
+						if(trackbusy='0' and img_busy='0')then
+							if(trackrddat(7 downto 0)/=crcdat(7 downto 0))then
+								sectstatus<=x"b0";
+							end if;
+							img_addr<=cursecthead+x"07";
+							if(deleted='1')then
+								img_wrdat<=x"10";
+							else
+								img_wrdat<=x"00";
+							end if;
+							img_wr<='1';
+							swait:=2;
+							fdstate<=fs_ststatus;
+						end if;
+					when fs_ststatus =>
+						if(img_busy='0')then
+							img_addr<=cursecthead+x"08";
+							img_wrdat<=sectstatus;
+							img_wr<='1';
+							
+							if((sectcount+1)<numsect)then
+								sectcount<=sectcount+1;
+								cursecthead<=nxtsecthead;
 								ambuf0:=(others=>'0');
 								ambuf1:=(others=>'0');
 								ambuf2:=(others=>'0');
@@ -1467,310 +1753,33 @@ begin
 								fdstate<=fs_savenexttrack;
 							end if;
 						end if;
-					end if;
-				when fs_scaniam =>
-					if(trackbusy='0' and crcbusy='0')then
-						ambuf3:=ambuf2;
-						ambuf2:=ambuf1;
-						ambuf1:=ambuf0;
-						ambuf0:=trackrddat(9 downto 0);
-						crcclr<='1';
-						if(ambuf3=("11" & x"a1") and ambuf2=("11" & x"a1") and ambuf1=("11" & x"a1") and ambuf0=("10" & x"fe"))then
-							crcwrdat<=x"a1";
-							crcwr<='1';
-							fdstate<=fs_crciam0;
-						elsif(ambuf0=("01" & x"fe"))then
-							crcwrdat<=x"fe";
-							crcwr<='1';
-							fdstate<=fs_stC;
-						end if;
-						track_curaddr<=track_curaddr+1;
-						trackrd<='1';
-						swait:=2;
-					end if;
-				when fs_crciam0 =>
-					if(crcbusy='0')then
-						crcwrdat<=x"a1";
-						crcwr<='1';
-						fdstate<=fs_crciam1;
-					end if;
-				when fs_crciam1 =>
-					if(crcbusy='0')then
-						crcwrdat<=x"a1";
-						crcwr<='1';
-						fdstate<=fs_crciam2;
-					end if;
-				when fs_crciam2 =>
-					if(crcbusy='0')then
-						crcwrdat<=x"fe";
-						crcwr<='1';
-						fdstate<=fs_stc;
-					end if;
-				when fs_stC =>
-					if(trackbusy='0' and img_busy='0' and crcbusy='0')then
-						img_addr<=cursecthead+x"00";
-						img_wrdat<=trackrddat(7 downto 0);
-						img_wr<='1';
-						crcwrdat<=trackrddat(7 downto 0);
-						crcwr<='1';
-						track_curaddr<=track_curaddr+1;
-						trackrd<='1';
-						swait:=2;
-						fdstate<=fs_stH;
-					end if;
-				when fs_stH =>
-					if(trackbusy='0' and img_busy='0' and crcbusy='0')then
-						img_addr<=cursecthead+x"01";
-						img_wrdat<=trackrddat(7 downto 0);
-						img_wr<='1';
-						crcwrdat<=trackrddat(7 downto 0);
-						crcwr<='1';
-						track_curaddr<=track_curaddr+1;
-						trackrd<='1';
-						swait:=2;
-						fdstate<=fs_stR;
-					end if;
-				when fs_stR =>
-					if(trackbusy='0' and img_busy='0' and crcbusy='0')then
-						img_addr<=cursecthead+x"02";
-						img_wrdat<=trackrddat(7 downto 0);
-						img_wr<='1';
-						crcwrdat<=trackrddat(7 downto 0);
-						crcwr<='1';
-						track_curaddr<=track_curaddr+1;
-						trackrd<='1';
-						swait:=2;
-						fdstate<=fs_stN;
-					end if;
-				when fs_stN =>
-					if(trackbusy='0' and img_busy='0' and crcbusy='0')then
-						img_addr<=cursecthead+x"03";
-						img_wrdat<=trackrddat(7 downto 0);
-						img_wr<='1';
-						crcwrdat<=trackrddat(7 downto 0);
-						crcwr<='1';
-						case trackrddat(7 downto 0) is
-						when x"00" =>
-							sectlen<=x"0080";
-						when x"01" =>
-							sectlen<=x"0100";
-						when x"02" =>
-							sectlen<=x"0200";
-						when x"03" =>
-							sectlen<=x"0400";
-						when x"04" =>
-							sectlen<=x"0800";
-						when x"05" =>
-							sectlen<=x"1000";
-						when x"06" =>
-							sectlen<=x"2000";
-						when x"07" =>
-							sectlen<=x"4000";
-						when others =>
-							sectlen<=x"0001";
-						end case;
-						track_curaddr<=track_curaddr+1;
-						trackrd<='1';
-						swait:=2;
-						fdstate<=fs_chkicrch;
-					end if;
-				when fs_chkicrch =>
-					if(trackbusy='0' and img_busy='0' and crcbusy='0')then
-						if(trackrddat(7 downto 0)/=crcdat(15 downto 8))then
-							sectstatus<=x"a0";
-						else
-							sectstatus<=x"00";
-						end if;
-						img_addr<=cursecthead+x"04";
-						img_wrdat<=numsect(7 downto 0);
-						img_wr<='1';
-						track_curaddr<=track_curaddr+1;
-						trackrd<='1';
-						swait:=2;
-						fdstate<=fs_chkicrcl;
-					end if;
-				when fs_chkicrcl =>
-					if(trackbusy='0' and img_busy='0')then
-						if(trackrddat(7 downto 0)/=crcdat(7 downto 0))then
-							sectstatus<=x"a0";
-						end if;
-						img_addr<=cursecthead+x"05";
-						img_wrdat<=numsect(15 downto 8);
-						img_wr<='1';
-						track_curaddr<=track_curaddr+1;
-						trackrd<='1';
-						swait:=2;
-						fdstate<=fs_stmod;
-					end if;
-				when fs_stmod =>
-					if(img_busy='0')then
-						img_addr<=cursecthead+x"06";
-						if(trackrddat(9)='1')then
-							img_wrdat<=x"00";
-						else
-							img_wrdat<=x"40";
-						end if;
-						img_wr<='1';
-						swait:=2;
-						fdstate<=fs_stsectsizel;
-					end if;
-				when fs_stsectsizel =>
-					if(img_busy='0')then
-						img_addr<=cursecthead+x"0e";
-						img_wrdat<=sectlen(7 downto 0);
-						img_wr<='1';
-						swait:=2;
-						fdstate<=fs_stsectsizeh;
-					end if;
-				when fs_stsectsizeh =>
-					if(img_busy='0')then
-						img_addr<=cursecthead+x"0f";
-						img_wrdat<=sectlen(15 downto 8);
-						img_wr<='1';
-						swait:=2;
-						fdstate<=fs_scandam;
-						ambuf0:=(others=>'0');
-						ambuf1:=(others=>'0');
-						ambuf2:=(others=>'0');
-						ambuf3:=(others=>'0');
-						crcclr<='1';
-					end if;
-				when fs_scandam =>
-					if(trackbusy='0' and crcbusy='0')then
-						ambuf3:=ambuf2;
-						ambuf2:=ambuf1;
-						ambuf1:=ambuf0;
-						ambuf0:=trackrddat(9 downto 0);
-						crcclr<='1';
-						if(ambuf3=("11" & x"a1") and ambuf2=("11" & x"a1") and ambuf1=("11" & x"a1") and ambuf0=("10" & x"f8"))then
-							deleted<='1';
-							crcwrdat<=x"a1";
-							crcwr<='1';
-							fdstate<=fs_crcdam0;
-						elsif(ambuf3=("11" & x"a1") and ambuf2=("11" & x"a1") and ambuf1=("11" & x"a1") and ambuf0=("10" & x"fb"))then
-							deleted<='0';
-							crcwrdat<=x"a1";
-							crcwr<='1';
-							fdstate<=fs_crcdam0;
-						elsif(ambuf0=("01" & x"f8"))then
-							deleted<='1';
-							fdstate<=fs_stdat;
-							crcwrdat<=x"f8";
-							crcwr<='1';
-						elsif(ambuf0=("01" & x"fb"))then
-							deleted<='0';
-							fdstate<=fs_stdat;
-							crcwrdat<=x"fb";
-							crcwr<='1';
-						end if;
-						track_curaddr<=track_curaddr+1;
-						trackrd<='1';
-						swait:=2;
-					end if;
-				when fs_crcdam0 =>
-					if(crcbusy='0')then
-						crcwrdat<=x"a1";
-						crcwr<='1';
-						fdstate<=fs_crcdam1;
-					end if;
-				when fs_crcdam1 =>
-					if(crcbusy='0')then
-						crcwrdat<=x"a1";
-						crcwr<='1';
-						fdstate<=fs_crcdam2;
-					end if;
-				when fs_crcdam2 =>
-					if(crcbusy='0')then
-						if(deleted='1')then
-							crcwrdat<=x"f8";
-						else
-							crcwrdat<=x"fb";
-						end if;
-						crcwr<='1';
-						fdstate<=fs_stdat;
-					end if;
-				when fs_stdat =>
-					if(trackbusy='0' and img_busy='0' and crcbusy='0')then
-						if(sectlen>x"0000")then
-							img_addr<=img_addr+1;
-							img_wrdat<=trackrddat(7 downto 0);
-							img_wr<='1';
-							crcwrdat<=trackrddat(7 downto 0);
-							crcwr<='1';
-							sectlen<=sectlen-1;
-						else
-							nxtsecthead<=img_addr+1;
-							if(deleted='1')then
-								sectstatus<=x"10";
-							elsif(trackrddat(7 downto 0)/=crcdat(15 downto 8))then
-								sectstatus<=x"b0";
-							end if;
-							fdstate<=fs_chkdatcrc;
-						end if;
-						track_curaddr<=track_curaddr+1;
-						trackrd<='1';
-					end if;
-				when fs_chkdatcrc =>
-					if(trackbusy='0' and img_busy='0')then
-						if(trackrddat(7 downto 0)/=crcdat(7 downto 0))then
-							sectstatus<=x"b0";
-						end if;
-						img_addr<=cursecthead+x"07";
-						if(deleted='1')then
-							img_wrdat<=x"10";
-						else
-							img_wrdat<=x"00";
-						end if;
-						img_wr<='1';
-						swait:=2;
-						fdstate<=fs_ststatus;
-					end if;
-				when fs_ststatus =>
-					if(img_busy='0')then
-						img_addr<=cursecthead+x"08";
-						img_wrdat<=sectstatus;
-						img_wr<='1';
-						
-						if((sectcount+1)<numsect)then
-							sectcount<=sectcount+1;
-							cursecthead<=nxtsecthead;
+					when fs_savenexttrack =>
+						if((trackno+1)<tracks)then
+							trackno<=trackno+1;
+							tbladdr<=trackno+x"09";
 							ambuf0:=(others=>'0');
 							ambuf1:=(others=>'0');
 							ambuf2:=(others=>'0');
 							ambuf3:=(others=>'0');
+							trackwrote<='0';
 							trackrd<='1';
+							track_curaddr<=(others=>'0');
+							sectcount<=(others=>'0');
 							swait:=2;
-							fdstate<=fs_scaniam;
+							fdstate<=fs_scantrack;
 						else
-							fdstate<=fs_savenexttrack;
+							img_sync<='1';
+							swait:=2;
+							fdstate<=fs_saveend;
 						end if;
-					end if;
-				when fs_savenexttrack =>
-					if((trackno+1)<tracks)then
-						trackno<=trackno+1;
-						tbladdr<=trackno+x"09";
-						ambuf0:=(others=>'0');
-						ambuf1:=(others=>'0');
-						ambuf2:=(others=>'0');
-						ambuf3:=(others=>'0');
-						trackwrote<='0';
-						trackrd<='1';
-						track_curaddr<=(others=>'0');
-						sectcount<=(others=>'0');
-						swait:=2;
-						fdstate<=fs_scantrack;
-					else
-						img_sync<='1';
-						swait:=2;
-						fdstate<=fs_saveend;
-					end if;
-				when fs_saveend =>
-					if(img_busy='0')then
-						fddone<='1';
-						fdstate<=fs_idle;
-					end if;
-				when others =>
-				end case;
+					when fs_saveend =>
+						if(img_busy='0')then
+							fddone<='1';
+							fdstate<=fs_idle;
+						end if;
+					when others =>
+					end case;
+				end if;
 			end if;
 		end if;
 	end process;
@@ -1830,110 +1839,112 @@ begin
 	process(sclk,rstn)
 	variable wrote	:std_logic;
 	begin
-		if(rstn='0')then
-			curfbhaddr<=(others=>'1');
-			fbufstate<=ss_idle;
-			fec_ramrd<='0';
-			fec_ramwr<='0';
-			fec_ramaddrh<=(others=>'0');
-			fbwr<='0';
-			wrote:='0';
-		elsif(sclk' event and sclk='1')then
-			fbwr<='0';
-			case fbufstate is
-			when ss_idle =>
-				if(trackrd='1')then
-					if(curfbhaddr/=trackaddr(22 downto 8))then
+		if rising_edge(sclk) then
+			if(rstn='0')then
+				curfbhaddr<=(others=>'1');
+				fbufstate<=ss_idle;
+				fec_ramrd<='0';
+				fec_ramwr<='0';
+				fec_ramaddrh<=(others=>'0');
+				fbwr<='0';
+				wrote:='0';
+			elsif(sys_ce = '1')then
+				fbwr<='0';
+				case fbufstate is
+				when ss_idle =>
+					if(trackrd='1')then
+						if(curfbhaddr/=trackaddr(22 downto 8))then
+							if(wrote='1')then
+								fec_ramwr<='1';
+								fbufstate<=ss_rwrite;
+							else
+								fec_ramaddrh<=trackaddr(22 downto 8);
+								curfbhaddr<=trackaddr(22 downto 8);
+								fec_ramrd<='1';
+								fbufstate<=ss_read;
+							end if;
+						end if;
+					elsif(trackwr='1')then
+						if(curfbhaddr=trackaddr(22 downto 8))then
+							fbwr<='1';
+							wrote:='1';
+						else
+							if(wrote='1')then
+								fec_ramwr<='1';
+								fbufstate<=ss_write;
+							else
+								fec_ramaddrh<=trackaddr(22 downto 8);
+								curfbhaddr<=trackaddr(22 downto 8);
+								fec_ramrd<='1';
+								fbufstate<=ss_wread;
+							end if;
+						end if;
+					elsif(tracksync='1')then
 						if(wrote='1')then
 							fec_ramwr<='1';
-							fbufstate<=ss_rwrite;
-						else
-							fec_ramaddrh<=trackaddr(22 downto 8);
-							curfbhaddr<=trackaddr(22 downto 8);
-							fec_ramrd<='1';
-							fbufstate<=ss_read;
+							fbufstate<=ss_sync;
 						end if;
 					end if;
-				elsif(trackwr='1')then
-					if(curfbhaddr=trackaddr(22 downto 8))then
+				when ss_rwrite =>
+					if(fec_rambusy='1')then
+						fec_ramwr<='0';
+						fbufstate<=ss_rwrite2;
+					end if;
+				when ss_rwrite2 =>
+					if(fec_rambusy='0')then
+						fec_ramaddrh<=trackaddr(22 downto 8);
+						curfbhaddr<=trackaddr(22 downto 8);
+						fec_ramrd<='1';
+						fbufstate<=ss_read;
+					end if;
+				when ss_read =>
+					if(fec_rambusy='1')then
+						fec_ramrd<='0';
+						fbufstate<=ss_read2;
+					end if;
+				when ss_read2 =>
+					if(fec_rambusy='0')then
+						fbufstate<=ss_idle;
+						wrote:='0';
+					end if;
+				when ss_write =>
+					if(fec_rambusy='1')then
+						fec_ramwr<='0';
+						fbufstate<=ss_write2;
+					end if;
+				when ss_write2 =>
+					if(fec_rambusy='0')then
+						fec_ramaddrh<=trackaddr(22 downto 8);
+						curfbhaddr<=trackaddr(22 downto 8);
+						fec_ramrd<='1';
+						wrote:='0';
+						fbufstate<=ss_wread;
+					end if;
+				when ss_wread =>
+					if(fec_rambusy='1')then
+						fec_ramrd<='0';
+						fbufstate<=ss_wread2;
+					end if;
+				when ss_wread2 =>
+					if(fec_rambusy='0')then
 						fbwr<='1';
 						wrote:='1';
-					else
-						if(wrote='1')then
-							fec_ramwr<='1';
-							fbufstate<=ss_write;
-						else
-							fec_ramaddrh<=trackaddr(22 downto 8);
-							curfbhaddr<=trackaddr(22 downto 8);
-							fec_ramrd<='1';
-							fbufstate<=ss_wread;
-						end if;
+						fbufstate<=ss_idle;
 					end if;
-				elsif(tracksync='1')then
-					if(wrote='1')then
-						fec_ramwr<='1';
-						fbufstate<=ss_sync;
+				when ss_sync =>
+					if(fec_rambusy='1')then
+						fec_ramwr<='0';
+						fbufstate<=ss_sync2;
 					end if;
-				end if;
-			when ss_rwrite =>
-				if(fec_rambusy='1')then
-					fec_ramwr<='0';
-					fbufstate<=ss_rwrite2;
-				end if;
-			when ss_rwrite2 =>
-				if(fec_rambusy='0')then
-					fec_ramaddrh<=trackaddr(22 downto 8);
-					curfbhaddr<=trackaddr(22 downto 8);
-					fec_ramrd<='1';
-					fbufstate<=ss_read;
-				end if;
-			when ss_read =>
-				if(fec_rambusy='1')then
-					fec_ramrd<='0';
-					fbufstate<=ss_read2;
-				end if;
-			when ss_read2 =>
-				if(fec_rambusy='0')then
+				when ss_sync2 =>
+					if(fec_rambusy='0')then
+						wrote:='0';
+						fbufstate<=ss_idle;
+					end if;
+				when others =>
 					fbufstate<=ss_idle;
-					wrote:='0';
-				end if;
-			when ss_write =>
-				if(fec_rambusy='1')then
-					fec_ramwr<='0';
-					fbufstate<=ss_write2;
-				end if;
-			when ss_write2 =>
-				if(fec_rambusy='0')then
-					fec_ramaddrh<=trackaddr(22 downto 8);
-					curfbhaddr<=trackaddr(22 downto 8);
-					fec_ramrd<='1';
-					wrote:='0';
-					fbufstate<=ss_wread;
-				end if;
-			when ss_wread =>
-				if(fec_rambusy='1')then
-					fec_ramrd<='0';
-					fbufstate<=ss_wread2;
-				end if;
-			when ss_wread2 =>
-				if(fec_rambusy='0')then
-					fbwr<='1';
-					wrote:='1';
-					fbufstate<=ss_idle;
-				end if;
-			when ss_sync =>
-				if(fec_rambusy='1')then
-					fec_ramwr<='0';
-					fbufstate<=ss_sync2;
-				end if;
-			when ss_sync2 =>
-				if(fec_rambusy='0')then
-					wrote:='0';
-					fbufstate<=ss_idle;
-				end if;
-			when others =>
-				fbufstate<=ss_idle;
-			end case;
+				end case;
+			end if;
 		end if;
 	end process;
 	
@@ -2062,123 +2073,125 @@ begin
 	variable wrote	:std_logic;
 	variable swait	:integer range 0 to 2;
 	begin
-		if(rstn='0')then
-			sasibufstate<=ss_idle;
-			lba_sasi<=(others=>'0');
-			cur_slba<=(others=>'1');
-			wrote:='0';
-			mist_rd(bit_sasi)<='0';
-			mist_wr(bit_sasi)<='0';
-			sasibufwr<='0';
-			sasidone<='0';
-			swait:=0;
-		elsif(sclk' event and sclk='1')then
-			sasibufwr<='0';
-			sasidone<='0';
-			if(swait>0)then
-				swait:=swait-1;
-			else
-				case sasibufstate is
-				when ss_idle =>
-					if(sasi_rdreq2='1')then
-						if(sasi_lba(20 downto 1)/=cur_slba(19 downto 0))then
+		if rising_edge(sclk) then
+			if(rstn='0')then
+				sasibufstate<=ss_idle;
+				lba_sasi<=(others=>'0');
+				cur_slba<=(others=>'1');
+				wrote:='0';
+				mist_rd(bit_sasi)<='0';
+				mist_wr(bit_sasi)<='0';
+				sasibufwr<='0';
+				sasidone<='0';
+				swait:=0;
+			elsif(sys_ce = '1')then
+				sasibufwr<='0';
+				sasidone<='0';
+				if(swait>0)then
+					swait:=swait-1;
+				else
+					case sasibufstate is
+					when ss_idle =>
+						if(sasi_rdreq2='1')then
+							if(sasi_lba(20 downto 1)/=cur_slba(19 downto 0))then
+								if(wrote='1')then
+									mist_wr(bit_sasi)<='1';
+									sasibufstate<=ss_rwrite;
+								else
+									cur_slba<=allzero(31 downto 20) & sasi_lba(20 downto 1);
+									lba_sasi<=allzero(31 downto 20) & sasi_lba(20 downto 1);
+									mist_rd(bit_sasi)<='1';
+									sasibufstate<=ss_read;
+								end if;
+							else
+								sasidone<='1';
+							end if;
+						elsif(sasi_wrreq2='1')then
+							if(sasi_lba(20 downto 1)=cur_slba(19 downto 0))then
+								sasibufwr<='1';
+								sasidone<='1';
+							else
+								if(wrote='1')then
+									mist_wr(bit_sasi)<='1';
+									sasibufstate<=ss_write;
+								else
+									cur_slba<=allzero(31 downto 20) & sasi_lba(20 downto 1);
+									lba_sasi<=allzero(31 downto 20) & sasi_lba(20 downto 1);
+									mist_rd(bit_sasi)<='1';
+									sasibufstate<=ss_wread;
+								end if;
+							end if;
+						elsif(sasi_syreq2='1')then
 							if(wrote='1')then
 								mist_wr(bit_sasi)<='1';
-								sasibufstate<=ss_rwrite;
+								sasibufstate<=ss_sync;
 							else
-								cur_slba<=allzero(31 downto 20) & sasi_lba(20 downto 1);
-								lba_sasi<=allzero(31 downto 20) & sasi_lba(20 downto 1);
-								mist_rd(bit_sasi)<='1';
-								sasibufstate<=ss_read;
+								sasidone<='1';
 							end if;
-						else
-							sasidone<='1';
 						end if;
-					elsif(sasi_wrreq2='1')then
-						if(sasi_lba(20 downto 1)=cur_slba(19 downto 0))then
+					when ss_rwrite =>
+						if(mist_ack(bit_sasi)='1')then
+							mist_wr(bit_sasi)<='0';
+							sasibufstate<=ss_rwrite2;
+						end if;
+					when ss_rwrite2 =>
+						if(mist_ack(bit_sasi)='0')then
+							wrote:='0';
+							cur_slba<=allzero(31 downto 20) & sasi_lba(20 downto 1);
+							lba_sasi<=allzero(31 downto 20) & sasi_lba(20 downto 1);
+							mist_rd(bit_sasi)<='1';
+							sasibufstate<=ss_read;
+						end if;
+					when ss_read =>
+						if(mist_ack(bit_sasi)='1')then
+							mist_rd(bit_sasi)<='0';
+							sasibufstate<=ss_read2;
+						end if;
+					when ss_read2 =>
+						if(mist_ack(bit_sasi)='0')then
+							sasidone<='1';
+							sasibufstate<=ss_idle;
+						end if;
+					when ss_write =>
+						if(mist_ack(bit_sasi)='1')then
+							mist_wr(bit_sasi)<='0';
+							sasibufstate<=ss_write2;
+						end if;
+					when ss_write2 =>
+						if(mist_ack(bit_sasi)='0')then
+							cur_slba<=allzero(31 downto 20) & sasi_lba(20 downto 1);
+							lba_sasi<=allzero(31 downto 20) & sasi_lba(20 downto 1);
+							mist_rd(bit_sasi)<='1';
+							wrote:='0';
+							sasibufstate<=ss_wread;
+						end if;
+					when ss_wread =>
+						if(mist_ack(bit_sasi)='1')then
+							mist_rd(bit_sasi)<='0';
+							sasibufstate<=ss_wread2;
+						end if;
+					when ss_wread2 =>
+						if(mist_ack(bit_sasi)='0')then
 							sasibufwr<='1';
+							wrote:='1';
 							sasidone<='1';
-						else
-							if(wrote='1')then
-								mist_wr(bit_sasi)<='1';
-								sasibufstate<=ss_write;
-							else
-								cur_slba<=allzero(31 downto 20) & sasi_lba(20 downto 1);
-								lba_sasi<=allzero(31 downto 20) & sasi_lba(20 downto 1);
-								mist_rd(bit_sasi)<='1';
-								sasibufstate<=ss_wread;
-							end if;
+							sasibufstate<=ss_idle;
 						end if;
-					elsif(sasi_syreq2='1')then
-						if(wrote='1')then
-							mist_wr(bit_sasi)<='1';
-							sasibufstate<=ss_sync;
-						else
+					when ss_sync =>
+						if(mist_ack(bit_sasi)='1')then
+							mist_wr(bit_sasi)<='0';
+							sasibufstate<=ss_sync2;
+						end if;
+					when ss_sync2 =>
+						if(mist_ack(bit_sasi)='0')then
+							wrote:='0';
 							sasidone<='1';
+							sasibufstate<=ss_idle;
 						end if;
-					end if;
-				when ss_rwrite =>
-					if(mist_ack(bit_sasi)='1')then
-						mist_wr(bit_sasi)<='0';
-						sasibufstate<=ss_rwrite2;
-					end if;
-				when ss_rwrite2 =>
-					if(mist_ack(bit_sasi)='0')then
-						wrote:='0';
-						cur_slba<=allzero(31 downto 20) & sasi_lba(20 downto 1);
-						lba_sasi<=allzero(31 downto 20) & sasi_lba(20 downto 1);
-						mist_rd(bit_sasi)<='1';
-						sasibufstate<=ss_read;
-					end if;
-				when ss_read =>
-					if(mist_ack(bit_sasi)='1')then
-						mist_rd(bit_sasi)<='0';
-						sasibufstate<=ss_read2;
-					end if;
-				when ss_read2 =>
-					if(mist_ack(bit_sasi)='0')then
-						sasidone<='1';
+					when others =>
 						sasibufstate<=ss_idle;
-					end if;
-				when ss_write =>
-					if(mist_ack(bit_sasi)='1')then
-						mist_wr(bit_sasi)<='0';
-						sasibufstate<=ss_write2;
-					end if;
-				when ss_write2 =>
-					if(mist_ack(bit_sasi)='0')then
-						cur_slba<=allzero(31 downto 20) & sasi_lba(20 downto 1);
-						lba_sasi<=allzero(31 downto 20) & sasi_lba(20 downto 1);
-						mist_rd(bit_sasi)<='1';
-						wrote:='0';
-						sasibufstate<=ss_wread;
-					end if;
-				when ss_wread =>
-					if(mist_ack(bit_sasi)='1')then
-						mist_rd(bit_sasi)<='0';
-						sasibufstate<=ss_wread2;
-					end if;
-				when ss_wread2 =>
-					if(mist_ack(bit_sasi)='0')then
-						sasibufwr<='1';
-						wrote:='1';
-						sasidone<='1';
-						sasibufstate<=ss_idle;
-					end if;
-				when ss_sync =>
-					if(mist_ack(bit_sasi)='1')then
-						mist_wr(bit_sasi)<='0';
-						sasibufstate<=ss_sync2;
-					end if;
-				when ss_sync2 =>
-					if(mist_ack(bit_sasi)='0')then
-						wrote:='0';
-						sasidone<='1';
-						sasibufstate<=ss_idle;
-					end if;
-				when others =>
-					sasibufstate<=ss_idle;
-				end case;
+					end case;
+				end if;
 			end if;
 		end if;
 	end process;

@@ -33,6 +33,15 @@ module cpu_wrapper (
 	logic  [2:0] tg_FC, fx_FC;
 
 	assign tg_FC = 3'd0;
+	assign dout    = !cpu_select ? tg_dout       : fx_dout;
+	assign address = !cpu_select ? tg_addr[23:0] : fx_addr[23:0];
+	assign OE      = !cpu_select ? tg_OE         : fx_OE;
+	assign rw_n    = !cpu_select ? tg_rwn        : fx_rwn;
+	assign AS_n    = !cpu_select ? tg_ASn        : fx_ASn;
+	assign UDS_n   = !cpu_select ? tg_UDSn       : fx_UDSn;
+	assign LDS_n   = !cpu_select ? tg_LDSn       : fx_LDSn;
+	assign FC      = !cpu_select ? tg_FC         : fx_FC;
+	
 	TG68 MPU (
 		.clk           (clk10m),
 		.reset         (reset_n),
@@ -87,19 +96,7 @@ module cpu_wrapper (
 		ph1n <= phi1_ce;
 		ph2n <= phi2_ce;
 	end
-	
-	always_ff @(posedge clk) begin
-		if (phi2_ce) begin
-			dout    <= !cpu_select ? tg_dout       : fx_dout;
-			address <= !cpu_select ? tg_addr[23:0] : fx_addr[23:0];
-			OE      <= !cpu_select ? tg_OE         : fx_OE;
-			rw_n    <= !cpu_select ? tg_rwn        : fx_rwn;
-			AS_n    <= !cpu_select ? tg_ASn        : fx_ASn;
-			UDS_n   <= !cpu_select ? tg_UDSn       : fx_UDSn;
-			LDS_n   <= !cpu_select ? tg_LDSn       : fx_LDSn;
-			FC      <= !cpu_select ? tg_FC         : fx_FC;
-		end
-	end
+
 	always @(negedge clk, negedge reset_n) begin
 		reg [1:0] stage;
 	

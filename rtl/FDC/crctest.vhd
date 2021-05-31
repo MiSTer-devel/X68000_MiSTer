@@ -13,6 +13,7 @@ port(
 	busy	:out std_logic;
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end CRCTEST;

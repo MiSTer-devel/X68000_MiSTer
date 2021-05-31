@@ -13,6 +13,7 @@ port(
 	signout	:out std_logic;
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end signext;
@@ -21,16 +22,18 @@ architecture rtl of signext is
 signal	count	:integer range 0 to extmax;
 begin
 	process(clk,rstn)begin
-		if(rstn='0')then
-			count<=0;
-		elsif(clk' event and clk='1')then
-			if(signin='1')then
-				count<=len;
-				signout<='1';
-			elsif(count>0)then
-				count<=count-1;
-			else
-				signout<='0';
+		if rising_edge(clk) then
+			if(rstn='0')then
+				count<=0;
+			elsif(ce = '1')then
+				if(signin='1')then
+					count<=len;
+					signout<='1';
+				elsif(count>0)then
+					count<=count-1;
+				else
+					signout<='0';
+				end if;
 			end if;
 		end if;
 	end process;

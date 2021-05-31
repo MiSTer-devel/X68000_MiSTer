@@ -16,7 +16,9 @@ port(
 	sndout	:out std_logic_vector(11 downto 0);
 	
 	sysclk	:in std_logic;
+	sys_ce  :in std_logic := '1';
 	sndclk		:in std_logic;
+	snd_ce  :in std_logic := '1';
 	rstn	:in std_logic
 );
 end e6258;
@@ -34,6 +36,7 @@ port(
 	clkdiv	:in std_logic_vector(1 downto 0);
 	sft		:in std_logic;
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 
@@ -56,13 +59,15 @@ begin
 
 	process(sysclk,rstn)
 	begin
-		if(rstn='0')then
-			datinbuf<=(others=>'0');
-			addrbuf<='0';
-		elsif(sysclk' event and sysclk='1')then
-			if(datwr='1')then
-				datinbuf<=datin;
-				addrbuf<=addr;
+		if rising_edge(sysclk) then
+			if(rstn='0')then
+				datinbuf<=(others=>'0');
+				addrbuf<='0';
+			elsif(sys_ce = '1')then
+				if(datwr='1')then
+					datinbuf<=datin;
+					addrbuf<=addr;
+				end if;
 			end if;
 		end if;
 	end process;
@@ -70,90 +75,94 @@ begin
 	process(sndclk,rstn)
 	variable ldatwr	:std_logic_vector(1 downto 0);
 	begin
-		if(rstn='0')then
-			playen<='0';
-			recen<='0';
-			bufcount<=0;
-			nxtbuf0<=(others=>'0');
-			nxtbuf1<=(others=>'0');
-			drq<='0';
-			ldatwr:="00";
-		elsif(sndclk' event and sndclk='1')then
-			if(datwr='1')then
-				drq<='0';
-			elsif(ldatwr="10")then
-				if(addrbuf='0')then
-					if(datinbuf(1)='1')then
-						playen<='1';
-					elsif(datinbuf(2)='1')then
-						recen<='1';
-					elsif(datinbuf(0)='1')then
-						playen<='0';
-						recen<='0';
-					end if;
-				else
-					nxtbuf1<=datinbuf(7 downto 4);
-					nxtbuf0<=datinbuf(3 downto 0);
-					bufcount<=2;
-				end if;
-			end if;
-			if(datuse='1')then
-				nxtbuf0<=nxtbuf1;
+		if rising_edge(sndclk) then
+			if(rstn='0')then
+				playen<='0';
+				recen<='0';
+				bufcount<=0;
+				nxtbuf0<=(others=>'0');
 				nxtbuf1<=(others=>'0');
-				if(bufcount>0)then
-					bufcount<=bufcount-1;
+				drq<='0';
+				ldatwr:="00";
+			elsif(snd_ce = '1')then
+				if(datwr='1')then
+					drq<='0';
+				elsif(ldatwr="10")then
+					if(addrbuf='0')then
+						if(datinbuf(1)='1')then
+							playen<='1';
+						elsif(datinbuf(2)='1')then
+							recen<='1';
+						elsif(datinbuf(0)='1')then
+							playen<='0';
+							recen<='0';
+						end if;
+					else
+						nxtbuf1<=datinbuf(7 downto 4);
+						nxtbuf0<=datinbuf(3 downto 0);
+						bufcount<=2;
+					end if;
 				end if;
-				if(bufcount<=1)then
-					drq<='1';
+				if(datuse='1')then
+					nxtbuf0<=nxtbuf1;
+					nxtbuf1<=(others=>'0');
+					if(bufcount>0)then
+						bufcount<=bufcount-1;
+					end if;
+					if(bufcount<=1)then
+						drq<='1';
+					end if;
 				end if;
+				ldatwr:=ldatwr(0) & datwr;
 			end if;
-			ldatwr:=ldatwr(0) & datwr;
 		end if;
 	end process;
 	
 	process(sndclk,rstn)begin
-		if(rstn='0')then
-			playdat<=(others=>'0');
-			playwr<='0';
-			divcount<=0;
-			datuse<='0';
-			calcsft<='0';
-			sftcount<=0;
-		elsif(sndclk' event and sndclk='1')then
-			playwr<='0';
-			datuse<='0';
-			calcsft<='0';
-			if(playen='1' and sft='1')then
-				if(sftcount>0)then
-					sftcount<=sftcount-1;
-				else
-					if(clkdiv="01")then
-						sftcount<=5;
+		if rising_edge(sndclk) then
+			if(rstn='0')then
+				playdat<=(others=>'0');
+				playwr<='0';
+				divcount<=0;
+				datuse<='0';
+				calcsft<='0';
+				sftcount<=0;
+			elsif(snd_ce = '1')then
+				playwr<='0';
+				datuse<='0';
+				calcsft<='0';
+				if(playen='1' and sft='1')then
+					if(sftcount>0)then
+						sftcount<=sftcount-1;
 					else
-						sftcount<=3;
-					end if;
-					calcsft<='1';
-					if(divcount=0)then
-						playdat<=nxtbuf0;
-						if(bufcount=0)then
-							datemp<='1';
+						if(clkdiv="01")then
+							sftcount<=5;
 						else
-							datemp<='0';
+							sftcount<=3;
 						end if;
-						playwr<='1';
-						datuse<='1';
-						case clkdiv is
-						when "00" =>
-							divcount<=255;
-						when "01" =>
-							divcount<=127;
-						when "10" =>
-							divcount<=127;
-						when others =>
-							divcount<=0;		--for debug
-						end case;
-					else
-						divcount<=divcount-1;
+						calcsft<='1';
+						if(divcount=0)then
+							playdat<=nxtbuf0;
+							if(bufcount=0)then
+								datemp<='1';
+							else
+								datemp<='0';
+							end if;
+							playwr<='1';
+							datuse<='1';
+							case clkdiv is
+							when "00" =>
+								divcount<=255;
+							when "01" =>
+								divcount<=127;
+							when "10" =>
+								divcount<=127;
+							when others =>
+								divcount<=0;		--for debug
+							end case;
+						else
+							divcount<=divcount-1;
+						end if;
 					end if;
 				end if;
 			end if;
@@ -171,6 +180,7 @@ begin
 		clkdiv	=>clkdiv,
 		sft		=>calcsft,
 		clk		=>sndclk,
+		ce      =>snd_ce,
 		rstn	=>rstn
 	);
 	

@@ -29,6 +29,7 @@ port(
 	PCLoe	:out std_logic;
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end e8255;
@@ -50,67 +51,69 @@ begin
 	RD<='1' when CSn='0' and RDn='0' else '0';
 	WR<='1' when CSn='0' and WRn='0' else '0';
 	process(clk,rstn)begin
-		if(rstn='0')then
-			ODAT_A<=(others=>deflogic);
-			ODAT_B<=(others=>deflogic);
-			ODAT_C<=(others=>deflogic);
-			REG<=(others=>'0');
-			OE_A<='0';
-			OE_B<='0';
-			OE_CH<='0';
-			OE_CL<='0';
-		elsif(clk' event and clk='1')then
-			if(WR='1')then
-				case ADR is
-				when "00" =>
-					ODAT_A<=DATIN;
-				when "01" =>
-					ODAT_B<=DATIN;
-				when "10" =>
-					ODAT_C<=DATIN;
-				when "11" =>
-					REG<=DATIN;
-					if(DATIN(7)='1')then	--mode select
-						MODE<=DATIN(6 downto 5);
-						OE_A<=not DATIN(4);
-						OE_CH<=not DATIN(3);
-						OE_B<=not DATIN(1);
-						OE_CL<=not DATIN(0);
-						if(DATIN(4)='0')then
-							ODAT_A<=(others=>'0');
+		if rising_edge(clk) then
+			if(rstn='0')then
+				ODAT_A<=(others=>deflogic);
+				ODAT_B<=(others=>deflogic);
+				ODAT_C<=(others=>deflogic);
+				REG<=(others=>'0');
+				OE_A<='0';
+				OE_B<='0';
+				OE_CH<='0';
+				OE_CL<='0';
+			elsif(ce = '1')then
+				if(WR='1')then
+					case ADR is
+					when "00" =>
+						ODAT_A<=DATIN;
+					when "01" =>
+						ODAT_B<=DATIN;
+					when "10" =>
+						ODAT_C<=DATIN;
+					when "11" =>
+						REG<=DATIN;
+						if(DATIN(7)='1')then	--mode select
+							MODE<=DATIN(6 downto 5);
+							OE_A<=not DATIN(4);
+							OE_CH<=not DATIN(3);
+							OE_B<=not DATIN(1);
+							OE_CL<=not DATIN(0);
+							if(DATIN(4)='0')then
+								ODAT_A<=(others=>'0');
+							end if;
+							if(DATIN(1)='0')then
+								ODAT_B<=(others=>'0');
+							end if;
+							if(DATIN(3)='0')then
+								ODAT_C(7 downto 4)<=(others=>'0');
+							end if;
+							if(DATIN(0)='0')then
+								ODAT_C(3 downto 0)<=(others=>'0');
+							end if;
+						else
+							case DATIN(3 downto 1) is
+							when "000" =>
+								ODAT_C(0)<=DATIN(0);
+							when "001" =>
+								ODAT_C(1)<=DATIN(0);
+							when "010" =>
+								ODAT_C(2)<=DATIN(0);
+							when "011" =>
+								ODAT_C(3)<=DATIN(0);
+							when "100" =>
+								ODAT_C(4)<=DATIN(0);
+							when "101" =>
+								ODAT_C(5)<=DATIN(0);
+							when "110" =>
+								ODAT_C(6)<=DATIN(0);
+							when "111" =>
+								ODAT_C(7)<=DATIN(0);
+							when others =>
+							end case;
 						end if;
-						if(DATIN(1)='0')then
-							ODAT_B<=(others=>'0');
-						end if;
-						if(DATIN(3)='0')then
-							ODAT_C(7 downto 4)<=(others=>'0');
-						end if;
-						if(DATIN(0)='0')then
-							ODAT_C(3 downto 0)<=(others=>'0');
-						end if;
-					else
-						case DATIN(3 downto 1) is
-						when "000" =>
-							ODAT_C(0)<=DATIN(0);
-						when "001" =>
-							ODAT_C(1)<=DATIN(0);
-						when "010" =>
-							ODAT_C(2)<=DATIN(0);
-						when "011" =>
-							ODAT_C(3)<=DATIN(0);
-						when "100" =>
-							ODAT_C(4)<=DATIN(0);
-						when "101" =>
-							ODAT_C(5)<=DATIN(0);
-						when "110" =>
-							ODAT_C(6)<=DATIN(0);
-						when "111" =>
-							ODAT_C(7)<=DATIN(0);
-						when others =>
-						end case;
-					end if;
-				when others=>
-				end case;
+					when others=>
+					end case;
+				end if;
 			end if;
 		end if;
 	end process;

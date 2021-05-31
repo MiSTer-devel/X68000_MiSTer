@@ -4,6 +4,7 @@ use IEEE.std_logic_1164.all;
 entity mputest is
 port(
 		clk           : in std_logic;
+		ce            : in std_logic := '1';
 		rstn          : in std_logic;
         clkena_in     : in std_logic:='1';
         m_data	      : out std_logic_vector(15 downto 0);
@@ -133,43 +134,49 @@ end component;
 
 begin
 	process(clk,rstn)begin
-		if(rstn='0')then
-			iplen<='1';
-		elsif(clk' event and clk='1')then
-			if(address(23)='1' and as='0')then
-				iplen<='0';
+		if rising_edge(clk) then
+			if(rstn='0')then
+				iplen<='1';
+			elsif(ce = '1')then
+				if(address(23)='1' and as='0')then
+					iplen<='0';
+				end if;
 			end if;
 		end if;
 	end process;
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			lclkena<='0';
-		elsif(clk' event and clk='1')then
-			lclkena<=clkena_in;
+		if rising_edge(clk) then
+			if(rstn='0')then
+				lclkena<='0';
+			elsif(ce = '1')then
+				lclkena<=clkena_in;
+			end if;
 		end if;
 	end process;
 	
 	process(clk,rstn)
 	variable nxtack	:std_logic;
 	begin
-		if(rstn='0')then
-			dtack<='1';
-			nxtack:='0';
-			las<='1';
-		elsif(clk' event and clk='1')then
-			if(as='0' and (uds='0' or lds='0'))then
-				nxtack:='1';
-			end if;
-			if(clkena_in='1')then
-				if(nxtack='1')then
-					dtack<='0';
-					nxtack:='0';
-				else
-					dtack<='1';
+		if rising_edge(clk) then
+			if(rstn='0')then
+				dtack<='1';
+				nxtack:='0';
+				las<='1';
+			elsif(ce = '1')then
+				if(as='0' and (uds='0' or lds='0'))then
+					nxtack:='1';
 				end if;
+				if(clkena_in='1')then
+					if(nxtack='1')then
+						dtack<='0';
+						nxtack:='0';
+					else
+						dtack<='1';
+					end if;
+				end if;
+				las<=as;
 			end if;
-			las<=as;
 		end if;
 	end process;
 	

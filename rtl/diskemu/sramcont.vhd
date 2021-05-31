@@ -25,6 +25,7 @@ port(
 	mist_we		:in std_logic;
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end sramcont;
@@ -84,60 +85,62 @@ begin
 	rdat<=rddattmp(7 downto 0) & rddattmp(15 downto 8);
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			lba<=(others=>'0');
-			state<=st_idle;
-			mist_rd<='0';
-			mist_wr<='0';
-			done<='0';
-		elsif(clk' event and clk='1')then
-			done<='0';
-			case state is
-			when st_idle =>
-				if(ldreq='1')then
-					lba<=(others=>'0');
-					mist_rd<='1';
-					state<=st_load0;
-				elsif(streq='1')then
-					lba<=(others=>'0');
-					mist_wr<='1';
-					state<=st_store0;
-				end if;
-			when st_load0 =>
-				if(mist_ack='1')then
-					mist_rd<='0';
-					state<=st_load1;
-				end if;
-			when st_load1 =>
-				if(mist_ack='0')then
-					if(lba<x"0000001f")then
-						lba<=lba+1;
+		if rising_edge(clk) then
+			if(rstn='0')then
+				lba<=(others=>'0');
+				state<=st_idle;
+				mist_rd<='0';
+				mist_wr<='0';
+				done<='0';
+			elsif(ce = '1')then
+				done<='0';
+				case state is
+				when st_idle =>
+					if(ldreq='1')then
+						lba<=(others=>'0');
 						mist_rd<='1';
 						state<=st_load0;
-					else
-						done<='1';
-						state<=st_idle;
-					end if;
-				end if;
-			when st_store0 =>
-				if(mist_ack='1')then
-					mist_wr<='0';
-					state<=st_store1;
-				end if;
-			when st_store1 =>
-				if(mist_ack='0')then
-					if(lba<x"0000001f")then
-						lba<=lba+1;
+					elsif(streq='1')then
+						lba<=(others=>'0');
 						mist_wr<='1';
 						state<=st_store0;
-					else
-						done<='1';
-						state<=st_idle;
 					end if;
-				end if;
-			when others =>
-				state<=st_idle;
-			end case;
+				when st_load0 =>
+					if(mist_ack='1')then
+						mist_rd<='0';
+						state<=st_load1;
+					end if;
+				when st_load1 =>
+					if(mist_ack='0')then
+						if(lba<x"0000001f")then
+							lba<=lba+1;
+							mist_rd<='1';
+							state<=st_load0;
+						else
+							done<='1';
+							state<=st_idle;
+						end if;
+					end if;
+				when st_store0 =>
+					if(mist_ack='1')then
+						mist_wr<='0';
+						state<=st_store1;
+					end if;
+				when st_store1 =>
+					if(mist_ack='0')then
+						if(lba<x"0000001f")then
+							lba<=lba+1;
+							mist_wr<='1';
+							state<=st_store0;
+						else
+							done<='1';
+							state<=st_idle;
+						end if;
+					end if;
+				when others =>
+					state<=st_idle;
+				end case;
+			end if;
 		end if;
 	end process;
 	

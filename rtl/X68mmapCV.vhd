@@ -57,6 +57,7 @@ port(
 	min			:in std_logic;
 	mon			:out std_logic;
 	sclk		:in std_logic;
+	sys_ce      :in std_logic := '1';
 	rstn		:in std_logic
 );
 end X68mmapCV;
@@ -135,11 +136,13 @@ begin
 	b_wr<=b_wrb;
 
 	process(sclk,rstn)begin
-		if(rstn='0')then
-			IPLen<='1';
-		elsif(sclk' event and sclk='1')then
-			if(m_addr(23)='1' and m_as='0')then
-				IPLen<='0';
+		if rising_edge(sclk) then
+			if(rstn='0')then
+				IPLen<='1';
+			elsif(sys_ce = '1')then
+				if(m_addr(23)='1' and m_as='0')then
+					IPLen<='0';
+				end if;
 			end if;
 		end if;
 	end process;
@@ -240,82 +243,84 @@ begin
 	process(sclk,rstn)
 	variable mwait	:integer range 0 to 3;
 	begin
-		if(rstn='0')then
-			SWstate<=sw_IDLE;
-			swack<='0';
-			mwait:=0;
-		elsif(sclk' event and sclk='1')then
-			if(mwait>0)then
-				mwait:=mwait-1;
-			else
-				case SWstate is
-				when sw_IDLE =>
-					if(SWen='1')then
-						if(AP(0)='1')then
-							SWwr<=b_wrb;
-							SWstate<=sw_PR0;
-						else
+		if rising_edge(sclk) then
+			if(rstn='0')then
+				SWstate<=sw_IDLE;
+				swack<='0';
+				mwait:=0;
+			elsif(sys_ce = '1')then
+				if(mwait>0)then
+					mwait:=mwait-1;
+				else
+					case SWstate is
+					when sw_IDLE =>
+						if(SWen='1')then
+							if(AP(0)='1')then
+								SWwr<=b_wrb;
+								SWstate<=sw_PR0;
+							else
+								SWwr<="00";
+								SWstate<=sw_PR0w;
+							end if;
+						end if;
+					when sw_PR0 =>
+						if(ram_ack='1')then
 							SWwr<="00";
 							SWstate<=sw_PR0w;
+							mwait:=1;
 						end if;
-					end if;
-				when sw_PR0 =>
-					if(ram_ack='1')then
+					when sw_PR0w =>
+						if(AP(1)='1')then
+							SWwr<=b_wrb;
+							SWstate<=sw_PR1;
+						else
+							SWwr<="00";
+							SWstate<=sw_PR1w;
+						end if;
+					when sw_PR1 =>
+						if(ram_ack='1')then
+							SWwr<="00";
+							SWstate<=sw_PR1w;
+							mwait:=1;
+						end if;
+					when sw_PR1w =>
+						if(AP(2)='1')then
+							SWwr<=b_wrb;
+							SWstate<=sw_PR2;
+						else
+							SWwr<="00";
+							SWstate<=sw_PR2w;
+						end if;
+					when sw_PR2 =>
+						if(ram_ack='1')then
+							SWwr<="00";
+							SWstate<=sw_PR2w;
+							mwait:=1;
+						end if;
+					when sw_PR2w =>
+						if(AP(3)='1')then
+							SWwr<=b_wrb;
+							SWstate<=sw_PR3;
+						else
+							SWwr<="00";
+							SWstate<=sw_PR3w;
+						end if;
+					when sw_PR3 =>
+						if(ram_ack='1')then
+							SWwr<="00";
+							SWstate<=sw_PR3w;
+							mwait:=1;
+						end if;
+					when sw_PR3w =>
+						swack<='1';
+		--				SWstate<=sw_IDLE;
+					when others =>
+					end case;
+					if(SWen='0')then
 						SWwr<="00";
-						SWstate<=sw_PR0w;
-						mwait:=1;
+						SWstate<=sw_IDLE;
+						swack<='0';
 					end if;
-				when sw_PR0w =>
-					if(AP(1)='1')then
-						SWwr<=b_wrb;
-						SWstate<=sw_PR1;
-					else
-						SWwr<="00";
-						SWstate<=sw_PR1w;
-					end if;
-				when sw_PR1 =>
-					if(ram_ack='1')then
-						SWwr<="00";
-						SWstate<=sw_PR1w;
-						mwait:=1;
-					end if;
-				when sw_PR1w =>
-					if(AP(2)='1')then
-						SWwr<=b_wrb;
-						SWstate<=sw_PR2;
-					else
-						SWwr<="00";
-						SWstate<=sw_PR2w;
-					end if;
-				when sw_PR2 =>
-					if(ram_ack='1')then
-						SWwr<="00";
-						SWstate<=sw_PR2w;
-						mwait:=1;
-					end if;
-				when sw_PR2w =>
-					if(AP(3)='1')then
-						SWwr<=b_wrb;
-						SWstate<=sw_PR3;
-					else
-						SWwr<="00";
-						SWstate<=sw_PR3w;
-					end if;
-				when sw_PR3 =>
-					if(ram_ack='1')then
-						SWwr<="00";
-						SWstate<=sw_PR3w;
-						mwait:=1;
-					end if;
-				when sw_PR3w =>
-					swack<='1';
-	--				SWstate<=sw_IDLE;
-				when others =>
-				end case;
-				if(SWen='0')then
-					SWwr<="00";
-					SWstate<=sw_IDLE;
-					swack<='0';
 				end if;
 			end if;
 		end if;
@@ -331,36 +336,40 @@ begin
 	process(sclk,rstn)
 	variable iocount	:integer range 0 to 1;
 	begin
-		if(rstn='0')then
-			IO_ack<='0';
-			iocount:=1;
-		elsif(sclk' event and sclk='1')then
-			if(atype=addr_IO and m_as='0')then
-				if(iocount=0)then
-					if((m_rd='1' or b_wrb/="00") and iowait='0')then
-						IO_ack<='1';
+		if rising_edge(sclk) then
+			if(rstn='0')then
+				IO_ack<='0';
+				iocount:=1;
+			elsif(sys_ce = '1')then
+				if(atype=addr_IO and m_as='0')then
+					if(iocount=0)then
+						if((m_rd='1' or b_wrb/="00") and iowait='0')then
+							IO_ack<='1';
+						else
+							IO_ack<='0';
+						end if;
 					else
+						iocount:=iocount-1;
 						IO_ack<='0';
 					end if;
 				else
-					iocount:=iocount-1;
+					iocount:=1;
 					IO_ack<='0';
 				end if;
-			else
-				iocount:=1;
-				IO_ack<='0';
 			end if;
 		end if;
 	end process;
 	
 	process(sclk,rstn)begin
-		if(rstn='0')then
-			buserr<='0';
-		elsif(sclk' event and sclk='1')then
-			if(atype=addr_NUL and (m_rd='1' or m_wr='1'))then
-				buserr<='1';
-			elsif(iackbe='1')then
+		if rising_edge(sclk) then
+			if(rstn='0')then
 				buserr<='0';
+			elsif(sys_ce = '1')then
+				if(atype=addr_NUL and (m_rd='1' or m_wr='1'))then
+					buserr<='1';
+				elsif(iackbe='1')then
+					buserr<='0';
+				end if;
 			end if;
 		end if;
 	end process;
@@ -368,76 +377,106 @@ begin
 	process(sclk,rstn)
 	variable mwait	:integer	range 0 to 3;
 	begin
-		if(rstn='0')then
-			gpstate<=gp_idle;
-			gpack<='0';
-			gp_rdat<=(others=>'0');
-			gpwr<="00";
-			gprd<='0';
-			gprmw<="00";
-		elsif(sclk' event and sclk='1')then
-			if(mwait>0)then
-				mwait:=mwait-1;
-			else
-				case gpstate is
-				when gp_idle =>
-					if(gpconven='1')then
-						if(m_rd='1')then
-							gprd<='1';
-							gpstate<=gp_p0;
-						else
-							case b_wrb is
-							when "01" | "11" =>
-								if(vmode="00")then
-									gprmw<="11";
-								else
-									if(m_addr(1)='0')then
-										gpwr<="10";
-									else
-										gpwr<="01";
-									end if;
-								end if;
+		if rising_edge(sclk) then
+			if(rstn='0')then
+				gpstate<=gp_idle;
+				gpack<='0';
+				gp_rdat<=(others=>'0');
+				gpwr<="00";
+				gprd<='0';
+				gprmw<="00";
+			elsif(sys_ce = '1')then
+				if(mwait>0)then
+					mwait:=mwait-1;
+				else
+					case gpstate is
+					when gp_idle =>
+						if(gpconven='1')then
+							if(m_rd='1')then
+								gprd<='1';
 								gpstate<=gp_p0;
-							when "10" =>
-								if(vmode="00")then
-									gprmw<="11";
-								else
+							else
+								case b_wrb is
+								when "01" | "11" =>
+									if(vmode="00")then
+										gprmw<="11";
+									else
+										if(m_addr(1)='0')then
+											gpwr<="10";
+										else
+											gpwr<="01";
+										end if;
+									end if;
+									gpstate<=gp_p0;
+								when "10" =>
+									if(vmode="00")then
+										gprmw<="11";
+									else
+										if(m_addr(1)='0')then
+											gpwr<="10";
+										else
+											gpwr<="01";
+										end if;
+									end if;
+									gpstate<=gp_p2;
+								when others =>
+								end case;
+							end if;
+						end if;
+					when gp_p0 =>
+						if(ram_ack='1')then
+							if(vmode="00")then
+								gp_rdat(3 downto 0)<=ram_rdatq;
+							else
+								gp_rdat(7 downto 0)<=ram_rdatb;
+							end if;
+							gprd<='0';
+							gpwr<="00";
+							gprmw<="00";
+							gpstate<=gp_p0w;
+							mwait:=1;
+						end if;
+					when gp_p0w =>
+						if(m_rd='1')then
+							if(vmode="00")then
+								gpstate<=gp_p1;
+							else
+								gpstate<=gp_p2;
+							end if;
+							gprd<='1';
+						else
+							if(vmode="00")then
+								gpstate<=gp_p1;
+								gprmw<="11";
+							else
+								case b_wrb is
+								when "01" =>
+									gpack<='1';
+									gpstate<=gp_end;
+								when "11" =>
+									gpstate<=gp_p2;
 									if(m_addr(1)='0')then
 										gpwr<="10";
 									else
 										gpwr<="01";
 									end if;
-								end if;
-								gpstate<=gp_p2;
-							when others =>
-							end case;
+								when others =>
+								end case;
+							end if;
 						end if;
-					end if;
-				when gp_p0 =>
-					if(ram_ack='1')then
-						if(vmode="00")then
-							gp_rdat(3 downto 0)<=ram_rdatq;
-						else
-							gp_rdat(7 downto 0)<=ram_rdatb;
+					when gp_p1 =>
+						if(ram_ack='1')then
+							gp_rdat(7 downto 4)<=ram_rdatq;
+							gprd<='0';
+							gpwr<="00";
+							gprmw<="00";
+							gpstate<=gp_p1w;
+							mwait:=1;
 						end if;
-						gprd<='0';
-						gpwr<="00";
-						gprmw<="00";
-						gpstate<=gp_p0w;
-						mwait:=1;
-					end if;
-				when gp_p0w =>
-					if(m_rd='1')then
-						if(vmode="00")then
-							gpstate<=gp_p1;
-						else
+					when gp_p1w =>
+						if(m_rd='1')then
 							gpstate<=gp_p2;
-						end if;
-						gprd<='1';
-					else
-						if(vmode="00")then
-							gpstate<=gp_p1;
-							gprmw<="11";
+							gprd<='1';
 						else
 							case b_wrb is
 							when "01" =>
@@ -445,88 +484,60 @@ begin
 								gpstate<=gp_end;
 							when "11" =>
 								gpstate<=gp_p2;
-								if(m_addr(1)='0')then
-									gpwr<="10";
-								else
-									gpwr<="01";
-								end if;
+								gprmw<="11";
 							when others =>
 							end case;
 						end if;
-					end if;
-				when gp_p1 =>
-					if(ram_ack='1')then
-						gp_rdat(7 downto 4)<=ram_rdatq;
-						gprd<='0';
-						gpwr<="00";
-						gprmw<="00";
-						gpstate<=gp_p1w;
-						mwait:=1;
-					end if;
-				when gp_p1w =>
-					if(m_rd='1')then
-						gpstate<=gp_p2;
-						gprd<='1';
-					else
-						case b_wrb is
-						when "01" =>
-							gpack<='1';
-							gpstate<=gp_end;
-						when "11" =>
-							gpstate<=gp_p2;
-							gprmw<="11";
-						when others =>
-						end case;
-					end if;
-				when gp_p2 =>
-					if(ram_ack='1')then
-						if(vmode="00")then
-							gp_rdat(11 downto 8)<=ram_rdatq;
-						else
-							gp_rdat(15 downto 8)<=ram_rdatb;
+					when gp_p2 =>
+						if(ram_ack='1')then
+							if(vmode="00")then
+								gp_rdat(11 downto 8)<=ram_rdatq;
+							else
+								gp_rdat(15 downto 8)<=ram_rdatb;
+							end if;
+							gprd<='0';
+							gpwr<="00";
+							gprmw<="00";
+							gpstate<=gp_p2w;
+							mwait:=1;
 						end if;
-						gprd<='0';
-						gpwr<="00";
-						gprmw<="00";
-						gpstate<=gp_p2w;
-						mwait:=1;
-					end if;
-				when gp_p2w =>
-					if(m_rd='1')then
-						if(vmode="00")then
-							gpstate<=gp_p3;
-							gprd<='1';
+					when gp_p2w =>
+						if(m_rd='1')then
+							if(vmode="00")then
+								gpstate<=gp_p3;
+								gprd<='1';
+							else
+								gpack<='1';
+								gpstate<=gp_end;
+							end if;
 						else
-							gpack<='1';
-							gpstate<=gp_end;
+							if(vmode="00")then
+								gpstate<=gp_p3;
+								gprmw<="11";
+							else
+								gpack<='1';
+								gpstate<=gp_end;
+							end if;
 						end if;
-					else
-						if(vmode="00")then
-							gpstate<=gp_p3;
-							gprmw<="11";
-						else
-							gpack<='1';
-							gpstate<=gp_end;
+					when gp_p3 =>
+						if(ram_ack='1')then
+							gp_rdat(15 downto 12)<=ram_rdatq;
+							gprd<='0';
+							gpwr<="00";
+							gprmw<="00";
+							gpstate<=gp_p3w;
+							mwait:=1;
 						end if;
-					end if;
-				when gp_p3 =>
-					if(ram_ack='1')then
-						gp_rdat(15 downto 12)<=ram_rdatq;
-						gprd<='0';
-						gpwr<="00";
-						gprmw<="00";
-						gpstate<=gp_p3w;
-						mwait:=1;
-					end if;
-				when gp_p3w =>
-					gpack<='1';
-					gpstate<=gp_end;
-				when others =>
-					if(m_rd='0' and b_wrb="00")then
-						gpack<='0';
-						gpstate<=gp_idle;
-					end if;
-				end case;
+					when gp_p3w =>
+						gpack<='1';
+						gpstate<=gp_end;
+					when others =>
+						if(m_rd='0' and b_wrb="00")then
+							gpack<='0';
+							gpstate<=gp_idle;
+						end if;
+					end case;
+				end if;
 			end if;
 		end if;
 	end process;

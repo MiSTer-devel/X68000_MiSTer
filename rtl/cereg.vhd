@@ -15,7 +15,9 @@ port(
 	rd		:out std_logic;
 	
 	wclk	:in std_logic;
-	rclk	:in std_logic
+	ram_ce  :in std_logic := '1';
+	rclk	:in std_logic;
+	sys_ce  :in std_logic := '1'
 );
 end cereg;
 
@@ -33,18 +35,22 @@ signal	wdatb	:std_logic;
 begin
 
 	process(wclk)begin
-		if(wclk' event and wclk='1')then
-			riaddr<=conv_integer(wraddr);
-			wrb<=wr;
-			wdatb<=wdat;
+		if rising_edge(wclk) then
+			if (ram_ce = '1') then
+				riaddr<=conv_integer(wraddr);
+				wrb<=wr;
+				wdatb<=wdat;
+			end if;
 		end if;
 	end process;
 	
 	process(wclk)
 	begin
-		if(wclk' event and wclk='1')then
-			if(wrb='1')then
-				flag(riaddr)<=wdatb;
+		if rising_edge(wclk) then
+			if (ram_ce = '1') then
+				if(wrb='1')then
+					flag(riaddr)<=wdatb;
+				end if;
 			end if;
 		end if;
 	end process;
@@ -52,9 +58,11 @@ begin
 	process(rclk)
 	variable iaddr	:integer range 0 to bits-1;
 	begin
-		if(rclk' event and rclk='1')then
-			iaddr:=conv_integer(rdaddr);
-			rd<=flag(iaddr);
+		if rising_edge(rclk) then
+			if (sys_ce = '1') then
+				iaddr:=conv_integer(rdaddr);
+				rd<=flag(iaddr);
+			end if;
 		end if;
 	end process;
 end rtl;

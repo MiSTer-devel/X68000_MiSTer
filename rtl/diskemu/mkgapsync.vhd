@@ -17,6 +17,7 @@ port(
 	MKDONE	:in std_logic	:='1';
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn		:in std_logic
 );
 end mkgapsync;
@@ -36,61 +37,63 @@ signal	state	:state_t;
 
 begin
 	process(clk,rstn)begin
-		if(rstn='0')then
-			state<=st_IDLE;
-			lWRENn<=(others=>'1');
-			counter<=0;
---			waitcount<=0;
-			MKEN<='0';
-			MKDAT<=x"00";
-			MK<='0';
-		elsif(clk' event and clk='1')then
-			lWRENn<=lWRENn(0) & WRENn;
-			MK<='0';
---			if(waitcount>0)then
---				waitcount<=waitcount-1;
---			else
-				case state is
-				when st_IDLE =>
-					if(lWRENn="10")then
-						counter<=GAPS-1;
-						MKEN<='1';
-						MKDAT<=GAPDAT;
---						waitcount<=3;
-						state<=st_PREGAP;
-					end if;
-				when st_PREGAP =>
-					MK<='1';
---					waitcount<=3;
-					state<=st_GAP;
-				when st_GAP =>
-					if(MKDONE='1')then
-						MK<='1';
-						if(counter>0)then
-							counter<=counter-1;
-						else
-							MKDAT<=x"00";
-							counter<=SYNCS;
-							state<=st_SYNC;
+		if rising_edge(clk) then
+			if(rstn='0')then
+				state<=st_IDLE;
+				lWRENn<=(others=>'1');
+				counter<=0;
+	--			waitcount<=0;
+				MKEN<='0';
+				MKDAT<=x"00";
+				MK<='0';
+			elsif(ce = '1')then
+				lWRENn<=lWRENn(0) & WRENn;
+				MK<='0';
+	--			if(waitcount>0)then
+	--				waitcount<=waitcount-1;
+	--			else
+					case state is
+					when st_IDLE =>
+						if(lWRENn="10")then
+							counter<=GAPS-1;
+							MKEN<='1';
+							MKDAT<=GAPDAT;
+	--						waitcount<=3;
+							state<=st_PREGAP;
 						end if;
---						waitcount<=3;
-					end if;
-				when st_SYNC =>
-					if(MKDONE='1')then
+					when st_PREGAP =>
 						MK<='1';
-						if(counter>0)then
-							counter<=counter-1;
-						else
-							MKDAT<=x"00";
-							state<=st_END;
+	--					waitcount<=3;
+						state<=st_GAP;
+					when st_GAP =>
+						if(MKDONE='1')then
+							MK<='1';
+							if(counter>0)then
+								counter<=counter-1;
+							else
+								MKDAT<=x"00";
+								counter<=SYNCS;
+								state<=st_SYNC;
+							end if;
+	--						waitcount<=3;
 						end if;
---						waitcount<=3;
-					end if;
-				when others =>
-					MKEN<='0';
-					state<=st_IDLE;
-				end case;
---			end if;
+					when st_SYNC =>
+						if(MKDONE='1')then
+							MK<='1';
+							if(counter>0)then
+								counter<=counter-1;
+							else
+								MKDAT<=x"00";
+								state<=st_END;
+							end if;
+	--						waitcount<=3;
+						end if;
+					when others =>
+						MKEN<='0';
+						state<=st_IDLE;
+					end case;
+	--			end if;
+			end if;
 		end if;
 	end process;
 	

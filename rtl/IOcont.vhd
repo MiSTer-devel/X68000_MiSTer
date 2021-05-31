@@ -39,6 +39,7 @@ port(
 	prn_int		:in std_logic;
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end IOcont;
@@ -69,39 +70,43 @@ begin
 	INTx<=hdd_int & fdc_int & fdd_int & prn_int;
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			indiskl<=(others=>'0');
-			lindiskl<=(others=>'0');
-		elsif(clk' event and clk='1')then
-			lindiskl<=indiskl;
-			indiskl<=fd_diskin;
-			for i in 0 to 3 loop
-				if(lindiskl(i)='0' and indiskl(i)='1')then
-					diskins(i)<='1';
-				else
-					diskins(i)<='0';
-				end if;
-				if(lindiskl(i)='1' and indiskl(i)='0')then
-					diskeject(i)<='1';
-				else
-					diskeject(i)<='0';
-				end if;
-			end loop;
+		if rising_edge(clk) then
+			if(rstn='0')then
+				indiskl<=(others=>'0');
+				lindiskl<=(others=>'0');
+			elsif(ce = '1')then
+				lindiskl<=indiskl;
+				indiskl<=fd_diskin;
+				for i in 0 to 3 loop
+					if(lindiskl(i)='0' and indiskl(i)='1')then
+						diskins(i)<='1';
+					else
+						diskins(i)<='0';
+					end if;
+					if(lindiskl(i)='1' and indiskl(i)='0')then
+						diskeject(i)<='1';
+					else
+						diskeject(i)<='0';
+					end if;
+				end loop;
+			end if;
 		end if;
 	end process;
 	
 	fdd_intt<=diskins(3) or diskins(2) or diskins(1) or diskins(0) or diskeject(3) or diskeject(2) or diskeject(1) or diskeject(0);
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			fdd_int<='0';
-			iackl<='0';
-		elsif(clk' event and clk='1')then
-			iackl<=iack;
-			if(fdd_intt='1')then
-				fdd_int<='1';
-			elsif(iackl='1' and iackvect(1 downto 0)="01")then
+		if rising_edge(clk) then
+			if(rstn='0')then
 				fdd_int<='0';
+				iackl<='0';
+			elsif(ce = '1')then
+				iackl<=iack;
+				if(fdd_intt='1')then
+					fdd_int<='1';
+				elsif(iackl='1' and iackvect(1 downto 0)="01")then
+					fdd_int<='0';
+				end if;
 			end if;
 		end if;
 	end process;
@@ -121,76 +126,84 @@ begin
 	errdisk<=(fdcsel(3) and fd_diskerr(3)) or (fdcsel(2) and fd_diskerr(2)) or (fdcsel(1) and fd_diskerr(1)) or (fdcsel(0) and fd_diskerr(0));
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			INTn<=(others=>'0');
-			int<='0';
-		elsif(clk' event and clk='1')then
-			int<='0';
-			INTn<=(others=>'0');
-			for i in 0 to 3 loop
-				if(INTmask(i)='1' and INTx(i)='1')then
-					case i is
-					when 0 =>
-						INTn<="11";
-					when 1 =>
-						INTn<="01";
-					when 2 =>
-						INTn<="00";
-					when 3 =>
-						INTn<="10";
-					when others =>
-						INTn<="00";
-					end case;
-					int<='1';
-				end if;
-			end loop;
-		end if;
-	end process;
-	
-	process(clk,rstn)begin
-		if(rstn='0')then
-			INTmask<=(others=>'0');
-		elsif(clk' event and clk='1')then
-			if(ADDRx=x"e9c001" and wr='1')then
-				INTmask<=wdat(3 downto 0);
+		if rising_edge(clk) then
+			if(rstn='0')then
+				INTn<=(others=>'0');
+				int<='0';
+			elsif(ce = '1')then
+				int<='0';
+				INTn<=(others=>'0');
+				for i in 0 to 3 loop
+					if(INTmask(i)='1' and INTx(i)='1')then
+						case i is
+						when 0 =>
+							INTn<="11";
+						when 1 =>
+							INTn<="01";
+						when 2 =>
+							INTn<="00";
+						when 3 =>
+							INTn<="10";
+						when others =>
+							INTn<="00";
+						end case;
+						int<='1';
+					end if;
+				end loop;
 			end if;
 		end if;
 	end process;
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			INTVECT<=(others=>'0');
-		elsif(clk' event and clk='1')then
-			if(ADDRx=x"e9c003" and wr='1')then
-				INTVECT<=wdat(7 downto 2);
+		if rising_edge(clk) then
+			if(rstn='0')then
+				INTmask<=(others=>'0');
+			elsif(ce = '1')then
+				if(ADDRx=x"e9c001" and wr='1')then
+					INTmask<=wdat(3 downto 0);
+				end if;
+			end if;
+		end if;
+	end process;
+	
+	process(clk,rstn)begin
+		if rising_edge(clk) then
+			if(rstn='0')then
+				INTVECT<=(others=>'0');
+			elsif(ce = '1')then
+				if(ADDRx=x"e9c003" and wr='1')then
+					INTVECT<=wdat(7 downto 2);
+				end if;
 			end if;
 		end if;
 	end process;
 	ivect<=INTVECT & INTn;
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			fd_drvsel<="0001";
-			fd_drvhd<='0';
-			fd_drvmt<='0';
-			fd_usel<="00";
-		elsif(clk' event and clk='1')then
-			if(ADDRx=x"e94007" and wr='1')then
-				case wdat(1 downto 0) is
-				when "00" =>
-					fd_drvsel<="0001";
-				when "01" =>
-					fd_drvsel<="0010";
-				when "10" =>
-					fd_drvsel<="0100";
-				when "11" =>
-					fd_drvsel<="1000";
-				when others =>
-					fd_drvsel<="0000";
-				end case;
-				fd_usel<=wdat(1 downto 0);
-				fd_drvhd<=wdat(4);
-				fd_drvmt<=wdat(7);
+		if rising_edge(clk) then
+			if(rstn='0')then
+				fd_drvsel<="0001";
+				fd_drvhd<='0';
+				fd_drvmt<='0';
+				fd_usel<="00";
+			elsif(ce = '1')then
+				if(ADDRx=x"e94007" and wr='1')then
+					case wdat(1 downto 0) is
+					when "00" =>
+						fd_drvsel<="0001";
+					when "01" =>
+						fd_drvsel<="0010";
+					when "10" =>
+						fd_drvsel<="0100";
+					when "11" =>
+						fd_drvsel<="1000";
+					when others =>
+						fd_drvsel<="0000";
+					end case;
+					fd_usel<=wdat(1 downto 0);
+					fd_drvhd<=wdat(4);
+					fd_drvmt<=wdat(7);
+				end if;
 			end if;
 		end if;
 	end process;
@@ -200,24 +213,26 @@ begin
 			'0';
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			fdcsel<=(others=>'0');
-			fdcedge<=(others=>'0');
-			fdc_ejec<='0';
-			fdc_lockc<='0';
-			fdc_ledc<='0';
-		elsif(clk' event and clk='1')then
-			fdcedge<=(others=>'0');
-			if(ADDRx=x"e94005" and wr='1')then
-				fdcsel<=wdat(3 downto 0);
-				for i in 0 to 3 loop
-					if(fdcsel(i)='1' and wdat(i)='0')then
-						fdcedge(i)<='1';
-					end if;
-				end loop;
-				fdc_ejec<=wdat(5);
-				fdc_lockc<=wdat(6);
-				fdc_ledc<=wdat(7);
+		if rising_edge(clk) then
+			if(rstn='0')then
+				fdcsel<=(others=>'0');
+				fdcedge<=(others=>'0');
+				fdc_ejec<='0';
+				fdc_lockc<='0';
+				fdc_ledc<='0';
+			elsif(ce = '1')then
+				fdcedge<=(others=>'0');
+				if(ADDRx=x"e94005" and wr='1')then
+					fdcsel<=wdat(3 downto 0);
+					for i in 0 to 3 loop
+						if(fdcsel(i)='1' and wdat(i)='0')then
+							fdcedge(i)<='1';
+						end if;
+					end loop;
+					fdc_ejec<=wdat(5);
+					fdc_lockc<=wdat(6);
+					fdc_ledc<=wdat(7);
+				end if;
 			end if;
 		end if;
 	end process;
@@ -225,16 +240,18 @@ begin
 	fd_feject<=fdcedge when fdc_ejec='1' else (others=>'0');
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			fd_LED<=(others=>'0');
-			fd_lock<=(others=>'0');
-		elsif(clk' event and clk='1')then
-			for i in 0 to 3 loop
-				if(fdcedge(i)='1')then
-					fd_LED(i)<=fdc_ledc;
-					fd_lock(i)<=fdc_lockc;
-				end if;
-			end loop;
+		if rising_edge(clk) then
+			if(rstn='0')then
+				fd_LED<=(others=>'0');
+				fd_lock<=(others=>'0');
+			elsif(ce = '1')then
+				for i in 0 to 3 loop
+					if(fdcedge(i)='1')then
+						fd_LED(i)<=fdc_ledc;
+						fd_lock(i)<=fdc_lockc;
+					end if;
+				end loop;
+			end if;
 		end if;
 	end process;
 end rtl;

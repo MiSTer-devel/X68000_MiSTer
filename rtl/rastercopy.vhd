@@ -23,6 +23,7 @@ port(
 	ack		:in std_logic;
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end rastercopy;
@@ -47,43 +48,45 @@ begin
 	
 	process(clk,rstn)
 	begin
-		if(rstn='0')then
-			cplane<=(others=>'0');
-			srcaddr(selwidth+7 downto selwidth)<=(others=>'0');
-			dstaddr(selwidth+7 downto selwidth)<=(others=>'0');
---			sstart<='0';
---			lstart<='0';
-			cpy<='0';
-		elsif(clk' event and clk='1')then
-			cpy<='0';
---			lstart<=sstart;
---			sstart<=start;
-			case STATE is
-			when st_IDLE=>
---				if(sstart='0' and lstart='1')then
-				if(start='1')then
-					srcaddr(selwidth+7 downto selwidth)<=src;
-					dstaddr(selwidth+7 downto selwidth)<=dst;
-					cplane<=plane;
-					cpy<='1';
-					STATE<=st_COPY;
-				end if;
-			when st_COPY =>
-				if(ack='1')then
-					if(sel=selmax)then
-						cplane<=(others=>'0');
-						STATE<=st_IDLE;
-						sel<=(others=>'0');
-					else
-						sel<=sel+1;
-						cpy<='1';
-					end if;
-				end if;
-			when others =>
-			end case;
-			if(stop='1')then
+		if rising_edge(clk) then
+			if(rstn='0')then
 				cplane<=(others=>'0');
-				STATE<=st_IDLE;
+				srcaddr(selwidth+7 downto selwidth)<=(others=>'0');
+				dstaddr(selwidth+7 downto selwidth)<=(others=>'0');
+	--			sstart<='0';
+	--			lstart<='0';
+				cpy<='0';
+			elsif(ce = '1')then
+				cpy<='0';
+	--			lstart<=sstart;
+	--			sstart<=start;
+				case STATE is
+				when st_IDLE=>
+	--				if(sstart='0' and lstart='1')then
+					if(start='1')then
+						srcaddr(selwidth+7 downto selwidth)<=src;
+						dstaddr(selwidth+7 downto selwidth)<=dst;
+						cplane<=plane;
+						cpy<='1';
+						STATE<=st_COPY;
+					end if;
+				when st_COPY =>
+					if(ack='1')then
+						if(sel=selmax)then
+							cplane<=(others=>'0');
+							STATE<=st_IDLE;
+							sel<=(others=>'0');
+						else
+							sel<=sel+1;
+							cpy<='1';
+						end if;
+					end if;
+				when others =>
+				end case;
+				if(stop='1')then
+					cplane<=(others=>'0');
+					STATE<=st_IDLE;
+				end if;
 			end if;
 		end if;
 	end process;

@@ -23,7 +23,9 @@ port(
 	bg_PAT	:out std_logic_vector(7 downto 0);
 	
 	sclk	:in std_logic;
+	sys_ce  :in std_logic := '1';
 	vclk	:in std_logic;
+	vid_ce  :in std_logic := '1';
 	rstn	:in std_logic
 );
 end sprram;
@@ -79,10 +81,12 @@ begin
 	pcgl	:pcgram port map(addr(14 downto 1),pcg_addr,sclk,vclk,wrdat( 7 downto 0),(others=>'0'),pcg_wr(0),'0',rddat( 7 downto 0),pcgrdat( 7 downto 0));
 	
 	process(vclk,rstn)begin
-		if(rstn='0')then
-			dsel<=(others=>'0');
-		elsif(vclk' event and vclk='1')then
-			dsel<=dotx(1 downto 0);
+		if rising_edge(vclk) then
+			if(rstn='0')then
+				dsel<=(others=>'0');
+			elsif(vid_ce = '1')then
+				dsel<=dotx(1 downto 0);
+			end if;
 		end if;
 	end process;
 	dot<=	pcgrdat(15 downto 12) when dsel="00" else

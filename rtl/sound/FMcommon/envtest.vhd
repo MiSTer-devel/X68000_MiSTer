@@ -16,6 +16,7 @@ port(
 	ENVLEVEL	:out std_logic_vector(15 downto 0);
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 
@@ -45,15 +46,17 @@ port(
 end component;
 begin
 	process(clk,rstn)begin
-		if(rstn='0')then
-			CURSTATE<=es_OFF;
-			CURLEVEL<=(others=>'0');
-			state<='0';
-		elsif(clk' event and clk='0')then
-			state<=not state;
-			if(state='1')then
-				CURSTATE<=NXTSTATE;
-				CURLEVEL<=NXTLEVEL;
+		if falling_edge(clk) then
+			if(rstn='0')then
+				CURSTATE<=es_OFF;
+				CURLEVEL<=(others=>'0');
+				state<='0';
+			elsif(ce = '1')then
+				state<=not state;
+				if(state='1')then
+					CURSTATE<=NXTSTATE;
+					CURLEVEL<=NXTLEVEL;
+				end if;
 			end if;
 		end if;
 	end process;

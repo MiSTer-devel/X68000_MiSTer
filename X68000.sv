@@ -208,7 +208,7 @@ assign AUDIO_MIX = status[3:2];
 
 `include "build_id.v" 
 parameter CONF_STR1 = {
-	"X68000;MIDI;",
+	"X68000;UART115200,MIDI;",
 	"-;",
 	"S0,D88,FDD0;",
 	"S1,D88,FDD1;",
@@ -664,7 +664,7 @@ end
 
 ////////////////////////////  AUDIO  ////////////////////////////////////
 wire [17:0] mix_r, mix_l;
-reg [16:0] out_l, out_r;
+reg [15:0] out_l, out_r;
 
 localparam [3:0] comp_f1 = 4;
 localparam [3:0] comp_a1 = 2;
@@ -689,7 +689,7 @@ endfunction
 
 reg [15:0] cmp_l, cmp_r;
 
-always @(posedge CLK_AUDIO) begin
+always @(posedge clk_snd) begin
 	reg signed [17:0] tmp_l, tmp_r;
 
 	out_l <= aud_l + mt32_i2s_l;

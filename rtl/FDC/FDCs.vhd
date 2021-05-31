@@ -57,7 +57,9 @@ port(
 	ismode	:in std_logic	:='1';
 	
 	sclk	:in std_logic;
+	sys_ce  :in std_logic := '1';
 	fclk	:in std_logic;
+	fd_ce   :in std_logic := '1';
 	rstn	:in std_logic
 );
 end FDCs;
@@ -640,52 +642,54 @@ begin
 
 	process(sclk,rstn)
 	begin
-		if(rstn='0')then
-			lIOWR_DAT<='0';
-			lIORD_DAT<='0';
-			lIORD_STA<='0';
---			lWDAT<=(others=>'0');
-			CPUWRDAT<=(others=>'0');
-			CPUWR_DAT<='0';
-			CPURD_DAT<='0';
-			CPURD_STA<='0';
-			DRQ<='0';
-		elsif(sclk' event and sclk='1')then
-			CPUWR_DAT<='0';
-			CPURD_DAT<='0';
-			CPURD_STA<='0';
-			DMARDx<='0';
-			DMAWRx<='0';
-			if(IOWR_DAT='1')then
-				CPUWRDAT<=WDAT;
-			elsif(IOWR_DAT='0' and lIOWR_DAT='1')then
-				CPUWR_DAT<='1';
-			end if;
-			if(IORD_DAT='0' and lIORD_DAT='1')then
-				CPURD_DAT<='1';
-			end if;
-			if(IORD_STA='0' and lIORD_STA='1')then
-				CPURD_STA<='1';
-			end if;
-			if(DMAWR='1')then
-				CPUWRDAT<=WDAT;
-			elsif(DMAWR='0' and lDMAWR='1')then
-				DMAWRx<='1';
-			end if;
-			if(DMARD='0' and lDMARD='1')then
-				DMARDx<='1';
-			end if;
-			if(DMARQs='1')then
-				DRQ<='1';
-			elsif(DACKn='0' or IORD_DAT='1' or IOWR_DAT='1')then
+		if rising_edge(sclk) then
+			if(rstn='0')then
+				lIOWR_DAT<='0';
+				lIORD_DAT<='0';
+				lIORD_STA<='0';
+	--			lWDAT<=(others=>'0');
+				CPUWRDAT<=(others=>'0');
+				CPUWR_DAT<='0';
+				CPURD_DAT<='0';
+				CPURD_STA<='0';
 				DRQ<='0';
+			elsif(sys_ce = '1')then
+				CPUWR_DAT<='0';
+				CPURD_DAT<='0';
+				CPURD_STA<='0';
+				DMARDx<='0';
+				DMAWRx<='0';
+				if(IOWR_DAT='1')then
+					CPUWRDAT<=WDAT;
+				elsif(IOWR_DAT='0' and lIOWR_DAT='1')then
+					CPUWR_DAT<='1';
+				end if;
+				if(IORD_DAT='0' and lIORD_DAT='1')then
+					CPURD_DAT<='1';
+				end if;
+				if(IORD_STA='0' and lIORD_STA='1')then
+					CPURD_STA<='1';
+				end if;
+				if(DMAWR='1')then
+					CPUWRDAT<=WDAT;
+				elsif(DMAWR='0' and lDMAWR='1')then
+					DMAWRx<='1';
+				end if;
+				if(DMARD='0' and lDMARD='1')then
+					DMARDx<='1';
+				end if;
+				if(DMARQs='1')then
+					DRQ<='1';
+				elsif(DACKn='0' or IORD_DAT='1' or IOWR_DAT='1')then
+					DRQ<='0';
+				end if;
+				lIOWR_DAT<=IOWR_DAT;
+				lIORD_DAT<=IORD_DAT;
+				lIORD_STA<=IORD_STA;
+				lDMAWR<=DMAWR;
+				lDMARD<=DMARD;
+	--			lWDAT<=WDAT;
 			end if;
-			lIOWR_DAT<=IOWR_DAT;
-			lIORD_DAT<=IORD_DAT;
-			lIORD_STA<=IORD_STA;
-			lDMAWR<=DMAWR;
-			lDMARD<=DMARD;
---			lWDAT<=WDAT;
 		end if;
 	end process;
 	
@@ -704,493 +708,495 @@ begin
 	endEXECtx	:clktx port map(end_EXEC,end_EXECs,fclk,sclk,rstn);
 	
 	process(sclk,rstn)begin
-		if(rstn='0')then
-			command	<=(others=>'0');
-			C		<=(others=>'0');
-			D		<=(others=>'0');
-			DTL		<=(others=>'0');
-			EOT		<=(others=>'0');
-			GPL		<=(others=>'0');
-			HD		<='0';
-			HLT		<=(others=>'0');
-			HUT		<=(others=>'0');
-			MF		<='0';
-			MT		<='0';
-			N		<=(others=>'0');
-			NCN		<=0;
-			ND		<='0';
-			H		<=(others=>'0');
-			R		<=(others=>'0');
-			RW		<='0';
-			SC		<=(others=>'0');
-			SK		<='0';
-			SRT		<=(others=>'0');
-			STP		<=(others=>'0');
-			US		<=(others=>'0');
-			datnum	<=0;
-			EXEC	<='0';
-			RD_CMD	<='1';
-			RDDAT_CMD<=(others=>'0');
-			sDIOc	<='0';
-			DxBclr	<='0';
-			SEclr	<='0';
-			SISclr	<='0';
-		elsif(sclk' event and sclk='1')then 
-			EXEC<='0';
-			DxBclr	<='0';
-			SEclr	<='0';
-			SISclr	<='0';
-			if(setCs='1')then
-				C<=rxC;
-			elsif(incCs='1')then
-				C<=C+x"01";
-			end if;
-			if(setHs='1')then
-				H<=x"01";
-			elsif(resHs='1')then
-				H<=x"00";
-			end if;
-			if(setRs='1')then
-				R<=rxR;
-			elsif(incRs='1')then
-				R<=R+x"01";
-			elsif(resRs='1')then
-				R<=x"01";
-			end if;
-			if(setNs='1')then
-				N<=rxN;
-			end if;
-			if(setHDs='1')then
-				HD<='1';
-			elsif(resHDs='1')then
-				HD<='0';
-			end if;
-			if(datnum=0)then
+		if rising_edge(sclk) then
+			if(rstn='0')then
+				command	<=(others=>'0');
+				C		<=(others=>'0');
+				D		<=(others=>'0');
+				DTL		<=(others=>'0');
+				EOT		<=(others=>'0');
+				GPL		<=(others=>'0');
+				HD		<='0';
+				HLT		<=(others=>'0');
+				HUT		<=(others=>'0');
+				MF		<='0';
+				MT		<='0';
+				N		<=(others=>'0');
+				NCN		<=0;
+				ND		<='0';
+				H		<=(others=>'0');
+				R		<=(others=>'0');
+				RW		<='0';
+				SC		<=(others=>'0');
+				SK		<='0';
+				SRT		<=(others=>'0');
+				STP		<=(others=>'0');
+				US		<=(others=>'0');
+				datnum	<=0;
+				EXEC	<='0';
+				RD_CMD	<='1';
 				RDDAT_CMD<=(others=>'0');
-				RD_CMD<='1';
-				sDIOc<='0';
-				if(CPUWR_DAT='1')then
-					command<=CPUWRDAT(4 downto 0);
-					case CPUWRDAT(4 downto 0) is
-					when cmd_READDATA =>
-						MT<=CPUWRDAT(7);
-						MF<=CPUWRDAT(6);
-						SK<=CPUWRDAT(5);
-					when cmd_READDELETEDDATA =>
-						MT<=CPUWRDAT(7);
-						MF<=CPUWRDAT(6);
-						SK<=CPUWRDAT(5);
-					when cmd_WRITEDATA =>
-						MT<=CPUWRDAT(7);
-						MF<=CPUWRDAT(6);
-					when cmd_WRITEDELETEDDATA =>
-						MT<=CPUWRDAT(7);
-						MF<=CPUWRDAT(6);
-					when cmd_READATRACK =>
-						MF<=CPUWRDAT(6);
-						SK<=CPUWRDAT(5);
-					when cmd_READID =>
-						MF<=CPUWRDAT(6);
-					when cmd_FORMATATRACK =>
-						MF<=CPUWRDAT(6);
-						R<=x"00";
-					when cmd_SCANEQUAL =>
-						MT<=CPUWRDAT(7);
-						MF<=CPUWRDAT(6);
-						SK<=CPUWRDAT(5);
-					when cmd_SCANLOWEQUAL =>
-						MT<=CPUWRDAT(7);
-						MF<=CPUWRDAT(6);
-						SK<=CPUWRDAT(5);
-					when cmd_SCANHIGHEQUAL =>
-						MT<=CPUWRDAT(7);
-						MF<=CPUWRDAT(6);
-						SK<=CPUWRDAT(5);
-					when others=>
-					end case;
-					datnum<=1;
+				sDIOc	<='0';
+				DxBclr	<='0';
+				SEclr	<='0';
+				SISclr	<='0';
+			elsif(sys_ce = '1')then 
+				EXEC<='0';
+				DxBclr	<='0';
+				SEclr	<='0';
+				SISclr	<='0';
+				if(setCs='1')then
+					C<=rxC;
+				elsif(incCs='1')then
+					C<=C+x"01";
 				end if;
-			else
-				case command is
-				when cmd_READDATA | cmd_READDELETEDDATA | cmd_WRITEDATA | cmd_WRITEDELETEDDATA | cmd_READATRACK |
-					cmd_SCANEQUAL | cmd_SCANLOWEQUAL | cmd_SCANHIGHEQUAL =>
-					case datnum is
-					when 1 =>
-						if(CPUWR_DAT='1')then
-							US<=CPUWRDAT(1 downto 0);
-							HD<=CPUWRDAT(2);
-							datnum<=datnum+1;
-						end if;
-					when 2 =>
-						if(CPUWR_DAT='1')then
-							C<=CPUWRDAT;
-							datnum<=datnum+1;
-						end if;
-					when 3 =>
-						if(CPUWR_DAT='1')then
-							H<=CPUWRDAT;
-							datnum<=datnum+1;
-						end if;
-					when 4 =>
-						if(CPUWR_DAT='1')then
-							R<=CPUWRDAT;
-							datnum<=datnum+1;
-						end if;
-					when 5 =>
-						if(CPUWR_DAT='1')then
-							N<=CPUWRDAT;
-							datnum<=datnum+1;
-						end if;
-					when 6 =>
-						if(CPUWR_DAT='1')then
-							EOT<=CPUWRDAT;
-							datnum<=datnum+1;
-						end if;
-					when 7 =>
-						if(CPUWR_DAT='1')then
-							GPL<=CPUWRDAT;
-							datnum<=datnum+1;
-						end if;
-					when 8 =>
-						if(CPUWR_DAT='1')then
-							DTL<=CPUWRDAT;
-							RD_CMD<='0';
+				if(setHs='1')then
+					H<=x"01";
+				elsif(resHs='1')then
+					H<=x"00";
+				end if;
+				if(setRs='1')then
+					R<=rxR;
+				elsif(incRs='1')then
+					R<=R+x"01";
+				elsif(resRs='1')then
+					R<=x"01";
+				end if;
+				if(setNs='1')then
+					N<=rxN;
+				end if;
+				if(setHDs='1')then
+					HD<='1';
+				elsif(resHDs='1')then
+					HD<='0';
+				end if;
+				if(datnum=0)then
+					RDDAT_CMD<=(others=>'0');
+					RD_CMD<='1';
+					sDIOc<='0';
+					if(CPUWR_DAT='1')then
+						command<=CPUWRDAT(4 downto 0);
+						case CPUWRDAT(4 downto 0) is
+						when cmd_READDATA =>
+							MT<=CPUWRDAT(7);
+							MF<=CPUWRDAT(6);
+							SK<=CPUWRDAT(5);
+						when cmd_READDELETEDDATA =>
+							MT<=CPUWRDAT(7);
+							MF<=CPUWRDAT(6);
+							SK<=CPUWRDAT(5);
+						when cmd_WRITEDATA =>
+							MT<=CPUWRDAT(7);
+							MF<=CPUWRDAT(6);
+						when cmd_WRITEDELETEDDATA =>
+							MT<=CPUWRDAT(7);
+							MF<=CPUWRDAT(6);
+						when cmd_READATRACK =>
+							MF<=CPUWRDAT(6);
+							SK<=CPUWRDAT(5);
+						when cmd_READID =>
+							MF<=CPUWRDAT(6);
+						when cmd_FORMATATRACK =>
+							MF<=CPUWRDAT(6);
+							R<=x"00";
+						when cmd_SCANEQUAL =>
+							MT<=CPUWRDAT(7);
+							MF<=CPUWRDAT(6);
+							SK<=CPUWRDAT(5);
+						when cmd_SCANLOWEQUAL =>
+							MT<=CPUWRDAT(7);
+							MF<=CPUWRDAT(6);
+							SK<=CPUWRDAT(5);
+						when cmd_SCANHIGHEQUAL =>
+							MT<=CPUWRDAT(7);
+							MF<=CPUWRDAT(6);
+							SK<=CPUWRDAT(5);
+						when others=>
+						end case;
+						datnum<=1;
+					end if;
+				else
+					case command is
+					when cmd_READDATA | cmd_READDELETEDDATA | cmd_WRITEDATA | cmd_WRITEDELETEDDATA | cmd_READATRACK |
+						cmd_SCANEQUAL | cmd_SCANLOWEQUAL | cmd_SCANHIGHEQUAL =>
+						case datnum is
+						when 1 =>
+							if(CPUWR_DAT='1')then
+								US<=CPUWRDAT(1 downto 0);
+								HD<=CPUWRDAT(2);
+								datnum<=datnum+1;
+							end if;
+						when 2 =>
+							if(CPUWR_DAT='1')then
+								C<=CPUWRDAT;
+								datnum<=datnum+1;
+							end if;
+						when 3 =>
+							if(CPUWR_DAT='1')then
+								H<=CPUWRDAT;
+								datnum<=datnum+1;
+							end if;
+						when 4 =>
+							if(CPUWR_DAT='1')then
+								R<=CPUWRDAT;
+								datnum<=datnum+1;
+							end if;
+						when 5 =>
+							if(CPUWR_DAT='1')then
+								N<=CPUWRDAT;
+								datnum<=datnum+1;
+							end if;
+						when 6 =>
+							if(CPUWR_DAT='1')then
+								EOT<=CPUWRDAT;
+								datnum<=datnum+1;
+							end if;
+						when 7 =>
+							if(CPUWR_DAT='1')then
+								GPL<=CPUWRDAT;
+								datnum<=datnum+1;
+							end if;
+						when 8 =>
+							if(CPUWR_DAT='1')then
+								DTL<=CPUWRDAT;
+								RD_CMD<='0';
+								sDIOc<='1';
+								datnum<=datnum+1;
+							end if;
+						when 9 =>
+							if(WAITIN='0')then
+								EXEC<='1';
+								datnum<=datnum+1;
+							end if;
+						when 10 =>
+							if(end_EXECs='1')then
+								RD_CMD<='1';
+								RDDAT_CMD<=ST0;
+								datnum<=datnum+1;
+	--							SEclr<='1';
+							end if;
+						when 11=>
+							if(CPURD_DAT='1')then
+								RDDAT_CMD<=ST1;
+								datnum<=datnum+1;
+							end if;
+						when 12 =>
+							if(CPURD_DAT='1')then
+								RDDAT_CMD<=ST2;
+								datnum<=datnum+1;
+							end if;
+						when 13 =>
+							if(CPURD_DAT='1')then
+								RDDAT_CMD<=C;
+								datnum<=datnum+1;
+							end if;
+						when 14 =>
+							if(CPURD_DAT='1')then
+								RDDAT_CMD<=H;
+								datnum<=datnum+1;
+							end if;
+						when 15 =>
+							if(CPURD_DAT='1')then
+								RDDAT_CMD<=R;
+								datnum<=datnum+1;
+							end if;
+						when 16 =>
+							if(CPURD_DAT='1')then
+								RDDAT_CMD<=N;
+								datnum<=datnum+1;
+							end if;
+						when 17 =>
+							if(CPURD_DAT='1')then
+								RD_CMD<='1';
+								datnum<=0;
+							end if;
+						when others =>
+							datnum<=0;
+						end case;
+					when cmd_READID =>
+						case datnum is
+						when 1 =>
+							if(CPUWR_DAT='1')then
+								US<=CPUWRDAT(1 downto 0);
+								HD<=CPUWRDAT(2);
+								sDIOc<='1';
+								RD_CMD<='0';
+								datnum<=datnum+1;
+							end if;
+						when 2 =>
+							if(WAITIN='0')then
+								EXEC<='1';
+								datnum<=datnum+1;
+							end if;
+						when 3 =>
+							if(end_EXECs='1')then
+								RD_CMD<='1';
+								RDDAT_CMD<=ST0;
+	--							SEclr<='1';
+								datnum<=datnum+1;
+							end if;
+						when 4=>
+							if(CPURD_DAT='1')then
+								RDDAT_CMD<=ST1;
+								datnum<=datnum+1;
+							end if;
+						when 5 =>
+							if(CPURD_DAT='1')then
+								RDDAT_CMD<=ST2;
+								datnum<=datnum+1;
+							end if;
+						when 6 =>
+							if(CPURD_DAT='1')then
+								RDDAT_CMD<=C;
+								datnum<=datnum+1;
+							end if;
+						when 7 =>
+							if(CPURD_DAT='1')then
+								RDDAT_CMD<=H;
+								datnum<=datnum+1;
+							end if;
+						when 8 =>
+							if(CPURD_DAT='1')then
+								RDDAT_CMD<=R;
+								datnum<=datnum+1;
+							end if;
+						when 9 =>
+							if(CPURD_DAT='1')then
+								RDDAT_CMD<=N;
+								datnum<=datnum+1;
+							end if;
+						when 10 =>
+							if(CPURD_DAT='1')then
+								RD_CMD<='1';
+								datnum<=0;
+							end if;
+						when others =>
+							datnum<=0;
+						end case;
+					when cmd_FORMATATRACK =>
+						case datnum is
+						when 1 =>
+							if(CPUWR_DAT='1')then
+								US<=CPUWRDAT(1 downto 0);
+								HD<=CPUWRDAT(2);
+								datnum<=datnum+1;
+							end if;
+						when 2 =>
+							if(CPUWR_DAT='1')then
+								N<=CPUWRDAT;
+								datnum<=datnum+1;
+							end if;
+						when 3 =>
+							if(CPUWR_DAT='1')then
+								SC<=CPUWRDAT;
+								datnum<=datnum+1;
+							end if;
+						when 4 =>
+							if(CPUWR_DAT='1')then
+								GPL<=CPUWRDAT;
+								datnum<=datnum+1;
+							end if;
+						when 5 =>
+							if(CPUWR_DAT='1')then
+								D<=CPUWRDAT;
+								R<=x"01";
+								sDIOc<='1';
+								RD_CMD<='0';
+								datnum<=datnum+1;
+							end if;
+						when 6 =>
+							if(WAITIN='0')then
+								EXEC<='1';
+								datnum<=datnum+1;
+							end if;
+						when 7 =>
+							if(end_EXECs='1')then
+								RD_CMD<='1';
+								RDDAT_CMD<=ST0;
+	--							SEclr<='1';
+								datnum<=datnum+1;
+							end if;
+						when 8=>
+							if(CPURD_DAT='1')then
+								RDDAT_CMD<=ST1;
+								datnum<=datnum+1;
+							end if;
+						when 9 =>
+							if(CPURD_DAT='1')then
+								RDDAT_CMD<=ST2;
+								datnum<=datnum+1;
+							end if;
+						when 10 =>
+							if(CPURD_DAT='1')then
+								RDDAT_CMD<=C;
+								datnum<=datnum+1;
+							end if;
+						when 11 =>
+							if(CPURD_DAT='1')then
+								RDDAT_CMD<=H;
+								datnum<=datnum+1;
+							end if;
+						when 12 =>
+							if(CPURD_DAT='1')then
+								RDDAT_CMD<=R;
+								datnum<=datnum+1;
+							end if;
+						when 13 =>
+							if(CPURD_DAT='1')then
+								RDDAT_CMD<=N;
+								datnum<=datnum+1;
+							end if;
+						when 14 =>
+							if(CPURD_DAT='1')then
+								RD_CMD<='1';
+								datnum<=0;
+							end if;
+						when others =>
+							datnum<=0;
+						end case;
+					when cmd_RECALIBRATE =>
+						case datnum is
+						when 1 =>
+							if(CPUWR_DAT='1')then
+								US<=CPUWRDAT(1 downto 0);
+								HD<=CPUWRDAT(2);
+	--							HD<='0';
+								NCN<=0;
+								C<=x"00";
+								RD_CMD<='0';
+								datnum<=datnum+1;
+							end if;
+						when 2 =>
+							if(WAITIN='0')then
+								EXEC<='1';
+								datnum<=datnum+1;
+							end if;
+						when 3 =>
+							if(end_EXECs='1')then
+								RD_CMD<='1';
+								datnum<=0;
+							end if;
+						when others =>
+							datnum<=0;
+						end case;
+					when cmd_SENSEINTSTATUS =>
+						case datnum is
+						when 1 =>
+							RD_CMD<='1';
 							sDIOc<='1';
-							datnum<=datnum+1;
-						end if;
-					when 9 =>
-						if(WAITIN='0')then
-							EXEC<='1';
-							datnum<=datnum+1;
-						end if;
-					when 10 =>
-						if(end_EXECs='1')then
-							RD_CMD<='1';
-							RDDAT_CMD<=ST0;
-							datnum<=datnum+1;
---							SEclr<='1';
-						end if;
-					when 11=>
-						if(CPURD_DAT='1')then
-							RDDAT_CMD<=ST1;
-							datnum<=datnum+1;
-						end if;
-					when 12 =>
-						if(CPURD_DAT='1')then
-							RDDAT_CMD<=ST2;
-							datnum<=datnum+1;
-						end if;
-					when 13 =>
-						if(CPURD_DAT='1')then
-							RDDAT_CMD<=C;
-							datnum<=datnum+1;
-						end if;
-					when 14 =>
-						if(CPURD_DAT='1')then
-							RDDAT_CMD<=H;
-							datnum<=datnum+1;
-						end if;
-					when 15 =>
-						if(CPURD_DAT='1')then
-							RDDAT_CMD<=R;
-							datnum<=datnum+1;
-						end if;
-					when 16 =>
-						if(CPURD_DAT='1')then
-							RDDAT_CMD<=N;
-							datnum<=datnum+1;
-						end if;
-					when 17 =>
-						if(CPURD_DAT='1')then
-							RD_CMD<='1';
+							if(SISen='1')then
+								RDDAT_CMD<=ST0;
+								SEclr<='1';
+								datnum<=datnum+1;
+							else
+								RDDAT_CMD<=x"80";
+								datnum<=4;
+							end if;
+						when 2=>
+							if(CPURD_DAT='1')then
+								RDDAT_CMD<=PCN;
+								datnum<=datnum+1;
+							end if;
+						when 3 =>
+							if(CPURD_DAT='1')then
+								RD_CMD<='1';
+								DxBclr<='1';
+								SISclr<='1';
+								datnum<=0;
+							end if;
+						when 4 =>
+							if(CPURD_DAT='1')then
+								RD_CMD<='1';
+								datnum<=0;
+							end if;
+						when others =>
 							datnum<=0;
-						end if;
-					when others =>
-						datnum<=0;
-					end case;
-				when cmd_READID =>
-					case datnum is
-					when 1 =>
-						if(CPUWR_DAT='1')then
-							US<=CPUWRDAT(1 downto 0);
-							HD<=CPUWRDAT(2);
-							sDIOc<='1';
-							RD_CMD<='0';
-							datnum<=datnum+1;
-						end if;
-					when 2 =>
-						if(WAITIN='0')then
-							EXEC<='1';
-							datnum<=datnum+1;
-						end if;
-					when 3 =>
-						if(end_EXECs='1')then
-							RD_CMD<='1';
-							RDDAT_CMD<=ST0;
---							SEclr<='1';
-							datnum<=datnum+1;
-						end if;
-					when 4=>
-						if(CPURD_DAT='1')then
-							RDDAT_CMD<=ST1;
-							datnum<=datnum+1;
-						end if;
-					when 5 =>
-						if(CPURD_DAT='1')then
-							RDDAT_CMD<=ST2;
-							datnum<=datnum+1;
-						end if;
-					when 6 =>
-						if(CPURD_DAT='1')then
-							RDDAT_CMD<=C;
-							datnum<=datnum+1;
-						end if;
-					when 7 =>
-						if(CPURD_DAT='1')then
-							RDDAT_CMD<=H;
-							datnum<=datnum+1;
-						end if;
-					when 8 =>
-						if(CPURD_DAT='1')then
-							RDDAT_CMD<=R;
-							datnum<=datnum+1;
-						end if;
-					when 9 =>
-						if(CPURD_DAT='1')then
-							RDDAT_CMD<=N;
-							datnum<=datnum+1;
-						end if;
-					when 10 =>
-						if(CPURD_DAT='1')then
-							RD_CMD<='1';
+						end case;
+					when cmd_SPECIFY =>
+						case datnum is
+						when 1 =>
+							if(CPUWR_DAT='1')then
+								HUT<=CPUWRDAT(3 downto 0);
+								SRT<=CPUWRDAT(7 downto 4);
+								datnum<=datnum+1;
+							end if;
+						when 2 =>
+							if(CPUWR_DAT='1')then
+								HLT<=CPUWRDAT(7 downto 1);
+								ND<=CPUWRDAT(0);
+								RD_CMD<='1';
+								datnum<=0;
+							end if;
+						when others =>
 							datnum<=0;
-						end if;
-					when others =>
-						datnum<=0;
-					end case;
-				when cmd_FORMATATRACK =>
-					case datnum is
-					when 1 =>
-						if(CPUWR_DAT='1')then
-							US<=CPUWRDAT(1 downto 0);
-							HD<=CPUWRDAT(2);
-							datnum<=datnum+1;
-						end if;
-					when 2 =>
-						if(CPUWR_DAT='1')then
-							N<=CPUWRDAT;
-							datnum<=datnum+1;
-						end if;
-					when 3 =>
-						if(CPUWR_DAT='1')then
-							SC<=CPUWRDAT;
-							datnum<=datnum+1;
-						end if;
-					when 4 =>
-						if(CPUWR_DAT='1')then
-							GPL<=CPUWRDAT;
-							datnum<=datnum+1;
-						end if;
-					when 5 =>
-						if(CPUWR_DAT='1')then
-							D<=CPUWRDAT;
-							R<=x"01";
-							sDIOc<='1';
-							RD_CMD<='0';
-							datnum<=datnum+1;
-						end if;
-					when 6 =>
-						if(WAITIN='0')then
-							EXEC<='1';
-							datnum<=datnum+1;
-						end if;
-					when 7 =>
-						if(end_EXECs='1')then
-							RD_CMD<='1';
-							RDDAT_CMD<=ST0;
---							SEclr<='1';
-							datnum<=datnum+1;
-						end if;
-					when 8=>
-						if(CPURD_DAT='1')then
-							RDDAT_CMD<=ST1;
-							datnum<=datnum+1;
-						end if;
-					when 9 =>
-						if(CPURD_DAT='1')then
-							RDDAT_CMD<=ST2;
-							datnum<=datnum+1;
-						end if;
-					when 10 =>
-						if(CPURD_DAT='1')then
-							RDDAT_CMD<=C;
-							datnum<=datnum+1;
-						end if;
-					when 11 =>
-						if(CPURD_DAT='1')then
-							RDDAT_CMD<=H;
-							datnum<=datnum+1;
-						end if;
-					when 12 =>
-						if(CPURD_DAT='1')then
-							RDDAT_CMD<=R;
-							datnum<=datnum+1;
-						end if;
-					when 13 =>
-						if(CPURD_DAT='1')then
-							RDDAT_CMD<=N;
-							datnum<=datnum+1;
-						end if;
-					when 14 =>
-						if(CPURD_DAT='1')then
-							RD_CMD<='1';
+						end case;
+					when cmd_SENSEDRIVESTATUS =>
+						case datnum is
+						when 1 =>
+							if(CPUWR_DAT='1')then
+								US<=CPUWRDAT(1 downto 0);
+								HD<=CPUWRDAT(2);
+								RD_CMD<='1';
+								sDIOc<='1';
+								datnum<=datnum+1;
+							end if;
+						when 2 =>
+								RDDAT_CMD<=ST3;
+								datnum<=datnum+1;
+						when 3 =>
+							if(CPURD_DAT='1')then
+								RD_CMD<='1';
+								datnum<=0;
+							end if;
+						when others =>
 							datnum<=0;
-						end if;
-					when others =>
-						datnum<=0;
-					end case;
-				when cmd_RECALIBRATE =>
-					case datnum is
-					when 1 =>
-						if(CPUWR_DAT='1')then
-							US<=CPUWRDAT(1 downto 0);
-							HD<=CPUWRDAT(2);
---							HD<='0';
-							NCN<=0;
-							C<=x"00";
-							RD_CMD<='0';
-							datnum<=datnum+1;
-						end if;
-					when 2 =>
-						if(WAITIN='0')then
-							EXEC<='1';
-							datnum<=datnum+1;
-						end if;
-					when 3 =>
-						if(end_EXECs='1')then
-							RD_CMD<='1';
+						end case;
+					when cmd_SEEK =>
+						case datnum is
+						when 1 =>
+							if(CPUWR_DAT='1')then
+								US<=CPUWRDAT(1 downto 0);
+								HD<=CPUWRDAT(2);
+	--							HD<='0';
+								datnum<=datnum+1;
+							end if;
+						when 2 =>
+							if(CPUWR_DAT='1')then
+								NCN<=conv_integer(CPUWRDAT);
+								C<=CPUWRDAT;
+								RD_CMD<='0';
+								datnum<=datnum+1;
+							end if;
+						when 3 =>
+							if(WAITIN='0')then
+								EXEC<='1';
+								datnum<=datnum+1;
+							end if;
+						when 4 =>
+							if(end_EXECs='1')then
+								RD_CMD<='1';
+								datnum<=0;
+							end if;
+						when others =>
 							datnum<=0;
-						end if;
-					when others =>
-						datnum<=0;
-					end case;
-				when cmd_SENSEINTSTATUS =>
-					case datnum is
-					when 1 =>
-						RD_CMD<='1';
-						sDIOc<='1';
-						if(SISen='1')then
-							RDDAT_CMD<=ST0;
-							SEclr<='1';
-							datnum<=datnum+1;
-						else
+						end case;
+					when others =>		--Invalid
+						case datnum is
+						when 1 =>
+							RD_CMD<='1';
 							RDDAT_CMD<=x"80";
-							datnum<=4;
-						end if;
-					when 2=>
-						if(CPURD_DAT='1')then
-							RDDAT_CMD<=PCN;
-							datnum<=datnum+1;
-						end if;
-					when 3 =>
-						if(CPURD_DAT='1')then
-							RD_CMD<='1';
-							DxBclr<='1';
-							SISclr<='1';
-							datnum<=0;
-						end if;
-					when 4 =>
-						if(CPURD_DAT='1')then
-							RD_CMD<='1';
-							datnum<=0;
-						end if;
-					when others =>
-						datnum<=0;
-					end case;
-				when cmd_SPECIFY =>
-					case datnum is
-					when 1 =>
-						if(CPUWR_DAT='1')then
-							HUT<=CPUWRDAT(3 downto 0);
-							SRT<=CPUWRDAT(7 downto 4);
-							datnum<=datnum+1;
-						end if;
-					when 2 =>
-						if(CPUWR_DAT='1')then
-							HLT<=CPUWRDAT(7 downto 1);
-							ND<=CPUWRDAT(0);
-							RD_CMD<='1';
-							datnum<=0;
-						end if;
-					when others =>
-						datnum<=0;
-					end case;
-				when cmd_SENSEDRIVESTATUS =>
-					case datnum is
-					when 1 =>
-						if(CPUWR_DAT='1')then
-							US<=CPUWRDAT(1 downto 0);
-							HD<=CPUWRDAT(2);
-							RD_CMD<='1';
 							sDIOc<='1';
 							datnum<=datnum+1;
-						end if;
-					when 2 =>
-							RDDAT_CMD<=ST3;
-							datnum<=datnum+1;
-					when 3 =>
-						if(CPURD_DAT='1')then
-							RD_CMD<='1';
+						when 2=>
+							if(CPURD_DAT='1')then
+								RD_CMD<='1';
+								datnum<=0;
+							end if;
+						when others =>
 							datnum<=0;
-						end if;
-					when others =>
-						datnum<=0;
+						end case;
 					end case;
-				when cmd_SEEK =>
-					case datnum is
-					when 1 =>
-						if(CPUWR_DAT='1')then
-							US<=CPUWRDAT(1 downto 0);
-							HD<=CPUWRDAT(2);
---							HD<='0';
-							datnum<=datnum+1;
-						end if;
-					when 2 =>
-						if(CPUWR_DAT='1')then
-							NCN<=conv_integer(CPUWRDAT);
-							C<=CPUWRDAT;
-							RD_CMD<='0';
-							datnum<=datnum+1;
-						end if;
-					when 3 =>
-						if(WAITIN='0')then
-							EXEC<='1';
-							datnum<=datnum+1;
-						end if;
-					when 4 =>
-						if(end_EXECs='1')then
-							RD_CMD<='1';
-							datnum<=0;
-						end if;
-					when others =>
-						datnum<=0;
-					end case;
-				when others =>		--Invalid
-					case datnum is
-					when 1 =>
-						RD_CMD<='1';
-						RDDAT_CMD<=x"80";
-						sDIOc<='1';
-						datnum<=datnum+1;
-					when 2=>
-						if(CPURD_DAT='1')then
-							RD_CMD<='1';
-							datnum<=0;
-						end if;
-					when others =>
-						datnum<=0;
-					end case;
-				end case;
+				end if;
 			end if;
 		end if;
 	end process;
@@ -1206,1150 +1212,571 @@ begin
 --			'1';
 	
 	process(fclk,rstn)begin
-		if(rstn='0')then
-			lCPURD_DAT<=(others=>'0');
-			lCPUWR_DAT<=(others=>'0');
-			lDMARDx<=(others=>'0');
-			lDMAWRx<=(others=>'0');
-			CPURD_DATf<='0';
-			CPUWR_DATf<='0';
-			DMARDxf<='0';
-			DMAWRxf<='0';
-		elsif(fclk' event and fclk='1')then
-			CPURD_DATf<='0';
-			CPUWR_DATf<='0';
-			DMARDxf<='0';
-			DMAWRxf<='0';
-			lCPURD_DAT<=lCPURD_DAT(0) & CPURD_DAT;
-			lCPUWR_DAT<=lCPUWR_DAT(0) & CPUWR_DAT;
-			lDMARDx<=lDMARDx(0) & DMARDx;
-			lDMAWRx<=lDMAWRx(0) & DMAWRx;
-			if(lCPURD_DAT="01")then
-				CPURD_DATf<='1';
-			end if;
-			if(lCPUWR_DAT="01")then
-				CPUWR_DATf<='1';
-			end if;
-			if(lDMARDx="01")then
-				DMARDxf<='1';
-			end if;
-			if(lDMAWRx="01")then
-				DMAWRxf<='1';
+		if rising_edge(fclk) then
+			if(rstn='0')then
+				lCPURD_DAT<=(others=>'0');
+				lCPUWR_DAT<=(others=>'0');
+				lDMARDx<=(others=>'0');
+				lDMAWRx<=(others=>'0');
+				CPURD_DATf<='0';
+				CPUWR_DATf<='0';
+				DMARDxf<='0';
+				DMAWRxf<='0';
+			elsif(fd_ce = '1')then
+				CPURD_DATf<='0';
+				CPUWR_DATf<='0';
+				DMARDxf<='0';
+				DMAWRxf<='0';
+				lCPURD_DAT<=lCPURD_DAT(0) & CPURD_DAT;
+				lCPUWR_DAT<=lCPUWR_DAT(0) & CPUWR_DAT;
+				lDMARDx<=lDMARDx(0) & DMARDx;
+				lDMAWRx<=lDMAWRx(0) & DMAWRx;
+				if(lCPURD_DAT="01")then
+					CPURD_DATf<='1';
+				end if;
+				if(lCPUWR_DAT="01")then
+					CPUWR_DATf<='1';
+				end if;
+				if(lDMARDx="01")then
+					DMARDxf<='1';
+				end if;
+				if(lDMAWRx="01")then
+					DMAWRxf<='1';
+				end if;
 			end if;
 		end if;
 	end process;
 	
 	process(fclk,rstn)begin
-		if(rstn='0')then
-			execstate<=es_idle;
-			end_EXEC<='0';
-			seek_bgn<='0';
-			seek_init<='0';
-			crcclr<='0';
-			crcin<=(others=>'0');
-			crcwr<='0';
-			deminit<='0';
-			dembreak<='0';
-			PCN<=(others=>'0');
-			cntR<=(others=>'0');
-			rxC<=(others=>'0');
-			rxH<=(others=>'0');
-			rxR<=(others=>'0');
-			rxN<=(others=>'0');
-			contdata<='0';
-			TCclr<='0';
-			INT<='0';
-			INTs<='0';
-			DMARQ<='0';
-			DETSECT<='0';
-			setC<='0';
-			incC<='0';
-			resH<='0';
-			setH<='0';
-			setR<='0';
-			incR<='0';
-			resR<='0';
-			setN<='0';
-			setHD<='0';
-			resHD<='0';
-			sIC<="00";
-			sOR<='0';
-			sND<='0';
-			sDE<='0';
-			sEN<='0';
-			sDIOd<='0';
-			sNW<='0';
-			sMA<='0';
-			sRQM<='1';
-			sCM<='0';
-			sWC<='0';
-			sDD<='0';
-			sMD<='0';
-			iSE<='0';
-			sSH<='0';
-			txdat<=(others=>'0');
-			fmtxwr<='0';
-			mfmtxwr<='0';
-			fmmf8wr<='0';
-			fmmfbwr<='0';
-			fmmfcwr<='0';
-			fmmfewr<='0';
-			mfmma1wr<='0';
-			mfmmc2wr<='0';
-			modbreak<='0';
-			Nf<=(others=>'0');
-			NRDSTART<='0';
-			ecommand<=(others=>'0');
-			COMPDAT<=(others=>'0');
-			scancomp<='0';
-		elsif(fclk' event and fclk='1')then
-			end_EXEC<='0';
-			seek_bgn<='0';
-			seek_init<='0';
-			crcclr<='0';
-			crcwr<='0';
-			deminit<='0';
-			dembreak<='0';
-			fmtxwr<='0';
-			mfmtxwr<='0';
-			fmmf8wr<='0';
-			fmmfbwr<='0';
-			fmmfcwr<='0';
-			fmmfewr<='0';
-			mfmma1wr<='0';
-			mfmmc2wr<='0';
-			modbreak<='0';
-			TCclr<='0';
-			INT<='0';
-			INTs<='0';
-			DMARQ<='0';
-			setC<='0';
-			incC<='0';
-			resH<='0';
-			setH<='0';
-			setR<='0';
-			incR<='0';
-			resR<='0';
-			setN<='0';
-			setHD<='0';
-			resHD<='0';
-			NRDSTART<='0';
-			if(execstate=es_idle)then
+		if rising_edge(fclk) then
+			if(rstn='0')then
+				execstate<=es_idle;
+				end_EXEC<='0';
+				seek_bgn<='0';
+				seek_init<='0';
+				crcclr<='0';
+				crcin<=(others=>'0');
+				crcwr<='0';
+				deminit<='0';
+				dembreak<='0';
+				PCN<=(others=>'0');
+				cntR<=(others=>'0');
+				rxC<=(others=>'0');
+				rxH<=(others=>'0');
+				rxR<=(others=>'0');
+				rxN<=(others=>'0');
+				contdata<='0';
+				TCclr<='0';
+				INT<='0';
+				INTs<='0';
+				DMARQ<='0';
+				DETSECT<='0';
+				setC<='0';
+				incC<='0';
+				resH<='0';
+				setH<='0';
+				setR<='0';
+				incR<='0';
+				resR<='0';
+				setN<='0';
+				setHD<='0';
+				resHD<='0';
+				sIC<="00";
+				sOR<='0';
+				sND<='0';
+				sDE<='0';
+				sEN<='0';
+				sDIOd<='0';
+				sNW<='0';
+				sMA<='0';
 				sRQM<='1';
-				if(EXEC='1')then
-					sIC<="00";
-					sOR<='0';
-					sND<='0';
-					sDE<='0';
-					sEN<='0';
-					sNW<='0';
-					sMA<='0';
-					sWC<='0';
-					sDD<='0';
-					sEN<='0';
-					sSH<='0';
-					sMD<='0';
-					contdata<='0';
-					sRQM<='0';
-					sCM<='0';
-					DETSECT<='0';
-					NRDSTART<='1';
-					ecommand<=command;
-					case command is
-					when cmd_READDATA =>
-						if(preseek='1')then
-							seek_bgn<='1';
-							execstate<=es_seek;
-						else
+				sCM<='0';
+				sWC<='0';
+				sDD<='0';
+				sMD<='0';
+				iSE<='0';
+				sSH<='0';
+				txdat<=(others=>'0');
+				fmtxwr<='0';
+				mfmtxwr<='0';
+				fmmf8wr<='0';
+				fmmfbwr<='0';
+				fmmfcwr<='0';
+				fmmfewr<='0';
+				mfmma1wr<='0';
+				mfmmc2wr<='0';
+				modbreak<='0';
+				Nf<=(others=>'0');
+				NRDSTART<='0';
+				ecommand<=(others=>'0');
+				COMPDAT<=(others=>'0');
+				scancomp<='0';
+			elsif(fd_ce = '1')then
+				end_EXEC<='0';
+				seek_bgn<='0';
+				seek_init<='0';
+				crcclr<='0';
+				crcwr<='0';
+				deminit<='0';
+				dembreak<='0';
+				fmtxwr<='0';
+				mfmtxwr<='0';
+				fmmf8wr<='0';
+				fmmfbwr<='0';
+				fmmfcwr<='0';
+				fmmfewr<='0';
+				mfmma1wr<='0';
+				mfmmc2wr<='0';
+				modbreak<='0';
+				TCclr<='0';
+				INT<='0';
+				INTs<='0';
+				DMARQ<='0';
+				setC<='0';
+				incC<='0';
+				resH<='0';
+				setH<='0';
+				setR<='0';
+				incR<='0';
+				resR<='0';
+				setN<='0';
+				setHD<='0';
+				resHD<='0';
+				NRDSTART<='0';
+				if(execstate=es_idle)then
+					sRQM<='1';
+					if(EXEC='1')then
+						sIC<="00";
+						sOR<='0';
+						sND<='0';
+						sDE<='0';
+						sEN<='0';
+						sNW<='0';
+						sMA<='0';
+						sWC<='0';
+						sDD<='0';
+						sEN<='0';
+						sSH<='0';
+						sMD<='0';
+						contdata<='0';
+						sRQM<='0';
+						sCM<='0';
+						DETSECT<='0';
+						NRDSTART<='1';
+						ecommand<=command;
+						case command is
+						when cmd_READDATA =>
+							if(preseek='1')then
+								seek_bgn<='1';
+								execstate<=es_seek;
+							else
+								crcclr<='1';
+								deminit<='1';
+								execstate<=es_IAM0;
+							end if;
+							nturns<=0;
+						when cmd_READDELETEDDATA =>
+							if(preseek='1')then
+								seek_bgn<='1';
+								execstate<=es_seek;
+							else
+								crcclr<='1';
+								deminit<='1';
+								execstate<=es_IAM0;
+							end if;
+							nturns<=0;
+						when cmd_WRITEDATA =>
+							if(preseek='1')then
+								seek_bgn<='1';
+								execstate<=es_seek;
+							else
+								crcclr<='1';
+								deminit<='1';
+								execstate<=es_IAM0;
+							end if;
+							nturns<=0;
+						when cmd_WRITEDELETEDDATA =>
+							if(preseek='1')then
+								seek_bgn<='1';
+								execstate<=es_seek;
+							else
+								crcclr<='1';
+								deminit<='1';
+								execstate<=es_IAM0;
+							end if;
+							nturns<=0;
+						when cmd_READATRACK =>
+							if(preseek='1')then
+								seek_bgn<='1';
+								execstate<=es_seek;
+							else
+								crcclr<='1';
+								deminit<='1';
+								execstate<=es_windex;
+							end if;
+							nturns<=0;
+						when cmd_READID =>
 							crcclr<='1';
 							deminit<='1';
 							execstate<=es_IAM0;
-						end if;
-						nturns<=0;
-					when cmd_READDELETEDDATA =>
-						if(preseek='1')then
-							seek_bgn<='1';
-							execstate<=es_seek;
-						else
-							crcclr<='1';
-							deminit<='1';
-							execstate<=es_IAM0;
-						end if;
-						nturns<=0;
-					when cmd_WRITEDATA =>
-						if(preseek='1')then
-							seek_bgn<='1';
-							execstate<=es_seek;
-						else
-							crcclr<='1';
-							deminit<='1';
-							execstate<=es_IAM0;
-						end if;
-						nturns<=0;
-					when cmd_WRITEDELETEDDATA =>
-						if(preseek='1')then
-							seek_bgn<='1';
-							execstate<=es_seek;
-						else
-							crcclr<='1';
-							deminit<='1';
-							execstate<=es_IAM0;
-						end if;
-						nturns<=0;
-					when cmd_READATRACK =>
-						if(preseek='1')then
-							seek_bgn<='1';
-							execstate<=es_seek;
-						else
-							crcclr<='1';
-							deminit<='1';
+							nturns<=0;
+						when cmd_FORMATATRACK =>
 							execstate<=es_windex;
-						end if;
-						nturns<=0;
-					when cmd_READID =>
-						crcclr<='1';
-						deminit<='1';
-						execstate<=es_IAM0;
-						nturns<=0;
-					when cmd_FORMATATRACK =>
-						execstate<=es_windex;
-						nturns<=0;
-						cntR<=x"01";
-					when cmd_SCANEQUAL =>
-						if(preseek='1')then
+							nturns<=0;
+							cntR<=x"01";
+						when cmd_SCANEQUAL =>
+							if(preseek='1')then
+								seek_bgn<='1';
+								execstate<=es_seek;
+							else
+								execstate<=es_IAM0;
+							end if;
+							nturns<=0;
+						when cmd_SCANLOWEQUAL =>
+							if(preseek='1')then
+								seek_bgn<='1';
+								execstate<=es_seek;
+							else
+								execstate<=es_IAM0;
+							end if;
+							nturns<=0;
+						when cmd_SCANHIGHEQUAL	=>
+							if(preseek='1')then
+								seek_bgn<='1';
+								execstate<=es_seek;
+							else
+								execstate<=es_IAM0;
+							end if;
+							nturns<=0;
+						when cmd_RECALIBRATE =>
+							seek_init<='1';
+							execstate<=es_seek;
+						when cmd_SEEK =>
 							seek_bgn<='1';
 							execstate<=es_seek;
-						else
-							execstate<=es_IAM0;
-						end if;
-						nturns<=0;
-					when cmd_SCANLOWEQUAL =>
-						if(preseek='1')then
-							seek_bgn<='1';
-							execstate<=es_seek;
-						else
-							execstate<=es_IAM0;
-						end if;
-						nturns<=0;
-					when cmd_SCANHIGHEQUAL	=>
-						if(preseek='1')then
-							seek_bgn<='1';
-							execstate<=es_seek;
-						else
-							execstate<=es_IAM0;
-						end if;
-						nturns<=0;
-					when cmd_RECALIBRATE =>
-						seek_init<='1';
-						execstate<=es_seek;
-					when cmd_SEEK =>
-						seek_bgn<='1';
-						execstate<=es_seek;
-					when others=>
-						execstate<=es_idle;
-						sRQM<='1';
-					end case;
-				end if;
-			else
-				case ecommand is
-				when cmd_READDATA | cmd_READDELETEDDATA | cmd_READATRACK  =>
-					if(execstate/=es_seek and lindex='1' and indexb='0')then
---						if(contdata='1')then
---							if(MT='1' and HD='0')then
---								nturns<=0;
---								setH<='1';
---								crcclr<='1';
---								contdata<='0';
---								deminit<='1';
---								execstate<=es_IAM0;
---							else
---								sEN<='1';
---								sHD<=HD;
---								sUS<=US;
---								PCN<=cPCN;
---								sIC<="01";
---								INT<='1';
---								end_EXEC<='1';
---								execstate<=es_IDLE;
---							end if;
---						end if;
-						if(nturns<3)then
-							nturns<=nturns+1;
---							if(nturns=2 and MT='1' and H='0')then
---								nturns<=0;
---								setHD<='1';
---							end if;
-						else
+						when others=>
+							execstate<=es_idle;
+							sRQM<='1';
+						end case;
+					end if;
+				else
+					case ecommand is
+					when cmd_READDATA | cmd_READDELETEDDATA | cmd_READATRACK  =>
+						if(execstate/=es_seek and lindex='1' and indexb='0')then
+	--						if(contdata='1')then
+	--							if(MT='1' and HD='0')then
+	--								nturns<=0;
+	--								setH<='1';
+	--								crcclr<='1';
+	--								contdata<='0';
+	--								deminit<='1';
+	--								execstate<=es_IAM0;
+	--							else
+	--								sEN<='1';
+	--								sHD<=HD;
+	--								sUS<=US;
+	--								PCN<=cPCN;
+	--								sIC<="01";
+	--								INT<='1';
+	--								end_EXEC<='1';
+	--								execstate<=es_IDLE;
+	--							end if;
+	--						end if;
+							if(nturns<3)then
+								nturns<=nturns+1;
+	--							if(nturns=2 and MT='1' and H='0')then
+	--								nturns<=0;
+	--								setHD<='1';
+	--							end if;
+							else
+								sHD<=HD;
+								sUS<=US;
+								sIC<="01";
+								sND<='1';
+								if(DETSECT='0')then
+									sMA<='1';
+								else
+									sMD<='1';
+								end if;
+								PCN<=cPCN;
+								INT<='1';
+								iSE<='0';
+								end_EXEC<='1';
+								execstate<=es_IDLE;
+							end if;
+						elsif(NOTRDY='1')then
 							sHD<=HD;
 							sUS<=US;
-							sIC<="01";
-							sND<='1';
-							if(DETSECT='0')then
-								sMA<='1';
-							else
-								sMD<='1';
-							end if;
+							sIC<="11";
+							sND<='0';
+							sMA<='0';
 							PCN<=cPCN;
 							INT<='1';
 							iSE<='0';
 							end_EXEC<='1';
 							execstate<=es_IDLE;
 						end if;
-					elsif(NOTRDY='1')then
-						sHD<=HD;
-						sUS<=US;
-						sIC<="11";
-						sND<='0';
-						sMA<='0';
-						PCN<=cPCN;
-						INT<='1';
-						iSE<='0';
-						end_EXEC<='1';
-						execstate<=es_IDLE;
-					end if;
-					case execstate is
-					when es_seek =>
-						if(seek_end='1')then
-							execstate<=es_IAM0;
-							crcclr<='1';
-							deminit<='1';
-						elsif(seek_err='1')then
-							sIC<="01";
-							sHD<=HD;
-							sUS<=US;
-							PCN<=cPCN;
-							INT<='1';
-							iSE<='1';
-							execstate<=es_idle;
-						end if;
-					when es_windex =>
-						if(lindex='1' and indexb='0')then
-							execstate<=es_IAM0;
-						end if;
-					when es_IAM0 =>
-						if(MF='0')then
-							if(fmmfedet='1')then
-								crcin<=x"fe";
-								crcwr<='1';
-								execstate<=es_C;
-							elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmrxed='1')then
-								dembreak<='1';
+						case execstate is
+						when es_seek =>
+							if(seek_end='1')then
+								execstate<=es_IAM0;
 								crcclr<='1';
+								deminit<='1';
+							elsif(seek_err='1')then
+								sIC<="01";
+								sHD<=HD;
+								sUS<=US;
+								PCN<=cPCN;
+								INT<='1';
+								iSE<='1';
+								execstate<=es_idle;
 							end if;
-						else
-							if(mfmma1det='1')then
-								crcin<=x"a1";
-								crcwr<='1';
-								execstate<=es_IAM1;
-							end if;
-						end if;
-					when es_IAM1 =>
-						if(mfmma1det='1')then
-							crcin<=x"a1";
-							crcwr<='1';
-							execstate<=es_IAM2;
-						elsif(mfmmc2det='1' or mfmrxed='1')then
-							dembreak<='1';
-							crcclr<='1';
-							execstate<=es_IAM0;
-						end if;
-					when es_IAM2 =>
-						if(mfmma1det='1')then
-							crcin<=x"a1";
-							crcwr<='1';
-							execstate<=es_IAM3;
-						elsif(mfmmc2det='1' or mfmrxed='1')then
-							dembreak<='1';
-							crcclr<='1';
-							execstate<=es_IAM0;
-						end if;
-					when es_IAM3 =>
-						if(mfmrxed='1' and mfmrxdat=x"fe")then
-							crcin<=x"fe";
-							crcwr<='1';
-							execstate<=es_C;
-						elsif(mfmma1det='1' or mfmmc2det='1' or mfmrxed='1')then
-							dembreak<='1';
-							crcclr<='1';
-							execstate<=es_IAM0;
-						end if;
-					when es_C =>
-						if(MF='0')then
-							if(fmrxed='1')then
-								rxC<=fmrxdat;
-								crcin<=fmrxdat;
-								crcwr<='1';
-								execstate<=es_H;
-							elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
-								dembreak<='1';
-								crcclr<='1';
+						when es_windex =>
+							if(lindex='1' and indexb='0')then
 								execstate<=es_IAM0;
 							end if;
-						else
-							if(mfmrxed='1')then
-								rxC<=mfmrxdat;
-								crcin<=mfmrxdat;
-								crcwr<='1';
-								execstate<=es_H;
-							elsif(mfmma1det='1' or mfmmc2det='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						end if;
-					when es_H =>
-						if(MF='0')then
-							if(fmrxed='1')then
-								rxH<=fmrxdat;
-								crcin<=fmrxdat;
-								crcwr<='1';
-								execstate<=es_R;
-							elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						else
-							if(mfmrxed='1')then
-								rxH<=mfmrxdat;
-								crcin<=mfmrxdat;
-								crcwr<='1';
-								execstate<=es_R;
-							elsif(mfmma1det='1' or mfmmc2det='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						end if;
-					when es_R =>
-						if(MF='0')then
-							if(fmrxed='1')then
-								rxR<=fmrxdat;
-								crcin<=fmrxdat;
-								crcwr<='1';
-								execstate<=es_N;
-							elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						else
-							if(mfmrxed='1')then
-								rxR<=mfmrxdat;
-								crcin<=mfmrxdat;
-								crcwr<='1';
-								execstate<=es_N;
-							elsif(mfmma1det='1' or mfmmc2det='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						end if;
-					when es_N =>
-						if(MF='0')then
-							if(fmrxed='1')then
-								rxN<=fmrxdat;
-								crcin<=fmrxdat;
-								crcwr<='1';
-								execstate<=es_CRCi0;
-							elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						else
-							if(mfmrxed='1')then
-								rxN<=mfmrxdat;
-								crcin<=mfmrxdat;
-								crcwr<='1';
-								execstate<=es_CRCi0;
-							elsif(mfmma1det='1' or mfmmc2det='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						end if;
-					when es_CRCi0 =>
-						if(MF='0')then
-							if(fmrxed='1')then
-								crcin<=fmrxdat;
-								crcwr<='1';
-								execstate<=es_CRCi1;
-							elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						else
-							if(mfmrxed='1')then
-								crcin<=mfmrxdat;
-								crcwr<='1';
-								execstate<=es_CRCi1;
-							elsif(mfmma1det='1' or mfmmc2det='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						end if;
-					when es_CRCi1 =>
-						if(MF='0')then
-							if(fmrxed='1')then
-								crcin<=fmrxdat;
-								crcwr<='1';
-								dembreak<='1';
-								execstate<=es_CRCic;
-							elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						else
-							if(mfmrxed='1')then
-								crcin<=mfmrxdat;
-								crcwr<='1';
-								dembreak<='1';
-								execstate<=es_CRCic;
-							elsif(mfmma1det='1' or mfmmc2det='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						end if;
-					when es_CRCic =>
-						if(crcdone='1')then
-							if(crczero='1' and rxC=C and rxH=H and (rxR=R or ecommand=cmd_READATRACK) and rxN=N)then
-								if(rxC=C)then
-									sWC<='0';
-									execstate<=es_DAM0;
+						when es_IAM0 =>
+							if(MF='0')then
+								if(fmmfedet='1')then
+									crcin<=x"fe";
+									crcwr<='1';
+									execstate<=es_C;
+								elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmrxed='1')then
+									dembreak<='1';
 									crcclr<='1';
-									DETSECT<='1';
-								else
-									sHD<=HD;
-									sUS<=US;
-									PCN<=cPCN;
-									sIC<="01";
-									sWC<='1';
-									INT<='1';
-									iSE<='0';
-									end_EXEC<='1';
-									execstate<=es_IDLE;
 								end if;
 							else
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						end if;
-					when es_DAM0 =>
-						if(MF='0')then
-							if(fmmf8det='1')then
-								sCM<='1';
-							end if;
-							if((((ecommand=cmd_READDATA or ecommand=cmd_READATRACK) or SK='0') and fmmfbdet='1') or ((ecommand=cmd_READDELETEDDATA or SK='0') and fmmf8det='1'))then
-								if(fmmf8det='1')then
-									crcin<=x"f8";
-								else
-									crcin<=x"fb";
+								if(mfmma1det='1')then
+									crcin<=x"a1";
+									crcwr<='1';
+									execstate<=es_IAM1;
 								end if;
-								crcwr<='1';
-								TCclr<='1';
-								execstate<=es_DATA;
-							elsif(fmmf8det='1' or fmmfbdet='1'or fmmfcdet='1' or fmmfedet='1' or fmrxed='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
 							end if;
-						else
+						when es_IAM1 =>
 							if(mfmma1det='1')then
 								crcin<=x"a1";
 								crcwr<='1';
-								execstate<=es_DAM1;
+								execstate<=es_IAM2;
 							elsif(mfmmc2det='1' or mfmrxed='1')then
 								dembreak<='1';
 								crcclr<='1';
 								execstate<=es_IAM0;
 							end if;
-						end if;
-						if(N=x"00" and (rxN/=x"00" or DTL<x"80"))then
-							bytecount<=conv_integer(DTL);
-						elsif(rxN=x"00")then
-							bytecount<=128;
-						elsif(rxN=x"01")then
-							bytecount<=256;
-						elsif(rxN=x"02")then
-							bytecount<=512;
-						elsif(rxN=x"03")then
-							bytecount<=1024;
-						elsif(rxN=x"04")then
-							bytecount<=2048;
-						elsif(rxN=x"05")then
-							bytecount<=4096;
-						elsif(rxN=x"06")then
-							bytecount<=8192;
-						else
-							bytecount<=16384;
-						end if;
-					when es_DAM1 =>
-						if(mfmma1det='1')then
-							crcin<=x"a1";
-							crcwr<='1';
-							execstate<=es_DAM2;
-						elsif(mfmmc2det='1' or mfmrxed='1')then
-							dembreak<='1';
-							crcclr<='1';
-							execstate<=es_IAM0;
-						end if;
-					when es_DAM2 =>
-						if(mfmma1det='1')then
-							crcin<=x"a1";
-							crcwr<='1';
-							execstate<=es_DAM3;
-						elsif(mfmmc2det='1' or mfmrxed='1')then
-							dembreak<='1';
-							crcclr<='1';
-							execstate<=es_IAM0;
-						end if;
-					when es_DAM3 =>
-						if(mfmrxed='1')then
-							if(mfmrxdat=x"f8")then
-								sCM<='1';
-							end if;
-						end if;
-						if(mfmrxed='1' and ((((ecommand=cmd_READDATA or ecommand=cmd_READATRACK) or SK='0') and mfmrxdat=x"fb") or ((ecommand=cmd_READDELETEDDATA or SK='0') and mfmrxdat=x"f8")))then
-							crcin<=mfmrxdat;
-							crcwr<='1';
-							TCclr<='1';
-							execstate<=es_DATA;
-						elsif(mfmma1det='1' or mfmmc2det='1' or mfmrxed='1')then
-							dembreak<='1';
-							crcclr<='1';
-							execstate<=es_IAM0;
-						end if;
-					when es_DATA =>
-						if(MF='0')then
-							if(fmrxed='1')then
-								crcin<=fmrxdat;
-								crcwr<='1';
-								if(ND='0')then
-									DMARQ<='1';
-								else
-									sHD<=HD;
-									sUS<=US;
-									PCN<=cPCN;
-									sIC<="00";
-									INT<='1';
-									iSE<='0';
-								end if;
-								RDDAT_DAT<=fmrxdat;
-								sDIOd<='1';
-								sRQM<='1';
-								execstate<=es_DATAw;
-							end if;
-						else
-							if(mfmrxed='1')then
-								crcin<=mfmrxdat;
-								crcwr<='1';
-								if(ND='0')then
-									DMARQ<='1';
-								else
-									sHD<=HD;
-									sUS<=US;
-									PCN<=cPCN;
-									sIC<="00";
-									INT<='1';
-									iSE<='0';
-								end if;
-								RDDAT_DAT<=mfmrxdat;
-								sDIOd<='1';
-								sRQM<='1';
-								execstate<=es_DATAw;
-							end if;
-						end if;
-					when es_DATAw =>
-						if(CPURD_DATf='1' or DMARDxf='1')then
-							sRQM<='0';
-							if(bytecount>1)then
-								bytecount<=bytecount-1;
-								execstate<=es_DATA;
-							else
-								execstate<=es_CRCd0;
-							end if;
-						elsif((MF='0' and fmrxed='1') or (MF='1' and mfmrxed='1'))then
-							sOR<='1';
-							sIC<="01";
-							sHD<=HD;
-							sUS<=US;
-							PCN<=cPCN;
-							INT<='1';
-							iSE<='0';
-							end_EXEC<='1';
-							execstate<=es_IDLE;
-						end if;
-					when es_CRCd0 =>
-						if(MF='0')then
-							if(fmrxed='1')then
-								crcin<=fmrxdat;
-								crcwr<='1';
-								execstate<=es_CRCd1;
-							end if;
-						else
-							if(mfmrxed='1')then
-								crcin<=mfmrxdat;
-								crcwr<='1';
-								execstate<=es_CRCd1;
-							end if;
-						end if;
-					when es_CRCd1 =>
-						if(MF='0')then
-							if(fmrxed='1')then
-								crcin<=fmrxdat;
-								crcwr<='1';
-								execstate<=es_CRCdc;
-							end if;
-						else
-							if(mfmrxed='1')then
-								crcin<=mfmrxdat;
-								crcwr<='1';
-								execstate<=es_CRCdc;
-							end if;
-						end if;
-					when es_CRCdc =>
-						if(crcdone='1')then
-							if(crczero='1')then
-								if(R<EOT)then
-									incR<='1';
-								elsif(MT='1')then
-									if(HD='0')then
-										resR<='1';
-										setH<='1';
-										setHD<='1';
-									else
-										resR<='1';
-										resH<='1';
-										resHD<='1';
-										incC<='1';
-									end if;
-								else
-									resR<='1';
-									incC<='1';
-								end if;
-								sDE<='0';
-								if(TCen='1')then
-									execstate<=es_IDLE;
-									sIC<="00";
-									sHD<=HD;
-									sUS<=US;
-									PCN<=cPCN;
-									INT<='1';
-									iSE<='1';
-									end_EXEC<='1';
-								elsif(R>=EOT)then
-									sEN<='1';
-									execstate<=es_IDLE;
-									sIC<="01";
-									sHD<=HD;
-									sUS<=US;
-									PCN<=cPCN;
-									INT<='1';
-									iSE<='1';
-									end_EXEC<='1';
-								else
-									nturns<=0;
-									crcclr<='1';
-									contdata<='1';
-									DETSECT<='0';
-									execstate<=es_IAM0;
-								end if;
-							else
-								sDE<='1';
-								sIC<="01";
-								sHD<=HD;
-								sUS<=US;
-								sDD<='1';
-								PCN<=cPCN;
-								INT<='1';
-								iSE<='0';
-								execstate<=es_idle;
-								end_EXEC<='1';
-							end if;
-						end if;
-					when others =>
-						execstate<=es_idle;
-					end case;
-				when cmd_WRITEDATA | cmd_WRITEDELETEDDATA =>
-					if(WPRT='0')then
-						sIC<="01";
-						sNW<='1';
-						sHD<=HD;
-						sUS<=US;
-						PCN<=cPCN;
-						INT<='1';
-						iSE<='0';
-						end_EXEC<='1';
-						execstate<=es_IDLE;
-					elsif(execstate/=es_seek and lindex='1' and indexb='0')then
---						if(contdata='1')then
---							if(MT='1' and HD='0')then
---								nturns<=0;
---								setH<='1';
---								crcclr<='1';
---								contdata<='0';
---								execstate<=es_IAM0;
---							else
---								sEN<='1';
---								sHD<=HD;
---								sUS<=US;
---								PCN<=cPCN;
---								sIC<="00";
---								INT<='1';
---								end_EXEC<='1';
---								execstate<=es_IDLE;
---							end if;
---						end if;
-						if(nturns<3)then
---							if(nturns=2 and MT='1' and HD='0')then
---								nturns<=0;
---								setH<='1';
---							end if;
-							nturns<=nturns+1;
-						else
-							sHD<=HD;
-							sUS<=US;
-							PCN<=cPCN;
-							INT<='1';
-							iSE<='0';
-							sIC<="01";
-							sND<='1';
-							sMA<='1';
-							end_EXEC<='1';
-							execstate<=es_IDLE;
-						end if;
-					elsif(NOTRDY='1')then
-						sHD<=HD;
-						sUS<=US;
-						sIC<="11";
-						sND<='0';
-						sMA<='0';
-						PCN<=cPCN;
-						INT<='1';
-						iSE<='0';
-						end_EXEC<='1';
-						execstate<=es_IDLE;
-					end if;
-					case execstate is
-					when es_seek =>
-						if(seek_end='1')then
-							execstate<=es_IAM0;
-							crcclr<='1';
-							deminit<='1';
-						elsif(seek_err='1')then
-							sIC<="01";
-							sHD<=HD;
-							sUS<=US;
-							PCN<=cPCN;
-							INT<='1';
-							iSE<='1';
-							execstate<=es_idle;
-						end if;
-					when es_windex =>
-						if(lindex='1' and indexb='0')then
-							execstate<=es_IAM0;
-						end if;
-					when es_IAM0 =>
-						if(MF='0')then
-							if(fmmfedet='1')then
-								crcin<=x"fe";
-								crcwr<='1';
-								execstate<=es_C;
-							elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmrxed='1')then
-								dembreak<='1';
-								crcclr<='1';
-							end if;
-						else
+						when es_IAM2 =>
 							if(mfmma1det='1')then
 								crcin<=x"a1";
 								crcwr<='1';
-								execstate<=es_IAM1;
-							end if;
-						end if;
-					when es_IAM1 =>
-						if(mfmma1det='1')then
-							crcin<=x"a1";
-							crcwr<='1';
-							execstate<=es_IAM2;
-						elsif(mfmmc2det='1' or mfmrxed='1')then
-							dembreak<='1';
-							crcclr<='1';
-							execstate<=es_IAM0;
-						end if;
-					when es_IAM2 =>
-						if(mfmma1det='1')then
-							crcin<=x"a1";
-							crcwr<='1';
-							execstate<=es_IAM3;
-						elsif(mfmmc2det='1' or mfmrxed='1')then
-							dembreak<='1';
-							crcclr<='1';
-							execstate<=es_IAM0;
-						end if;
-					when es_IAM3 =>
-						if(mfmrxed='1' and mfmrxdat=x"fe")then
-							crcin<=x"fe";
-							crcwr<='1';
-							execstate<=es_C;
-						elsif(mfmma1det='1' or mfmmc2det='1' or mfmrxed='1')then
-							dembreak<='1';
-							crcclr<='1';
-							execstate<=es_IAM0;
-						end if;
-					when es_C =>
-						if(MF='0')then
-							if(fmrxed='1')then
-								rxC<=fmrxdat;
-								crcin<=fmrxdat;
-								crcwr<='1';
-								execstate<=es_H;
-							elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
+								execstate<=es_IAM3;
+							elsif(mfmmc2det='1' or mfmrxed='1')then
 								dembreak<='1';
 								crcclr<='1';
 								execstate<=es_IAM0;
 							end if;
-						else
-							if(mfmrxed='1')then
-								rxC<=mfmrxdat;
-								crcin<=mfmrxdat;
+						when es_IAM3 =>
+							if(mfmrxed='1' and mfmrxdat=x"fe")then
+								crcin<=x"fe";
 								crcwr<='1';
-								execstate<=es_H;
-							elsif(mfmma1det='1' or mfmmc2det='1')then
+								execstate<=es_C;
+							elsif(mfmma1det='1' or mfmmc2det='1' or mfmrxed='1')then
 								dembreak<='1';
 								crcclr<='1';
 								execstate<=es_IAM0;
 							end if;
-						end if;
-					when es_H =>
-						if(MF='0')then
-							if(fmrxed='1')then
-								rxH<=fmrxdat;
-								crcin<=fmrxdat;
-								crcwr<='1';
-								execstate<=es_R;
-							elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						else
-							if(mfmrxed='1')then
-								rxH<=mfmrxdat;
-								crcin<=mfmrxdat;
-								crcwr<='1';
-								execstate<=es_R;
-							elsif(mfmma1det='1' or mfmmc2det='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						end if;
-					when es_R =>
-						if(MF='0')then
-							if(fmrxed='1')then
-								rxR<=fmrxdat;
-								crcin<=fmrxdat;
-								crcwr<='1';
-								execstate<=es_N;
-							elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						else
-							if(mfmrxed='1')then
-								rxR<=mfmrxdat;
-								crcin<=mfmrxdat;
-								crcwr<='1';
-								execstate<=es_N;
-							elsif(mfmma1det='1' or mfmmc2det='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						end if;
-					when es_N =>
-						if(MF='0')then
-							if(fmrxed='1')then
-								rxN<=fmrxdat;
-								crcin<=fmrxdat;
-								crcwr<='1';
-								execstate<=es_CRCi0;
-							elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						else
-							if(mfmrxed='1')then
-								rxN<=mfmrxdat;
-								crcin<=mfmrxdat;
-								crcwr<='1';
-								execstate<=es_CRCi0;
-							elsif(mfmma1det='1' or mfmmc2det='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						end if;
-					when es_CRCi0 =>
-						if(MF='0')then
-							if(fmrxed='1')then
-								crcin<=fmrxdat;
-								crcwr<='1';
-								execstate<=es_CRCi1;
-							elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						else
-							if(mfmrxed='1')then
-								crcin<=mfmrxdat;
-								crcwr<='1';
-								execstate<=es_CRCi1;
-							elsif(mfmma1det='1' or mfmmc2det='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						end if;
-					when es_CRCi1 =>
-						if(MF='0')then
-							if(fmrxed='1')then
-								crcin<=fmrxdat;
-								crcwr<='1';
-								dembreak<='1';
-								execstate<=es_CRCic;
-							elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						else
-							if(mfmrxed='1')then
-								crcin<=mfmrxdat;
-								crcwr<='1';
-								dembreak<='1';
-								execstate<=es_CRCic;
-							elsif(mfmma1det='1' or mfmmc2det='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						end if;
-					when es_CRCic =>
-						if(crcdone='1')then
-							if(crczero='1' and rxC=C and rxH=H and rxR=R and rxN=N)then
-								if(rxC=C)then
-									execstate<=es_Gap2;
-									if(MF='0')then
-										bytecount<=nfmGap2-1;
-										txdat<=x"ff";
-										fmtxwr<='1';
-									else
-										bytecount<=nmfmGap2-1;
-										txdat<=x"4e";
-										mfmtxwr<='1';
-									end if;
+						when es_C =>
+							if(MF='0')then
+								if(fmrxed='1')then
+									rxC<=fmrxdat;
+									crcin<=fmrxdat;
+									crcwr<='1';
+									execstate<=es_H;
+								elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
+									dembreak<='1';
 									crcclr<='1';
-									DETSECT<='1';
-									sWC<='0';
-								else
-									sHD<=HD;
-									sUS<=US;
-									PCN<=cPCN;
-									sIC<="01";
-									sWC<='1';
-									INT<='1';
-									iSE<='0';
-									end_EXEC<='1';
-									execstate<=es_IDLE;
+									execstate<=es_IAM0;
 								end if;
 							else
-								crcclr<='1';
-								execstate<=es_IAM0;
+								if(mfmrxed='1')then
+									rxC<=mfmrxdat;
+									crcin<=mfmrxdat;
+									crcwr<='1';
+									execstate<=es_H;
+								elsif(mfmma1det='1' or mfmmc2det='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
 							end if;
-						end if;
-					when es_Gap2 =>
-						if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
-							if(bytecount>0)then
-								bytecount<=bytecount-1;
-								if(MF='0')then
-									txdat<=x"ff";
-									fmtxwr<='1';
-								else
-									txdat<=x"4e";
-									mfmtxwr<='1';
+						when es_H =>
+							if(MF='0')then
+								if(fmrxed='1')then
+									rxH<=fmrxdat;
+									crcin<=fmrxdat;
+									crcwr<='1';
+									execstate<=es_R;
+								elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
 								end if;
 							else
-								txdat<=x"00";
-								if(MF='0')then
-									bytecount<=nfmSyncd-1;
-									fmtxwr<='1';
-								else
-									bytecount<=nmfmSyncd-1;
-									mfmtxwr<='1';
+								if(mfmrxed='1')then
+									rxH<=mfmrxdat;
+									crcin<=mfmrxdat;
+									crcwr<='1';
+									execstate<=es_R;
+								elsif(mfmma1det='1' or mfmmc2det='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
 								end if;
-								execstate<=es_Syncd;
-								crcclr<='1';
 							end if;
-						end if;
-					when es_Syncd =>
-						if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
-							if(bytecount>0)then
-								txdat<=x"00";
-								if(MF='0')then
-									fmtxwr<='1';
-								else
-									mfmtxwr<='1';
+						when es_R =>
+							if(MF='0')then
+								if(fmrxed='1')then
+									rxR<=fmrxdat;
+									crcin<=fmrxdat;
+									crcwr<='1';
+									execstate<=es_N;
+								elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
 								end if;
-								bytecount<=bytecount-1;
 							else
-								if(MF='0')then
-									if(ecommand=cmd_WRITEDELETEDDATA)then	--Deleted
-										fmmf8wr<='1';
+								if(mfmrxed='1')then
+									rxR<=mfmrxdat;
+									crcin<=mfmrxdat;
+									crcwr<='1';
+									execstate<=es_N;
+								elsif(mfmma1det='1' or mfmmc2det='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							end if;
+						when es_N =>
+							if(MF='0')then
+								if(fmrxed='1')then
+									rxN<=fmrxdat;
+									crcin<=fmrxdat;
+									crcwr<='1';
+									execstate<=es_CRCi0;
+								elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							else
+								if(mfmrxed='1')then
+									rxN<=mfmrxdat;
+									crcin<=mfmrxdat;
+									crcwr<='1';
+									execstate<=es_CRCi0;
+								elsif(mfmma1det='1' or mfmmc2det='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							end if;
+						when es_CRCi0 =>
+							if(MF='0')then
+								if(fmrxed='1')then
+									crcin<=fmrxdat;
+									crcwr<='1';
+									execstate<=es_CRCi1;
+								elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							else
+								if(mfmrxed='1')then
+									crcin<=mfmrxdat;
+									crcwr<='1';
+									execstate<=es_CRCi1;
+								elsif(mfmma1det='1' or mfmmc2det='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							end if;
+						when es_CRCi1 =>
+							if(MF='0')then
+								if(fmrxed='1')then
+									crcin<=fmrxdat;
+									crcwr<='1';
+									dembreak<='1';
+									execstate<=es_CRCic;
+								elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							else
+								if(mfmrxed='1')then
+									crcin<=mfmrxdat;
+									crcwr<='1';
+									dembreak<='1';
+									execstate<=es_CRCic;
+								elsif(mfmma1det='1' or mfmmc2det='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							end if;
+						when es_CRCic =>
+							if(crcdone='1')then
+								if(crczero='1' and rxC=C and rxH=H and (rxR=R or ecommand=cmd_READATRACK) and rxN=N)then
+									if(rxC=C)then
+										sWC<='0';
+										execstate<=es_DAM0;
+										crcclr<='1';
+										DETSECT<='1';
+									else
+										sHD<=HD;
+										sUS<=US;
+										PCN<=cPCN;
+										sIC<="01";
+										sWC<='1';
+										INT<='1';
+										iSE<='0';
+										end_EXEC<='1';
+										execstate<=es_IDLE;
+									end if;
+								else
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							end if;
+						when es_DAM0 =>
+							if(MF='0')then
+								if(fmmf8det='1')then
+									sCM<='1';
+								end if;
+								if((((ecommand=cmd_READDATA or ecommand=cmd_READATRACK) or SK='0') and fmmfbdet='1') or ((ecommand=cmd_READDELETEDDATA or SK='0') and fmmf8det='1'))then
+									if(fmmf8det='1')then
 										crcin<=x"f8";
 									else
-										fmmfbwr<='1';
 										crcin<=x"fb";
 									end if;
 									crcwr<='1';
-								else
-									mfmma1wr<='1';
+									TCclr<='1';
+									execstate<=es_DATA;
+								elsif(fmmf8det='1' or fmmfbdet='1'or fmmfcdet='1' or fmmfedet='1' or fmrxed='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							else
+								if(mfmma1det='1')then
 									crcin<=x"a1";
 									crcwr<='1';
+									execstate<=es_DAM1;
+								elsif(mfmmc2det='1' or mfmrxed='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
 								end if;
-								execstate<=es_DAM0;
-							end if;
-						end if;
-					when es_DAM0 =>
-						if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
-							if(MF='0')then
-								if(ND='0')then
-									DMARQ<='1';
-								else
-									sHD<=HD;
-									sUS<=US;
-									PCN<=cPCN;
-									sIC<="00";
-									INT<='1';
-									iSE<='0';
-								end if;
-								sRQM<='1';
-								sDIOd<='0';
-								TCclr<='1';
-								execstate<=es_DATA;
-							else
-								mfmma1wr<='1';
-								crcin<=x"a1";
-								crcwr<='1';
-								execstate<=es_DAM1;
 							end if;
 							if(N=x"00" and (rxN/=x"00" or DTL<x"80"))then
 								bytecount<=conv_integer(DTL);
@@ -2370,1089 +1797,93 @@ begin
 							else
 								bytecount<=16384;
 							end if;
-						end if;
-					when es_DAM1 =>
-						if(mfmtxemp='1')then
-							mfmma1wr<='1';
-							crcin<=x"a1";
-							crcwr<='1';
-							execstate<=es_DAM2;
-						end if;
-					when es_DAM2 =>
-						if(mfmtxemp='1')then
-							if(ecommand=cmd_WRITEDELETEDDATA)then
-								txdat<=x"f8";
-								crcin<=x"f8";
-							else
-								txdat<=x"fb";
-								crcin<=x"fb";
-							end if;
-							mfmtxwr<='1';
-							crcwr<='1';
-							execstate<=es_DAM3;
-						end if;
-					when es_DAM3 =>
-						if(mfmtxemp='1')then
-							if(ND='0')then
-								DMARQ<='1';
-							else
-								sHD<=HD;
-								sUS<=US;
-								PCN<=cPCN;
-								sIC<="00";
-								INT<='1';
-								iSE<='0';
-							end if;
-							sRQM<='1';
-							sDIOd<='0';
-							TCclr<='1';
-							execstate<=es_DATA;
-						end if;
-					when es_DATA =>
-						if(CPUWR_DATf='1' or DMAWRxf='1')then
-							sRQM<='0';
-							txdat<=CPUWRDAT;
-							crcin<=CPUWRDAT;
-							if(MF='0')then
-								fmtxwr<='1';
-							else
-								mfmtxwr<='1';
-							end if;
-							crcwr<='1';
-							if(bytecount>1)then
-								bytecount<=bytecount-1;
-								execstate<=es_DATAw;
-							else
-								execstate<=es_CRCd0;
-							end if;
-						elsif((MF='0' and fmtxend='1') or (MF='1' and mfmtxend='1'))then
-							sOR<='1';
-							sHD<=HD;
-							sUS<=US;
-							PCN<=cPCN;
-							sIC<="01";
-							INT<='1';
-							iSE<='0';
-							execstate<=es_IDLE;
-							end_EXEC<='1';
-						end if;
-					when es_DATAw =>
-						if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
-							if(ND='0')then
-								DMARQ<='1';
-							else
-								sHD<=HD;
-								sUS<=US;
-								PCN<=cPCN;
-								sIC<="00";
-								INT<='1';
-								iSE<='0';
-							end if;
-							sRQM<='1';
-							sDIOd<='0';
-							execstate<=es_DATA;
-						end if;
-					when es_CRCd0 =>
-						if(((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1')) and crcbusy='0')then
-							txdat<=crcdat(15 downto 8);
-							if(MF='0')then
-								fmtxwr<='1';
-							else
-								mfmtxwr<='1';
-							end if;
-							execstate<=es_CRCd1;
-						end if;
-					when es_CRCd1 =>
-						if(((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1')) and crcbusy='0')then
-							txdat<=crcdat(7 downto 0);
-							if(MF='0')then
-								fmtxwr<='1';
-							else
-								mfmtxwr<='1';
-							end if;
-							bytecount<=conv_integer(GPL)/2;
-							execstate<=es_GAP3;
-							if(R<EOT)then
-								incR<='1';
-							elsif(MT='1')then
-								if(HD='0')then
-									resR<='1';
-									setH<='1';
-									setHD<='1';
-								else
-									resR<='1';
-									resH<='1';
-									resHD<='1';
-									incC<='1';
-								end if;
-							else
-								resR<='1';
-								incC<='1';
-							end if;
-						end if;
-					when es_GAP3 =>
-						if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
-							if(bytecount>1)then
-								if(MF='0')then
-									txdat<=x"ff";
-									fmtxwr<='1';
-								else
-									txdat<=x"4e";
-									mfmtxwr<='1';
-								end if;
-								bytecount<=bytecount-1;
-							elsif(TCen='1')then
-								execstate<=es_IDLE;
-								sIC<="00";
-								sHD<=HD;
-								sUS<=US;
-								PCN<=cPCN;
-								INT<='1';
-								iSE<='1';
-								end_EXEC<='1';
-							else
-								nturns<=0;
-								contdata<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						end if;
-					when others=>
-						execstate<=es_IDLE;
-						end_EXEC<='1';
-					end case;
---				when "00010" =>		--Read a Track
---					if(execstate/=es_seek and lindex='1' and indexb='0')then
---						if(contdata='1')then
---							if(MT='1' and HD='0')then
---								nturns<=0;
---								setH<='1';
---								contdata<='0';
---								crcclr<='1';
---								execstate<=es_IAM0;
---							else
---								sEN<='1';
---								sHD<=HD;
---								sUS<=US;
---								PCN<=cPCN;
---								sIC<="00";
---								INT<='1';
---								end_EXEC<='1';
---								execstate<=es_IDLE;
---							end if;
---						end if;
---						if(nturns<3)then
---							if(nturns=2 and MT='1' and HD='0')then
---								nturns<=0;
---								setH<='1';
---							end if;
---							nturns<=nturns+1;
---						else
---							sHD<=HD;
---							sUS<=US;
---							PCN<=cPCN;
---							sIC<="01";
---							INT<='1';
---							sND<='1';
---							end_EXEC<='1';
---							execstate<=es_IDLE;
---						end if;
---					end if;
---					case execstate is
---					when es_seek =>
---						if(seek_end='1')then
---							execstate<=es_windex;
---							crcclr<='1';
---							deminit<='1';
---						elsif(seek_err='1')then
---							sIC<="01";
---							sHD<=HD;
---							sUS<=US;
---							PCN<=cPCN;
---							INT<='1';
---							execstate<=es_idle;
---						end if;
---					when es_windex =>
---						if(lindex='1' and indexb='0')then
---							execstate<=es_DAM0;
---							deminit<='1';
---						end if;
---					when es_DAM0 =>
---						if(MF='0')then
---							if(fmmf8det='1')then
---								sCM<='1';
---							end if;
---							if(fmmfbdet='1' or (SK='0' and fmmf8det='1'))then
---								if(fmmf8det='1')then
---									crcin<=x"f8";
---								else
---									crcin<=x"fb";
---								end if;
---								crcwr<='1';
---								execstate<=es_DATA;
---							elsif(fmmf8det='1' or fmmfbdet='1'or fmmfcdet='1' or fmmfedet='1' or fmrxed='1')then
---								dembreak<='1';
---								crcclr<='1';
---							end if;
---						else
---							if(mfmma1det='1')then
---								crcin<=x"a1";
---								crcwr<='1';
---								execstate<=es_DAM1;
---							end if;
---						end if;
---						if(N=x"00" and (rxN/=x"00" or DTL<x"80"))then
---							bytecount<=conv_integer(DTL);
---						elsif(rxN=x"00")then
---							bytecount<=128;
---						elsif(rxN=x"01")then
---							bytecount<=256;
---						elsif(rxN=x"02")then
---							bytecount<=512;
---						elsif(rxN=x"03")then
---							bytecount<=1024;
---						elsif(rxN=x"04")then
---							bytecount<=2048;
---						elsif(rxN=x"05")then
---							bytecount<=4096;
---						elsif(rxN=x"06")then
---							bytecount<=8192;
---						else
---							bytecount<=16384;
---						end if;
---					when es_DAM1 =>
---						if(mfmma1det='1')then
---							crcin<=x"a1";
---							crcwr<='1';
---							execstate<=es_DAM2;
---						elsif(mfmmc2det='1' or mfmrxed='1')then
---							dembreak<='1';
---							crcclr<='1';
---							execstate<=es_DAM0;
---						end if;
---					when es_DAM2 =>
---						if(mfmma1det='1')then
---							crcin<=x"a1";
---							crcwr<='1';
---							execstate<=es_DAM3;
---						elsif(mfmmc2det='1' or mfmrxed='1')then
---							dembreak<='1';
---							crcclr<='1';
---							execstate<=es_DAM0;
---						end if;
---					when es_DAM3 =>
---						if(mfmrxed='1')then
---							if(mfmrxdat=x"f8")then
---								sCM<='1';
---							end if;
---						end if;
---						if(mfmrxed='1' and (((ecommand="00110" or SK='0') and mfmrxdat=x"fb") or ((ecommand="01100" or SK='0') and mfmrxdat=x"f8")))then
---							crcin<=mfmrxdat;
---							crcwr<='1';
---							execstate<=es_DATA;
---						elsif(mfmma1det='1' or mfmmc2det='1' or mfmrxed='1')then
---							dembreak<='1';
---							crcclr<='1';
---							execstate<=es_DAM0;
---						end if;
---					when es_DATA =>
---						if(MF='0')then
---							if(fmrxed='1')then
---								crcin<=fmrxdat;
---								crcwr<='1';
---								if(ND='0')then
---									DMARQ<='1';
---								else
---									sHD<=HD;
---									sUS<=US;
---									PCN<=cPCN;
---									sIC<="00";
---									INT<='1';
---								end if;
---								RDDAT_DAT<=fmrxdat;
---								sDIOd<='1';
---								sRQM<='1';
---								execstate<=es_DATAw;
---							end if;
---						else
---							if(mfmrxed='1')then
---								crcin<=mfmrxdat;
---								crcwr<='1';
---								if(ND='0')then
---									DMARQ<='1';
---								else
---									sHD<=HD;
---									sUS<=US;
---									PCN<=cPCN;
---									sIC<="00";
---									INT<='1';
---								end if;
---								RDDAT_DAT<=mfmrxdat;
---								sDIOd<='1';
---								sRQM<='1';
---								execstate<=es_DATAw;
---							end if;
---						end if;
---					when es_DATAw =>
---						if(CPURD_DATf='1' or DMARDx=f'1')then
---							sRQM<='0';
---							if(bytecount>1)then
---								bytecount<=bytecount-1;
---								execstate<=es_DATA;
---							else
---								execstate<=es_CRCd0;
---							end if;
---						elsif((MF='0' and fmrxed='1') or (MF='1' and mfmrxed='1'))then
---							sOR<='1';
---							sIC<="01";
---							sHD<=HD;
---							sUS<=US;
---							PCN<=cPCN;
---							INT<='1';
---							end_EXEC<='1';
---							execstate<=es_IDLE;
---						end if;
---					when es_CRCd0 =>
---						if(MF='0')then
---							if(fmrxed='1')then
---								crcin<=fmrxdat;
---								crcwr<='1';
---								execstate<=es_CRCd1;
---							end if;
---						else
---							if(mfmrxed='1')then
---								crcin<=mfmrxdat;
---								crcwr<='1';
---								execstate<=es_CRCd1;
---							end if;
---						end if;
---					when es_CRCd1 =>
---						if(MF='0')then
---							if(fmrxed='1')then
---								crcin<=fmrxdat;
---								crcwr<='0';
---								execstate<=es_CRCdc;
---							end if;
---						else
---							if(mfmrxed='1')then
---								crcin<=mfmrxdat;
---								crcwr<='1';
---								execstate<=es_CRCdc;
---							end if;
---						end if;
---					when es_CRCdc =>
---						if(crcdone='1')then
---							if(crczero='1')then
---								sDE<='0';
---								if(TCen='1')then
---									execstate<=es_IDLE;
---									sIC<="00";
---									sHD<=HD;
---									sUS<=US;
---									PCN<=cPCN;
---									INT<='1';
---									end_EXEC<='1';
---								else
---									execstate<=es_DAM0;
---								end if;
---							else
---								sDE<='1';
---								sIC<="01";
---								sHD<=HD;
---								sUS<=US;
---								PCN<=cPCN;
---								INT<='1';
---								execstate<=es_idle;
---								end_EXEC<='1';
---							end if;
---						end if;
---					when others =>
---						execstate<=es_idle;
---					end case;
-				when cmd_READID =>
-					if(execstate/=es_seek and lindex='1' and indexb='0')then
-						if(nturns<3)then
---							if(nturns=2 and MT='1' and HD='0')then
---								nturns<=0;
---								setH<='1';
---							end if;
-							nturns<=nturns+1;
-						else
-							if(MT='1' and HD='0')then
-								setHD<='1';
-							else
-								sHD<=HD;
-								sUS<=US;
-								sIC<="01";
-								sND<='1';
-								sMA<='1';
-								PCN<=cPCN;
-								INT<='1';
-								iSE<='0';
-								end_EXEC<='1';
-								execstate<=es_IDLE;
-							end if;
-						end if;
-					elsif(NOTRDY='1')then
-						sHD<=HD;
-						sUS<=US;
-						sIC<="11";
-						sND<='0';
-						sMA<='0';
-						PCN<=cPCN;
-						INT<='1';
-						iSE<='0';
-						end_EXEC<='1';
-						execstate<=es_IDLE;
-					end if;
-					case execstate is
-					when es_IAM0 =>
-						if(MF='0')then
-							if(fmmfedet='1')then
-								crcin<=x"fe";
-								crcwr<='1';
-								execstate<=es_C;
-							elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmrxed='1')then
-								dembreak<='1';
-								crcclr<='1';
-							end if;
-						else
+						when es_DAM1 =>
 							if(mfmma1det='1')then
 								crcin<=x"a1";
 								crcwr<='1';
-								execstate<=es_IAM1;
-							end if;
-						end if;
-					when es_IAM1 =>
-						if(mfmma1det='1')then
-							crcin<=x"a1";
-							crcwr<='1';
-							execstate<=es_IAM2;
-						elsif(mfmmc2det='1' or mfmrxed='1')then
-							dembreak<='1';
-							crcclr<='1';
-							execstate<=es_IAM0;
-						end if;
-					when es_IAM2 =>
-						if(mfmma1det='1')then
-							crcin<=x"a1";
-							crcwr<='1';
-							execstate<=es_IAM3;
-						elsif(mfmmc2det='1' or mfmrxed='1')then
-							dembreak<='1';
-							crcclr<='1';
-							execstate<=es_IAM0;
-						end if;
-					when es_IAM3 =>
-						if(mfmrxed='1' and mfmrxdat=x"fe")then
-							crcin<=x"fe";
-							crcwr<='1';
-							execstate<=es_C;
-						elsif(mfmma1det='1' or mfmmc2det='1' or mfmrxed='1')then
-							dembreak<='1';
-							crcclr<='1';
-							execstate<=es_IAM0;
-						end if;
-					when es_C =>
-						if(MF='0')then
-							if(fmrxed='1')then
-								rxC<=fmrxdat;
-								crcin<=fmrxdat;
-								crcwr<='1';
-								execstate<=es_H;
-							elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						else
-							if(mfmrxed='1')then
-								rxC<=mfmrxdat;
-								crcin<=mfmrxdat;
-								crcwr<='1';
-								execstate<=es_H;
-							elsif(mfmma1det='1' or mfmmc2det='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						end if;
-					when es_H =>
-						if(MF='0')then
-							if(fmrxed='1')then
-								rxH<=fmrxdat;
-								crcin<=fmrxdat;
-								crcwr<='1';
-								execstate<=es_R;
-							elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						else
-							if(mfmrxed='1')then
-								rxH<=mfmrxdat;
-								crcin<=mfmrxdat;
-								crcwr<='1';
-								execstate<=es_R;
-							elsif(mfmma1det='1' or mfmmc2det='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						end if;
-					when es_R =>
-						if(MF='0')then
-							if(fmrxed='1')then
-								rxR<=fmrxdat;
-								crcin<=fmrxdat;
-								crcwr<='1';
-								execstate<=es_N;
-							elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						else
-							if(mfmrxed='1')then
-								rxR<=mfmrxdat;
-								crcin<=mfmrxdat;
-								crcwr<='1';
-								execstate<=es_N;
-							elsif(mfmma1det='1' or mfmmc2det='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						end if;
-					when es_N =>
-						if(MF='0')then
-							if(fmrxed='1')then
-								rxN<=fmrxdat;
-								crcin<=fmrxdat;
-								crcwr<='1';
-								execstate<=es_CRCi0;
-							elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						else
-							if(mfmrxed='1')then
-								rxN<=mfmrxdat;
-								crcin<=mfmrxdat;
-								crcwr<='1';
-								execstate<=es_CRCi0;
-							elsif(mfmma1det='1' or mfmmc2det='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						end if;
-					when es_CRCi0 =>
-						if(MF='0')then
-							if(fmrxed='1')then
-								crcin<=fmrxdat;
-								crcwr<='1';
-								execstate<=es_CRCi1;
-							elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						else
-							if(mfmrxed='1')then
-								crcin<=mfmrxdat;
-								crcwr<='1';
-								execstate<=es_CRCi1;
-							elsif(mfmma1det='1' or mfmmc2det='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						end if;
-					when es_CRCi1 =>
-						if(MF='0')then
-							if(fmrxed='1')then
-								crcin<=fmrxdat;
-								crcwr<='1';
-								dembreak<='1';
-								execstate<=es_CRCic;
-							elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						else
-							if(mfmrxed='1')then
-								crcin<=mfmrxdat;
-								crcwr<='1';
-								dembreak<='1';
-								execstate<=es_CRCic;
-							elsif(mfmma1det='1' or mfmmc2det='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						end if;
-					when es_CRCic =>
-						if(crcdone='1')then
-							if(crczero='1')then
-								execstate<=es_IDLE;
-								sIC<="00";
-								sHD<=HD;
-								sUS<=US;
-								PCN<=cPCN;
-								INT<='1';
-								iSE<='0';
-								setC<='1';
-								if(rxH=x"00")then
-									resH<='1';
-								else
-									setH<='1';
-								end if;
-								setR<='1';
-								setN<='1';
-								end_EXEC<='1';
-								crcclr<='1';
-							else
-								sHD<=HD;
-								sUS<=US;
-								sIC<="01";
-								sND<='1';
-								sMA<='0';
-								PCN<=cPCN;
-								INT<='1';
-								iSE<='0';
-								end_EXEC<='1';
-								execstate<=es_IDLE;
-								crcclr<='1';
-							end if;
-						end if;
-					when others=>
-						execstate<=es_idle;
-						end_EXEC<='1';
-					end case;
-
-				when cmd_SCANEQUAL | cmd_SCANLOWEQUAL| cmd_SCANHIGHEQUAL =>
-					if(execstate/=es_seek and lindex='1' and indexb='0')then
-						if(nturns<3)then
-							nturns<=nturns+1;
-						else
-							sHD<=HD;
-							sUS<=US;
-							sIC<="01";
-							sND<='1';
-							if(DETSECT='0')then
-								sMA<='1';
-							else
-								sMD<='1';
-							end if;
-							PCN<=cPCN;
-							INT<='1';
-							iSE<='0';
-							end_EXEC<='1';
-							execstate<=es_IDLE;
-						end if;
-					elsif(NOTRDY='1')then
-						sHD<=HD;
-						sUS<=US;
-						sIC<="11";
-						sND<='0';
-						sMA<='0';
-						PCN<=cPCN;
-						INT<='1';
-						iSE<='0';
-						end_EXEC<='1';
-						execstate<=es_IDLE;
-					end if;
-					case execstate is
-					when es_seek =>
-						if(seek_end='1')then
-							execstate<=es_IAM0;
-							crcclr<='1';
-							deminit<='1';
-						elsif(seek_err='1')then
-							sIC<="01";
-							sHD<=HD;
-							sUS<=US;
-							PCN<=cPCN;
-							INT<='1';
-							iSE<='1';
-							execstate<=es_idle;
-						end if;
-					when es_windex =>
-						if(lindex='1' and indexb='0')then
-							execstate<=es_IAM0;
-						end if;
-					when es_IAM0 =>
-						if(MF='0')then
-							if(fmmfedet='1')then
-								crcin<=x"fe";
-								crcwr<='1';
-								execstate<=es_C;
-							elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmrxed='1')then
-								dembreak<='1';
-								crcclr<='1';
-							end if;
-						else
-							if(mfmma1det='1')then
-								crcin<=x"a1";
-								crcwr<='1';
-								execstate<=es_IAM1;
-							end if;
-						end if;
-					when es_IAM1 =>
-						if(mfmma1det='1')then
-							crcin<=x"a1";
-							crcwr<='1';
-							execstate<=es_IAM2;
-						elsif(mfmmc2det='1' or mfmrxed='1')then
-							dembreak<='1';
-							crcclr<='1';
-							execstate<=es_IAM0;
-						end if;
-					when es_IAM2 =>
-						if(mfmma1det='1')then
-							crcin<=x"a1";
-							crcwr<='1';
-							execstate<=es_IAM3;
-						elsif(mfmmc2det='1' or mfmrxed='1')then
-							dembreak<='1';
-							crcclr<='1';
-							execstate<=es_IAM0;
-						end if;
-					when es_IAM3 =>
-						if(mfmrxed='1' and mfmrxdat=x"fe")then
-							crcin<=x"fe";
-							crcwr<='1';
-							execstate<=es_C;
-						elsif(mfmma1det='1' or mfmmc2det='1' or mfmrxed='1')then
-							dembreak<='1';
-							crcclr<='1';
-							execstate<=es_IAM0;
-						end if;
-					when es_C =>
-						if(MF='0')then
-							if(fmrxed='1')then
-								rxC<=fmrxdat;
-								crcin<=fmrxdat;
-								crcwr<='1';
-								execstate<=es_H;
-							elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						else
-							if(mfmrxed='1')then
-								rxC<=mfmrxdat;
-								crcin<=mfmrxdat;
-								crcwr<='1';
-								execstate<=es_H;
-							elsif(mfmma1det='1' or mfmmc2det='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						end if;
-					when es_H =>
-						if(MF='0')then
-							if(fmrxed='1')then
-								rxH<=fmrxdat;
-								crcin<=fmrxdat;
-								crcwr<='1';
-								execstate<=es_R;
-							elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						else
-							if(mfmrxed='1')then
-								rxH<=mfmrxdat;
-								crcin<=mfmrxdat;
-								crcwr<='1';
-								execstate<=es_R;
-							elsif(mfmma1det='1' or mfmmc2det='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						end if;
-					when es_R =>
-						if(MF='0')then
-							if(fmrxed='1')then
-								rxR<=fmrxdat;
-								crcin<=fmrxdat;
-								crcwr<='1';
-								execstate<=es_N;
-							elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						else
-							if(mfmrxed='1')then
-								rxR<=mfmrxdat;
-								crcin<=mfmrxdat;
-								crcwr<='1';
-								execstate<=es_N;
-							elsif(mfmma1det='1' or mfmmc2det='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						end if;
-					when es_N =>
-						if(MF='0')then
-							if(fmrxed='1')then
-								rxN<=fmrxdat;
-								crcin<=fmrxdat;
-								crcwr<='1';
-								execstate<=es_CRCi0;
-							elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						else
-							if(mfmrxed='1')then
-								rxN<=mfmrxdat;
-								crcin<=mfmrxdat;
-								crcwr<='1';
-								execstate<=es_CRCi0;
-							elsif(mfmma1det='1' or mfmmc2det='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						end if;
-					when es_CRCi0 =>
-						if(MF='0')then
-							if(fmrxed='1')then
-								crcin<=fmrxdat;
-								crcwr<='1';
-								execstate<=es_CRCi1;
-							elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						else
-							if(mfmrxed='1')then
-								crcin<=mfmrxdat;
-								crcwr<='1';
-								execstate<=es_CRCi1;
-							elsif(mfmma1det='1' or mfmmc2det='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						end if;
-					when es_CRCi1 =>
-						if(MF='0')then
-							if(fmrxed='1')then
-								crcin<=fmrxdat;
-								crcwr<='1';
-								dembreak<='1';
-								execstate<=es_CRCic;
-							elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						else
-							if(mfmrxed='1')then
-								crcin<=mfmrxdat;
-								crcwr<='1';
-								dembreak<='1';
-								execstate<=es_CRCic;
-							elsif(mfmma1det='1' or mfmmc2det='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						end if;
-					when es_CRCic =>
-						if(crcdone='1')then
-							if(crczero='1' and rxC=C and rxH=H and rxR=R and rxN=N)then
-								if(rxC=C)then
-									sWC<='0';
-									execstate<=es_DAM0;
-									crcclr<='1';
-									DETSECT<='1';
-								else
-									sHD<=HD;
-									sUS<=US;
-									PCN<=cPCN;
-									sIC<="01";
-									sWC<='1';
-									INT<='1';
-									iSE<='0';
-									end_EXEC<='1';
-									execstate<=es_IDLE;
-								end if;
-							else
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						end if;
-					when es_DAM0 =>
-						if(MF='0')then
-							if(fmmf8det='1')then
-								sCM<='1';
-							end if;
-							if(fmmfbdet='1' or fmmf8det='1')then
-								if(fmmf8det='1')then
-									crcin<=x"f8";
-								else
-									crcin<=x"fb";
-								end if;
-								crcwr<='1';
-								TCclr<='1';
-								execstate<=es_DATA;
-								scancomp<='0';
-							elsif(fmmf8det='1' or fmmfbdet='1'or fmmfcdet='1' or fmmfedet='1' or fmrxed='1')then
-								dembreak<='1';
-								crcclr<='1';
-								execstate<=es_IAM0;
-							end if;
-						else
-							if(mfmma1det='1')then
-								crcin<=x"a1";
-								crcwr<='1';
-								execstate<=es_DAM1;
+								execstate<=es_DAM2;
 							elsif(mfmmc2det='1' or mfmrxed='1')then
 								dembreak<='1';
 								crcclr<='1';
 								execstate<=es_IAM0;
 							end if;
-						end if;
-						if(N=x"00" and (rxN/=x"00" or DTL<x"80"))then
-							bytecount<=conv_integer(DTL);
-						elsif(rxN=x"00")then
-							bytecount<=128;
-						elsif(rxN=x"01")then
-							bytecount<=256;
-						elsif(rxN=x"02")then
-							bytecount<=512;
-						elsif(rxN=x"03")then
-							bytecount<=1024;
-						elsif(rxN=x"04")then
-							bytecount<=2048;
-						elsif(rxN=x"05")then
-							bytecount<=4096;
-						elsif(rxN=x"06")then
-							bytecount<=8192;
-						else
-							bytecount<=16384;
-						end if;
-					when es_DAM1 =>
-						if(mfmma1det='1')then
-							crcin<=x"a1";
-							crcwr<='1';
-							execstate<=es_DAM2;
-						elsif(mfmmc2det='1' or mfmrxed='1')then
-							dembreak<='1';
-							crcclr<='1';
-							execstate<=es_IAM0;
-						end if;
-					when es_DAM2 =>
-						if(mfmma1det='1')then
-							crcin<=x"a1";
-							crcwr<='1';
-							execstate<=es_DAM3;
-						elsif(mfmmc2det='1' or mfmrxed='1')then
-							dembreak<='1';
-							crcclr<='1';
-							execstate<=es_IAM0;
-						end if;
-					when es_DAM3 =>
-						if(mfmrxed='1')then
-							if(mfmrxdat=x"f8")then
-								sCM<='1';
-							end if;
-						end if;
-						if(mfmrxed='1' and (mfmrxdat=x"fb" or mfmrxdat=x"f8"))then
-							crcin<=mfmrxdat;
-							crcwr<='1';
-							TCclr<='1';
-							execstate<=es_DATA;
-							scancomp<='0';
-						elsif(mfmma1det='1' or mfmmc2det='1' or mfmrxed='1')then
-							dembreak<='1';
-							crcclr<='1';
-							execstate<=es_IAM0;
-						end if;
-					when es_DATA =>
-						if(MF='0')then
-							if(fmrxed='1')then
-								crcin<=fmrxdat;
+						when es_DAM2 =>
+							if(mfmma1det='1')then
+								crcin<=x"a1";
 								crcwr<='1';
-								if(ND='0')then
-									DMARQ<='1';
-								else
-									sHD<=HD;
-									sUS<=US;
-									PCN<=cPCN;
-									sIC<="00";
-									INT<='1';
-									iSE<='0';
-								end if;
-								COMPDAT<=fmrxdat;
-								sDIOd<='0';
-								sRQM<='1';
-								execstate<=es_DATAw;
+								execstate<=es_DAM3;
+							elsif(mfmmc2det='1' or mfmrxed='1')then
+								dembreak<='1';
+								crcclr<='1';
+								execstate<=es_IAM0;
 							end if;
-						else
+						when es_DAM3 =>
 							if(mfmrxed='1')then
+								if(mfmrxdat=x"f8")then
+									sCM<='1';
+								end if;
+							end if;
+							if(mfmrxed='1' and ((((ecommand=cmd_READDATA or ecommand=cmd_READATRACK) or SK='0') and mfmrxdat=x"fb") or ((ecommand=cmd_READDELETEDDATA or SK='0') and mfmrxdat=x"f8")))then
 								crcin<=mfmrxdat;
 								crcwr<='1';
-								if(ND='0')then
-									DMARQ<='1';
-								else
-									sHD<=HD;
-									sUS<=US;
-									PCN<=cPCN;
-									sIC<="00";
-									INT<='1';
-									iSE<='0';
-								end if;
-								COMPDAT<=mfmrxdat;
-								sDIOd<='0';
-								sRQM<='1';
-								execstate<=es_DATAw;
+								TCclr<='1';
+								execstate<=es_DATA;
+							elsif(mfmma1det='1' or mfmmc2det='1' or mfmrxed='1')then
+								dembreak<='1';
+								crcclr<='1';
+								execstate<=es_IAM0;
 							end if;
-						end if;
-					when es_DATAw =>
-						if(CPUWR_DATf='1' or DMAWRxf='1')then
-							sRQM<='0';
-							if(CPUWRDAT=x"ff" or CPUWRDAT=COMPDAT or scancomp='1')then
-								if(bytecount>1)then
-									bytecount<=bytecount-1;
-									execstate<=es_DATA;
-								else
-									execstate<=es_CRCd0;
-								end if;
-							elsif(COMPDAT<CPUWRDAT and command=cmd_SCANLOWEQUAL)then
-								scancomp<='1';
-								if(bytecount>1)then
-									bytecount<=bytecount-1;
-									execstate<=es_DATA;
-								else
-									execstate<=es_CRCd0;
-								end if;
-							elsif(COMPDAT>CPUWRDAT and command=cmd_SCANHIGHEQUAL)then
-								scancomp<='1';
-								if(bytecount>1)then
-									bytecount<=bytecount-1;
-									execstate<=es_DATA;
-								else
-									execstate<=es_CRCd0;
+						when es_DATA =>
+							if(MF='0')then
+								if(fmrxed='1')then
+									crcin<=fmrxdat;
+									crcwr<='1';
+									if(ND='0')then
+										DMARQ<='1';
+									else
+										sHD<=HD;
+										sUS<=US;
+										PCN<=cPCN;
+										sIC<="00";
+										INT<='1';
+										iSE<='0';
+									end if;
+									RDDAT_DAT<=fmrxdat;
+									sDIOd<='1';
+									sRQM<='1';
+									execstate<=es_DATAw;
 								end if;
 							else
-								sOR<='0';
+								if(mfmrxed='1')then
+									crcin<=mfmrxdat;
+									crcwr<='1';
+									if(ND='0')then
+										DMARQ<='1';
+									else
+										sHD<=HD;
+										sUS<=US;
+										PCN<=cPCN;
+										sIC<="00";
+										INT<='1';
+										iSE<='0';
+									end if;
+									RDDAT_DAT<=mfmrxdat;
+									sDIOd<='1';
+									sRQM<='1';
+									execstate<=es_DATAw;
+								end if;
+							end if;
+						when es_DATAw =>
+							if(CPURD_DATf='1' or DMARDxf='1')then
+								sRQM<='0';
+								if(bytecount>1)then
+									bytecount<=bytecount-1;
+									execstate<=es_DATA;
+								else
+									execstate<=es_CRCd0;
+								end if;
+							elsif((MF='0' and fmrxed='1') or (MF='1' and mfmrxed='1'))then
+								sOR<='1';
 								sIC<="01";
 								sHD<=HD;
 								sUS<=US;
@@ -3462,9 +1893,101 @@ begin
 								end_EXEC<='1';
 								execstate<=es_IDLE;
 							end if;
-						elsif((MF='0' and fmrxed='1') or (MF='1' and mfmrxed='1'))then
-							sOR<='1';
+						when es_CRCd0 =>
+							if(MF='0')then
+								if(fmrxed='1')then
+									crcin<=fmrxdat;
+									crcwr<='1';
+									execstate<=es_CRCd1;
+								end if;
+							else
+								if(mfmrxed='1')then
+									crcin<=mfmrxdat;
+									crcwr<='1';
+									execstate<=es_CRCd1;
+								end if;
+							end if;
+						when es_CRCd1 =>
+							if(MF='0')then
+								if(fmrxed='1')then
+									crcin<=fmrxdat;
+									crcwr<='1';
+									execstate<=es_CRCdc;
+								end if;
+							else
+								if(mfmrxed='1')then
+									crcin<=mfmrxdat;
+									crcwr<='1';
+									execstate<=es_CRCdc;
+								end if;
+							end if;
+						when es_CRCdc =>
+							if(crcdone='1')then
+								if(crczero='1')then
+									if(R<EOT)then
+										incR<='1';
+									elsif(MT='1')then
+										if(HD='0')then
+											resR<='1';
+											setH<='1';
+											setHD<='1';
+										else
+											resR<='1';
+											resH<='1';
+											resHD<='1';
+											incC<='1';
+										end if;
+									else
+										resR<='1';
+										incC<='1';
+									end if;
+									sDE<='0';
+									if(TCen='1')then
+										execstate<=es_IDLE;
+										sIC<="00";
+										sHD<=HD;
+										sUS<=US;
+										PCN<=cPCN;
+										INT<='1';
+										iSE<='1';
+										end_EXEC<='1';
+									elsif(R>=EOT)then
+										sEN<='1';
+										execstate<=es_IDLE;
+										sIC<="01";
+										sHD<=HD;
+										sUS<=US;
+										PCN<=cPCN;
+										INT<='1';
+										iSE<='1';
+										end_EXEC<='1';
+									else
+										nturns<=0;
+										crcclr<='1';
+										contdata<='1';
+										DETSECT<='0';
+										execstate<=es_IAM0;
+									end if;
+								else
+									sDE<='1';
+									sIC<="01";
+									sHD<=HD;
+									sUS<=US;
+									sDD<='1';
+									PCN<=cPCN;
+									INT<='1';
+									iSE<='0';
+									execstate<=es_idle;
+									end_EXEC<='1';
+								end if;
+							end if;
+						when others =>
+							execstate<=es_idle;
+						end case;
+					when cmd_WRITEDATA | cmd_WRITEDELETEDDATA =>
+						if(WPRT='0')then
 							sIC<="01";
+							sNW<='1';
 							sHD<=HD;
 							sUS<=US;
 							PCN<=cPCN;
@@ -3472,43 +1995,492 @@ begin
 							iSE<='0';
 							end_EXEC<='1';
 							execstate<=es_IDLE;
+						elsif(execstate/=es_seek and lindex='1' and indexb='0')then
+	--						if(contdata='1')then
+	--							if(MT='1' and HD='0')then
+	--								nturns<=0;
+	--								setH<='1';
+	--								crcclr<='1';
+	--								contdata<='0';
+	--								execstate<=es_IAM0;
+	--							else
+	--								sEN<='1';
+	--								sHD<=HD;
+	--								sUS<=US;
+	--								PCN<=cPCN;
+	--								sIC<="00";
+	--								INT<='1';
+	--								end_EXEC<='1';
+	--								execstate<=es_IDLE;
+	--							end if;
+	--						end if;
+							if(nturns<3)then
+	--							if(nturns=2 and MT='1' and HD='0')then
+	--								nturns<=0;
+	--								setH<='1';
+	--							end if;
+								nturns<=nturns+1;
+							else
+								sHD<=HD;
+								sUS<=US;
+								PCN<=cPCN;
+								INT<='1';
+								iSE<='0';
+								sIC<="01";
+								sND<='1';
+								sMA<='1';
+								end_EXEC<='1';
+								execstate<=es_IDLE;
+							end if;
+						elsif(NOTRDY='1')then
+							sHD<=HD;
+							sUS<=US;
+							sIC<="11";
+							sND<='0';
+							sMA<='0';
+							PCN<=cPCN;
+							INT<='1';
+							iSE<='0';
+							end_EXEC<='1';
+							execstate<=es_IDLE;
 						end if;
-					when es_CRCd0 =>
-						if(scancomp='0')then
-							sSH<='1';
-						else
-							sSH<='0';
-						end if;
-						if(MF='0')then
-							if(fmrxed='1')then
-								crcin<=fmrxdat;
+						case execstate is
+						when es_seek =>
+							if(seek_end='1')then
+								execstate<=es_IAM0;
+								crcclr<='1';
+								deminit<='1';
+							elsif(seek_err='1')then
+								sIC<="01";
+								sHD<=HD;
+								sUS<=US;
+								PCN<=cPCN;
+								INT<='1';
+								iSE<='1';
+								execstate<=es_idle;
+							end if;
+						when es_windex =>
+							if(lindex='1' and indexb='0')then
+								execstate<=es_IAM0;
+							end if;
+						when es_IAM0 =>
+							if(MF='0')then
+								if(fmmfedet='1')then
+									crcin<=x"fe";
+									crcwr<='1';
+									execstate<=es_C;
+								elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmrxed='1')then
+									dembreak<='1';
+									crcclr<='1';
+								end if;
+							else
+								if(mfmma1det='1')then
+									crcin<=x"a1";
+									crcwr<='1';
+									execstate<=es_IAM1;
+								end if;
+							end if;
+						when es_IAM1 =>
+							if(mfmma1det='1')then
+								crcin<=x"a1";
 								crcwr<='1';
+								execstate<=es_IAM2;
+							elsif(mfmmc2det='1' or mfmrxed='1')then
+								dembreak<='1';
+								crcclr<='1';
+								execstate<=es_IAM0;
+							end if;
+						when es_IAM2 =>
+							if(mfmma1det='1')then
+								crcin<=x"a1";
+								crcwr<='1';
+								execstate<=es_IAM3;
+							elsif(mfmmc2det='1' or mfmrxed='1')then
+								dembreak<='1';
+								crcclr<='1';
+								execstate<=es_IAM0;
+							end if;
+						when es_IAM3 =>
+							if(mfmrxed='1' and mfmrxdat=x"fe")then
+								crcin<=x"fe";
+								crcwr<='1';
+								execstate<=es_C;
+							elsif(mfmma1det='1' or mfmmc2det='1' or mfmrxed='1')then
+								dembreak<='1';
+								crcclr<='1';
+								execstate<=es_IAM0;
+							end if;
+						when es_C =>
+							if(MF='0')then
+								if(fmrxed='1')then
+									rxC<=fmrxdat;
+									crcin<=fmrxdat;
+									crcwr<='1';
+									execstate<=es_H;
+								elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							else
+								if(mfmrxed='1')then
+									rxC<=mfmrxdat;
+									crcin<=mfmrxdat;
+									crcwr<='1';
+									execstate<=es_H;
+								elsif(mfmma1det='1' or mfmmc2det='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							end if;
+						when es_H =>
+							if(MF='0')then
+								if(fmrxed='1')then
+									rxH<=fmrxdat;
+									crcin<=fmrxdat;
+									crcwr<='1';
+									execstate<=es_R;
+								elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							else
+								if(mfmrxed='1')then
+									rxH<=mfmrxdat;
+									crcin<=mfmrxdat;
+									crcwr<='1';
+									execstate<=es_R;
+								elsif(mfmma1det='1' or mfmmc2det='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							end if;
+						when es_R =>
+							if(MF='0')then
+								if(fmrxed='1')then
+									rxR<=fmrxdat;
+									crcin<=fmrxdat;
+									crcwr<='1';
+									execstate<=es_N;
+								elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							else
+								if(mfmrxed='1')then
+									rxR<=mfmrxdat;
+									crcin<=mfmrxdat;
+									crcwr<='1';
+									execstate<=es_N;
+								elsif(mfmma1det='1' or mfmmc2det='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							end if;
+						when es_N =>
+							if(MF='0')then
+								if(fmrxed='1')then
+									rxN<=fmrxdat;
+									crcin<=fmrxdat;
+									crcwr<='1';
+									execstate<=es_CRCi0;
+								elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							else
+								if(mfmrxed='1')then
+									rxN<=mfmrxdat;
+									crcin<=mfmrxdat;
+									crcwr<='1';
+									execstate<=es_CRCi0;
+								elsif(mfmma1det='1' or mfmmc2det='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							end if;
+						when es_CRCi0 =>
+							if(MF='0')then
+								if(fmrxed='1')then
+									crcin<=fmrxdat;
+									crcwr<='1';
+									execstate<=es_CRCi1;
+								elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							else
+								if(mfmrxed='1')then
+									crcin<=mfmrxdat;
+									crcwr<='1';
+									execstate<=es_CRCi1;
+								elsif(mfmma1det='1' or mfmmc2det='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							end if;
+						when es_CRCi1 =>
+							if(MF='0')then
+								if(fmrxed='1')then
+									crcin<=fmrxdat;
+									crcwr<='1';
+									dembreak<='1';
+									execstate<=es_CRCic;
+								elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							else
+								if(mfmrxed='1')then
+									crcin<=mfmrxdat;
+									crcwr<='1';
+									dembreak<='1';
+									execstate<=es_CRCic;
+								elsif(mfmma1det='1' or mfmmc2det='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							end if;
+						when es_CRCic =>
+							if(crcdone='1')then
+								if(crczero='1' and rxC=C and rxH=H and rxR=R and rxN=N)then
+									if(rxC=C)then
+										execstate<=es_Gap2;
+										if(MF='0')then
+											bytecount<=nfmGap2-1;
+											txdat<=x"ff";
+											fmtxwr<='1';
+										else
+											bytecount<=nmfmGap2-1;
+											txdat<=x"4e";
+											mfmtxwr<='1';
+										end if;
+										crcclr<='1';
+										DETSECT<='1';
+										sWC<='0';
+									else
+										sHD<=HD;
+										sUS<=US;
+										PCN<=cPCN;
+										sIC<="01";
+										sWC<='1';
+										INT<='1';
+										iSE<='0';
+										end_EXEC<='1';
+										execstate<=es_IDLE;
+									end if;
+								else
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							end if;
+						when es_Gap2 =>
+							if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
+								if(bytecount>0)then
+									bytecount<=bytecount-1;
+									if(MF='0')then
+										txdat<=x"ff";
+										fmtxwr<='1';
+									else
+										txdat<=x"4e";
+										mfmtxwr<='1';
+									end if;
+								else
+									txdat<=x"00";
+									if(MF='0')then
+										bytecount<=nfmSyncd-1;
+										fmtxwr<='1';
+									else
+										bytecount<=nmfmSyncd-1;
+										mfmtxwr<='1';
+									end if;
+									execstate<=es_Syncd;
+									crcclr<='1';
+								end if;
+							end if;
+						when es_Syncd =>
+							if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
+								if(bytecount>0)then
+									txdat<=x"00";
+									if(MF='0')then
+										fmtxwr<='1';
+									else
+										mfmtxwr<='1';
+									end if;
+									bytecount<=bytecount-1;
+								else
+									if(MF='0')then
+										if(ecommand=cmd_WRITEDELETEDDATA)then	--Deleted
+											fmmf8wr<='1';
+											crcin<=x"f8";
+										else
+											fmmfbwr<='1';
+											crcin<=x"fb";
+										end if;
+										crcwr<='1';
+									else
+										mfmma1wr<='1';
+										crcin<=x"a1";
+										crcwr<='1';
+									end if;
+									execstate<=es_DAM0;
+								end if;
+							end if;
+						when es_DAM0 =>
+							if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
+								if(MF='0')then
+									if(ND='0')then
+										DMARQ<='1';
+									else
+										sHD<=HD;
+										sUS<=US;
+										PCN<=cPCN;
+										sIC<="00";
+										INT<='1';
+										iSE<='0';
+									end if;
+									sRQM<='1';
+									sDIOd<='0';
+									TCclr<='1';
+									execstate<=es_DATA;
+								else
+									mfmma1wr<='1';
+									crcin<=x"a1";
+									crcwr<='1';
+									execstate<=es_DAM1;
+								end if;
+								if(N=x"00" and (rxN/=x"00" or DTL<x"80"))then
+									bytecount<=conv_integer(DTL);
+								elsif(rxN=x"00")then
+									bytecount<=128;
+								elsif(rxN=x"01")then
+									bytecount<=256;
+								elsif(rxN=x"02")then
+									bytecount<=512;
+								elsif(rxN=x"03")then
+									bytecount<=1024;
+								elsif(rxN=x"04")then
+									bytecount<=2048;
+								elsif(rxN=x"05")then
+									bytecount<=4096;
+								elsif(rxN=x"06")then
+									bytecount<=8192;
+								else
+									bytecount<=16384;
+								end if;
+							end if;
+						when es_DAM1 =>
+							if(mfmtxemp='1')then
+								mfmma1wr<='1';
+								crcin<=x"a1";
+								crcwr<='1';
+								execstate<=es_DAM2;
+							end if;
+						when es_DAM2 =>
+							if(mfmtxemp='1')then
+								if(ecommand=cmd_WRITEDELETEDDATA)then
+									txdat<=x"f8";
+									crcin<=x"f8";
+								else
+									txdat<=x"fb";
+									crcin<=x"fb";
+								end if;
+								mfmtxwr<='1';
+								crcwr<='1';
+								execstate<=es_DAM3;
+							end if;
+						when es_DAM3 =>
+							if(mfmtxemp='1')then
+								if(ND='0')then
+									DMARQ<='1';
+								else
+									sHD<=HD;
+									sUS<=US;
+									PCN<=cPCN;
+									sIC<="00";
+									INT<='1';
+									iSE<='0';
+								end if;
+								sRQM<='1';
+								sDIOd<='0';
+								TCclr<='1';
+								execstate<=es_DATA;
+							end if;
+						when es_DATA =>
+							if(CPUWR_DATf='1' or DMAWRxf='1')then
+								sRQM<='0';
+								txdat<=CPUWRDAT;
+								crcin<=CPUWRDAT;
+								if(MF='0')then
+									fmtxwr<='1';
+								else
+									mfmtxwr<='1';
+								end if;
+								crcwr<='1';
+								if(bytecount>1)then
+									bytecount<=bytecount-1;
+									execstate<=es_DATAw;
+								else
+									execstate<=es_CRCd0;
+								end if;
+							elsif((MF='0' and fmtxend='1') or (MF='1' and mfmtxend='1'))then
+								sOR<='1';
+								sHD<=HD;
+								sUS<=US;
+								PCN<=cPCN;
+								sIC<="01";
+								INT<='1';
+								iSE<='0';
+								execstate<=es_IDLE;
+								end_EXEC<='1';
+							end if;
+						when es_DATAw =>
+							if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
+								if(ND='0')then
+									DMARQ<='1';
+								else
+									sHD<=HD;
+									sUS<=US;
+									PCN<=cPCN;
+									sIC<="00";
+									INT<='1';
+									iSE<='0';
+								end if;
+								sRQM<='1';
+								sDIOd<='0';
+								execstate<=es_DATA;
+							end if;
+						when es_CRCd0 =>
+							if(((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1')) and crcbusy='0')then
+								txdat<=crcdat(15 downto 8);
+								if(MF='0')then
+									fmtxwr<='1';
+								else
+									mfmtxwr<='1';
+								end if;
 								execstate<=es_CRCd1;
 							end if;
-						else
-							if(mfmrxed='1')then
-								crcin<=mfmrxdat;
-								crcwr<='1';
-								execstate<=es_CRCd1;
-							end if;
-						end if;
-					when es_CRCd1 =>
-						if(MF='0')then
-							if(fmrxed='1')then
-								crcin<=fmrxdat;
-								crcwr<='1';
-								execstate<=es_CRCdc;
-							end if;
-						else
-							if(mfmrxed='1')then
-								crcin<=mfmrxdat;
-								crcwr<='1';
-								execstate<=es_CRCdc;
-							end if;
-						end if;
-					when es_CRCdc =>
-						if(crcdone='1')then
-							if(crczero='1')then
+						when es_CRCd1 =>
+							if(((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1')) and crcbusy='0')then
+								txdat<=crcdat(7 downto 0);
+								if(MF='0')then
+									fmtxwr<='1';
+								else
+									mfmtxwr<='1';
+								end if;
+								bytecount<=conv_integer(GPL)/2;
+								execstate<=es_GAP3;
 								if(R<EOT)then
 									incR<='1';
 								elsif(MT='1')then
@@ -3526,8 +2498,19 @@ begin
 									resR<='1';
 									incC<='1';
 								end if;
-								sDE<='0';
-								if(TCen='1')then
+							end if;
+						when es_GAP3 =>
+							if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
+								if(bytecount>1)then
+									if(MF='0')then
+										txdat<=x"ff";
+										fmtxwr<='1';
+									else
+										txdat<=x"4e";
+										mfmtxwr<='1';
+									end if;
+									bytecount<=bytecount-1;
+								elsif(TCen='1')then
 									execstate<=es_IDLE;
 									sIC<="00";
 									sHD<=HD;
@@ -3536,209 +2519,1272 @@ begin
 									INT<='1';
 									iSE<='1';
 									end_EXEC<='1';
-								elsif(R>=EOT)then
-									sEN<='1';
-									execstate<=es_IDLE;
-									sIC<="01";
-									sHD<=HD;
-									sUS<=US;
-									PCN<=cPCN;
-									INT<='1';
-									iSE<='1';
-									end_EXEC<='1';
 								else
 									nturns<=0;
-									crcclr<='1';
 									contdata<='1';
-									DETSECT<='0';
+									crcclr<='1';
 									execstate<=es_IAM0;
 								end if;
-							else
-								sDE<='1';
-								sIC<="01";
-								sHD<=HD;
-								sUS<=US;
-								sDD<='1';
-								PCN<=cPCN;
-								INT<='1';
-								iSE<='0';
-								execstate<=es_idle;
-								end_EXEC<='1';
 							end if;
-						end if;
-					when others =>
-						execstate<=es_idle;
-					end case;
-
-				when cmd_FORMATATRACK =>		--Format a Track
-					if(WPRT='0')then
-						sIC<="01";
-						sNW<='1';
-						sHD<=HD;
-						sUS<=US;
-						INT<='1';
-						iSE<='0';
-						end_EXEC<='1';
-						execstate<=es_IDLE;
-					elsif(lindex='1' and indexb='0')then
-						if(execstate/=es_windex)then
-							modbreak<='1';
+						when others=>
+							execstate<=es_IDLE;
+							end_EXEC<='1';
+						end case;
+	--				when "00010" =>		--Read a Track
+	--					if(execstate/=es_seek and lindex='1' and indexb='0')then
+	--						if(contdata='1')then
+	--							if(MT='1' and HD='0')then
+	--								nturns<=0;
+	--								setH<='1';
+	--								contdata<='0';
+	--								crcclr<='1';
+	--								execstate<=es_IAM0;
+	--							else
+	--								sEN<='1';
+	--								sHD<=HD;
+	--								sUS<=US;
+	--								PCN<=cPCN;
+	--								sIC<="00";
+	--								INT<='1';
+	--								end_EXEC<='1';
+	--								execstate<=es_IDLE;
+	--							end if;
+	--						end if;
+	--						if(nturns<3)then
+	--							if(nturns=2 and MT='1' and HD='0')then
+	--								nturns<=0;
+	--								setH<='1';
+	--							end if;
+	--							nturns<=nturns+1;
+	--						else
+	--							sHD<=HD;
+	--							sUS<=US;
+	--							PCN<=cPCN;
+	--							sIC<="01";
+	--							INT<='1';
+	--							sND<='1';
+	--							end_EXEC<='1';
+	--							execstate<=es_IDLE;
+	--						end if;
+	--					end if;
+	--					case execstate is
+	--					when es_seek =>
+	--						if(seek_end='1')then
+	--							execstate<=es_windex;
+	--							crcclr<='1';
+	--							deminit<='1';
+	--						elsif(seek_err='1')then
+	--							sIC<="01";
+	--							sHD<=HD;
+	--							sUS<=US;
+	--							PCN<=cPCN;
+	--							INT<='1';
+	--							execstate<=es_idle;
+	--						end if;
+	--					when es_windex =>
+	--						if(lindex='1' and indexb='0')then
+	--							execstate<=es_DAM0;
+	--							deminit<='1';
+	--						end if;
+	--					when es_DAM0 =>
+	--						if(MF='0')then
+	--							if(fmmf8det='1')then
+	--								sCM<='1';
+	--							end if;
+	--							if(fmmfbdet='1' or (SK='0' and fmmf8det='1'))then
+	--								if(fmmf8det='1')then
+	--									crcin<=x"f8";
+	--								else
+	--									crcin<=x"fb";
+	--								end if;
+	--								crcwr<='1';
+	--								execstate<=es_DATA;
+	--							elsif(fmmf8det='1' or fmmfbdet='1'or fmmfcdet='1' or fmmfedet='1' or fmrxed='1')then
+	--								dembreak<='1';
+	--								crcclr<='1';
+	--							end if;
+	--						else
+	--							if(mfmma1det='1')then
+	--								crcin<=x"a1";
+	--								crcwr<='1';
+	--								execstate<=es_DAM1;
+	--							end if;
+	--						end if;
+	--						if(N=x"00" and (rxN/=x"00" or DTL<x"80"))then
+	--							bytecount<=conv_integer(DTL);
+	--						elsif(rxN=x"00")then
+	--							bytecount<=128;
+	--						elsif(rxN=x"01")then
+	--							bytecount<=256;
+	--						elsif(rxN=x"02")then
+	--							bytecount<=512;
+	--						elsif(rxN=x"03")then
+	--							bytecount<=1024;
+	--						elsif(rxN=x"04")then
+	--							bytecount<=2048;
+	--						elsif(rxN=x"05")then
+	--							bytecount<=4096;
+	--						elsif(rxN=x"06")then
+	--							bytecount<=8192;
+	--						else
+	--							bytecount<=16384;
+	--						end if;
+	--					when es_DAM1 =>
+	--						if(mfmma1det='1')then
+	--							crcin<=x"a1";
+	--							crcwr<='1';
+	--							execstate<=es_DAM2;
+	--						elsif(mfmmc2det='1' or mfmrxed='1')then
+	--							dembreak<='1';
+	--							crcclr<='1';
+	--							execstate<=es_DAM0;
+	--						end if;
+	--					when es_DAM2 =>
+	--						if(mfmma1det='1')then
+	--							crcin<=x"a1";
+	--							crcwr<='1';
+	--							execstate<=es_DAM3;
+	--						elsif(mfmmc2det='1' or mfmrxed='1')then
+	--							dembreak<='1';
+	--							crcclr<='1';
+	--							execstate<=es_DAM0;
+	--						end if;
+	--					when es_DAM3 =>
+	--						if(mfmrxed='1')then
+	--							if(mfmrxdat=x"f8")then
+	--								sCM<='1';
+	--							end if;
+	--						end if;
+	--						if(mfmrxed='1' and (((ecommand="00110" or SK='0') and mfmrxdat=x"fb") or ((ecommand="01100" or SK='0') and mfmrxdat=x"f8")))then
+	--							crcin<=mfmrxdat;
+	--							crcwr<='1';
+	--							execstate<=es_DATA;
+	--						elsif(mfmma1det='1' or mfmmc2det='1' or mfmrxed='1')then
+	--							dembreak<='1';
+	--							crcclr<='1';
+	--							execstate<=es_DAM0;
+	--						end if;
+	--					when es_DATA =>
+	--						if(MF='0')then
+	--							if(fmrxed='1')then
+	--								crcin<=fmrxdat;
+	--								crcwr<='1';
+	--								if(ND='0')then
+	--									DMARQ<='1';
+	--								else
+	--									sHD<=HD;
+	--									sUS<=US;
+	--									PCN<=cPCN;
+	--									sIC<="00";
+	--									INT<='1';
+	--								end if;
+	--								RDDAT_DAT<=fmrxdat;
+	--								sDIOd<='1';
+	--								sRQM<='1';
+	--								execstate<=es_DATAw;
+	--							end if;
+	--						else
+	--							if(mfmrxed='1')then
+	--								crcin<=mfmrxdat;
+	--								crcwr<='1';
+	--								if(ND='0')then
+	--									DMARQ<='1';
+	--								else
+	--									sHD<=HD;
+	--									sUS<=US;
+	--									PCN<=cPCN;
+	--									sIC<="00";
+	--									INT<='1';
+	--								end if;
+	--								RDDAT_DAT<=mfmrxdat;
+	--								sDIOd<='1';
+	--								sRQM<='1';
+	--								execstate<=es_DATAw;
+	--							end if;
+	--						end if;
+	--					when es_DATAw =>
+	--						if(CPURD_DATf='1' or DMARDx=f'1')then
+	--							sRQM<='0';
+	--							if(bytecount>1)then
+	--								bytecount<=bytecount-1;
+	--								execstate<=es_DATA;
+	--							else
+	--								execstate<=es_CRCd0;
+	--							end if;
+	--						elsif((MF='0' and fmrxed='1') or (MF='1' and mfmrxed='1'))then
+	--							sOR<='1';
+	--							sIC<="01";
+	--							sHD<=HD;
+	--							sUS<=US;
+	--							PCN<=cPCN;
+	--							INT<='1';
+	--							end_EXEC<='1';
+	--							execstate<=es_IDLE;
+	--						end if;
+	--					when es_CRCd0 =>
+	--						if(MF='0')then
+	--							if(fmrxed='1')then
+	--								crcin<=fmrxdat;
+	--								crcwr<='1';
+	--								execstate<=es_CRCd1;
+	--							end if;
+	--						else
+	--							if(mfmrxed='1')then
+	--								crcin<=mfmrxdat;
+	--								crcwr<='1';
+	--								execstate<=es_CRCd1;
+	--							end if;
+	--						end if;
+	--					when es_CRCd1 =>
+	--						if(MF='0')then
+	--							if(fmrxed='1')then
+	--								crcin<=fmrxdat;
+	--								crcwr<='0';
+	--								execstate<=es_CRCdc;
+	--							end if;
+	--						else
+	--							if(mfmrxed='1')then
+	--								crcin<=mfmrxdat;
+	--								crcwr<='1';
+	--								execstate<=es_CRCdc;
+	--							end if;
+	--						end if;
+	--					when es_CRCdc =>
+	--						if(crcdone='1')then
+	--							if(crczero='1')then
+	--								sDE<='0';
+	--								if(TCen='1')then
+	--									execstate<=es_IDLE;
+	--									sIC<="00";
+	--									sHD<=HD;
+	--									sUS<=US;
+	--									PCN<=cPCN;
+	--									INT<='1';
+	--									end_EXEC<='1';
+	--								else
+	--									execstate<=es_DAM0;
+	--								end if;
+	--							else
+	--								sDE<='1';
+	--								sIC<="01";
+	--								sHD<=HD;
+	--								sUS<=US;
+	--								PCN<=cPCN;
+	--								INT<='1';
+	--								execstate<=es_idle;
+	--								end_EXEC<='1';
+	--							end if;
+	--						end if;
+	--					when others =>
+	--						execstate<=es_idle;
+	--					end case;
+					when cmd_READID =>
+						if(execstate/=es_seek and lindex='1' and indexb='0')then
+							if(nturns<3)then
+	--							if(nturns=2 and MT='1' and HD='0')then
+	--								nturns<=0;
+	--								setH<='1';
+	--							end if;
+								nturns<=nturns+1;
+							else
+								if(MT='1' and HD='0')then
+									setHD<='1';
+								else
+									sHD<=HD;
+									sUS<=US;
+									sIC<="01";
+									sND<='1';
+									sMA<='1';
+									PCN<=cPCN;
+									INT<='1';
+									iSE<='0';
+									end_EXEC<='1';
+									execstate<=es_IDLE;
+								end if;
+							end if;
+						elsif(NOTRDY='1')then
 							sHD<=HD;
 							sUS<=US;
+							sIC<="11";
+							sND<='0';
+							sMA<='0';
 							PCN<=cPCN;
-							sIC<="00";
 							INT<='1';
 							iSE<='0';
 							end_EXEC<='1';
 							execstate<=es_IDLE;
 						end if;
-					elsif(NOTRDY='1')then
-						sHD<=HD;
-						sUS<=US;
-						sIC<="11";
-						sND<='0';
-						sMA<='0';
-						PCN<=cPCN;
-						INT<='1';
-						iSE<='0';
-						end_EXEC<='1';
-						execstate<=es_IDLE;
-					end if;
-					case execstate is
-					when es_windex =>
-						if(lindex='1' and indexb='0')then
+						case execstate is
+						when es_IAM0 =>
 							if(MF='0')then
-								bytecount<=nfmGap0-1;
-								txdat<=x"ff";
-								fmtxwr<='1';
+								if(fmmfedet='1')then
+									crcin<=x"fe";
+									crcwr<='1';
+									execstate<=es_C;
+								elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmrxed='1')then
+									dembreak<='1';
+									crcclr<='1';
+								end if;
 							else
-								bytecount<=nmfmGap0-1;
-								txdat<=x"4e";
-								mfmtxwr<='1';
+								if(mfmma1det='1')then
+									crcin<=x"a1";
+									crcwr<='1';
+									execstate<=es_IAM1;
+								end if;
 							end if;
-							execstate<=es_GAP0;
+						when es_IAM1 =>
+							if(mfmma1det='1')then
+								crcin<=x"a1";
+								crcwr<='1';
+								execstate<=es_IAM2;
+							elsif(mfmmc2det='1' or mfmrxed='1')then
+								dembreak<='1';
+								crcclr<='1';
+								execstate<=es_IAM0;
+							end if;
+						when es_IAM2 =>
+							if(mfmma1det='1')then
+								crcin<=x"a1";
+								crcwr<='1';
+								execstate<=es_IAM3;
+							elsif(mfmmc2det='1' or mfmrxed='1')then
+								dembreak<='1';
+								crcclr<='1';
+								execstate<=es_IAM0;
+							end if;
+						when es_IAM3 =>
+							if(mfmrxed='1' and mfmrxdat=x"fe")then
+								crcin<=x"fe";
+								crcwr<='1';
+								execstate<=es_C;
+							elsif(mfmma1det='1' or mfmmc2det='1' or mfmrxed='1')then
+								dembreak<='1';
+								crcclr<='1';
+								execstate<=es_IAM0;
+							end if;
+						when es_C =>
+							if(MF='0')then
+								if(fmrxed='1')then
+									rxC<=fmrxdat;
+									crcin<=fmrxdat;
+									crcwr<='1';
+									execstate<=es_H;
+								elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							else
+								if(mfmrxed='1')then
+									rxC<=mfmrxdat;
+									crcin<=mfmrxdat;
+									crcwr<='1';
+									execstate<=es_H;
+								elsif(mfmma1det='1' or mfmmc2det='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							end if;
+						when es_H =>
+							if(MF='0')then
+								if(fmrxed='1')then
+									rxH<=fmrxdat;
+									crcin<=fmrxdat;
+									crcwr<='1';
+									execstate<=es_R;
+								elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							else
+								if(mfmrxed='1')then
+									rxH<=mfmrxdat;
+									crcin<=mfmrxdat;
+									crcwr<='1';
+									execstate<=es_R;
+								elsif(mfmma1det='1' or mfmmc2det='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							end if;
+						when es_R =>
+							if(MF='0')then
+								if(fmrxed='1')then
+									rxR<=fmrxdat;
+									crcin<=fmrxdat;
+									crcwr<='1';
+									execstate<=es_N;
+								elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							else
+								if(mfmrxed='1')then
+									rxR<=mfmrxdat;
+									crcin<=mfmrxdat;
+									crcwr<='1';
+									execstate<=es_N;
+								elsif(mfmma1det='1' or mfmmc2det='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							end if;
+						when es_N =>
+							if(MF='0')then
+								if(fmrxed='1')then
+									rxN<=fmrxdat;
+									crcin<=fmrxdat;
+									crcwr<='1';
+									execstate<=es_CRCi0;
+								elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							else
+								if(mfmrxed='1')then
+									rxN<=mfmrxdat;
+									crcin<=mfmrxdat;
+									crcwr<='1';
+									execstate<=es_CRCi0;
+								elsif(mfmma1det='1' or mfmmc2det='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							end if;
+						when es_CRCi0 =>
+							if(MF='0')then
+								if(fmrxed='1')then
+									crcin<=fmrxdat;
+									crcwr<='1';
+									execstate<=es_CRCi1;
+								elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							else
+								if(mfmrxed='1')then
+									crcin<=mfmrxdat;
+									crcwr<='1';
+									execstate<=es_CRCi1;
+								elsif(mfmma1det='1' or mfmmc2det='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							end if;
+						when es_CRCi1 =>
+							if(MF='0')then
+								if(fmrxed='1')then
+									crcin<=fmrxdat;
+									crcwr<='1';
+									dembreak<='1';
+									execstate<=es_CRCic;
+								elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							else
+								if(mfmrxed='1')then
+									crcin<=mfmrxdat;
+									crcwr<='1';
+									dembreak<='1';
+									execstate<=es_CRCic;
+								elsif(mfmma1det='1' or mfmmc2det='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							end if;
+						when es_CRCic =>
+							if(crcdone='1')then
+								if(crczero='1')then
+									execstate<=es_IDLE;
+									sIC<="00";
+									sHD<=HD;
+									sUS<=US;
+									PCN<=cPCN;
+									INT<='1';
+									iSE<='0';
+									setC<='1';
+									if(rxH=x"00")then
+										resH<='1';
+									else
+										setH<='1';
+									end if;
+									setR<='1';
+									setN<='1';
+									end_EXEC<='1';
+									crcclr<='1';
+								else
+									sHD<=HD;
+									sUS<=US;
+									sIC<="01";
+									sND<='1';
+									sMA<='0';
+									PCN<=cPCN;
+									INT<='1';
+									iSE<='0';
+									end_EXEC<='1';
+									execstate<=es_IDLE;
+									crcclr<='1';
+								end if;
+							end if;
+						when others=>
+							execstate<=es_idle;
+							end_EXEC<='1';
+						end case;
+	
+					when cmd_SCANEQUAL | cmd_SCANLOWEQUAL| cmd_SCANHIGHEQUAL =>
+						if(execstate/=es_seek and lindex='1' and indexb='0')then
+							if(nturns<3)then
+								nturns<=nturns+1;
+							else
+								sHD<=HD;
+								sUS<=US;
+								sIC<="01";
+								sND<='1';
+								if(DETSECT='0')then
+									sMA<='1';
+								else
+									sMD<='1';
+								end if;
+								PCN<=cPCN;
+								INT<='1';
+								iSE<='0';
+								end_EXEC<='1';
+								execstate<=es_IDLE;
+							end if;
+						elsif(NOTRDY='1')then
+							sHD<=HD;
+							sUS<=US;
+							sIC<="11";
+							sND<='0';
+							sMA<='0';
+							PCN<=cPCN;
+							INT<='1';
+							iSE<='0';
+							end_EXEC<='1';
+							execstate<=es_IDLE;
 						end if;
-					when es_GAP0 =>
-						if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
-							if(bytecount>0)then
+						case execstate is
+						when es_seek =>
+							if(seek_end='1')then
+								execstate<=es_IAM0;
+								crcclr<='1';
+								deminit<='1';
+							elsif(seek_err='1')then
+								sIC<="01";
+								sHD<=HD;
+								sUS<=US;
+								PCN<=cPCN;
+								INT<='1';
+								iSE<='1';
+								execstate<=es_idle;
+							end if;
+						when es_windex =>
+							if(lindex='1' and indexb='0')then
+								execstate<=es_IAM0;
+							end if;
+						when es_IAM0 =>
+							if(MF='0')then
+								if(fmmfedet='1')then
+									crcin<=x"fe";
+									crcwr<='1';
+									execstate<=es_C;
+								elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmrxed='1')then
+									dembreak<='1';
+									crcclr<='1';
+								end if;
+							else
+								if(mfmma1det='1')then
+									crcin<=x"a1";
+									crcwr<='1';
+									execstate<=es_IAM1;
+								end if;
+							end if;
+						when es_IAM1 =>
+							if(mfmma1det='1')then
+								crcin<=x"a1";
+								crcwr<='1';
+								execstate<=es_IAM2;
+							elsif(mfmmc2det='1' or mfmrxed='1')then
+								dembreak<='1';
+								crcclr<='1';
+								execstate<=es_IAM0;
+							end if;
+						when es_IAM2 =>
+							if(mfmma1det='1')then
+								crcin<=x"a1";
+								crcwr<='1';
+								execstate<=es_IAM3;
+							elsif(mfmmc2det='1' or mfmrxed='1')then
+								dembreak<='1';
+								crcclr<='1';
+								execstate<=es_IAM0;
+							end if;
+						when es_IAM3 =>
+							if(mfmrxed='1' and mfmrxdat=x"fe")then
+								crcin<=x"fe";
+								crcwr<='1';
+								execstate<=es_C;
+							elsif(mfmma1det='1' or mfmmc2det='1' or mfmrxed='1')then
+								dembreak<='1';
+								crcclr<='1';
+								execstate<=es_IAM0;
+							end if;
+						when es_C =>
+							if(MF='0')then
+								if(fmrxed='1')then
+									rxC<=fmrxdat;
+									crcin<=fmrxdat;
+									crcwr<='1';
+									execstate<=es_H;
+								elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							else
+								if(mfmrxed='1')then
+									rxC<=mfmrxdat;
+									crcin<=mfmrxdat;
+									crcwr<='1';
+									execstate<=es_H;
+								elsif(mfmma1det='1' or mfmmc2det='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							end if;
+						when es_H =>
+							if(MF='0')then
+								if(fmrxed='1')then
+									rxH<=fmrxdat;
+									crcin<=fmrxdat;
+									crcwr<='1';
+									execstate<=es_R;
+								elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							else
+								if(mfmrxed='1')then
+									rxH<=mfmrxdat;
+									crcin<=mfmrxdat;
+									crcwr<='1';
+									execstate<=es_R;
+								elsif(mfmma1det='1' or mfmmc2det='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							end if;
+						when es_R =>
+							if(MF='0')then
+								if(fmrxed='1')then
+									rxR<=fmrxdat;
+									crcin<=fmrxdat;
+									crcwr<='1';
+									execstate<=es_N;
+								elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							else
+								if(mfmrxed='1')then
+									rxR<=mfmrxdat;
+									crcin<=mfmrxdat;
+									crcwr<='1';
+									execstate<=es_N;
+								elsif(mfmma1det='1' or mfmmc2det='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							end if;
+						when es_N =>
+							if(MF='0')then
+								if(fmrxed='1')then
+									rxN<=fmrxdat;
+									crcin<=fmrxdat;
+									crcwr<='1';
+									execstate<=es_CRCi0;
+								elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							else
+								if(mfmrxed='1')then
+									rxN<=mfmrxdat;
+									crcin<=mfmrxdat;
+									crcwr<='1';
+									execstate<=es_CRCi0;
+								elsif(mfmma1det='1' or mfmmc2det='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							end if;
+						when es_CRCi0 =>
+							if(MF='0')then
+								if(fmrxed='1')then
+									crcin<=fmrxdat;
+									crcwr<='1';
+									execstate<=es_CRCi1;
+								elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							else
+								if(mfmrxed='1')then
+									crcin<=mfmrxdat;
+									crcwr<='1';
+									execstate<=es_CRCi1;
+								elsif(mfmma1det='1' or mfmmc2det='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							end if;
+						when es_CRCi1 =>
+							if(MF='0')then
+								if(fmrxed='1')then
+									crcin<=fmrxdat;
+									crcwr<='1';
+									dembreak<='1';
+									execstate<=es_CRCic;
+								elsif(fmmf8det='1' or fmmfbdet='1' or fmmfcdet='1' or fmmfedet='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							else
+								if(mfmrxed='1')then
+									crcin<=mfmrxdat;
+									crcwr<='1';
+									dembreak<='1';
+									execstate<=es_CRCic;
+								elsif(mfmma1det='1' or mfmmc2det='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							end if;
+						when es_CRCic =>
+							if(crcdone='1')then
+								if(crczero='1' and rxC=C and rxH=H and rxR=R and rxN=N)then
+									if(rxC=C)then
+										sWC<='0';
+										execstate<=es_DAM0;
+										crcclr<='1';
+										DETSECT<='1';
+									else
+										sHD<=HD;
+										sUS<=US;
+										PCN<=cPCN;
+										sIC<="01";
+										sWC<='1';
+										INT<='1';
+										iSE<='0';
+										end_EXEC<='1';
+										execstate<=es_IDLE;
+									end if;
+								else
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							end if;
+						when es_DAM0 =>
+							if(MF='0')then
+								if(fmmf8det='1')then
+									sCM<='1';
+								end if;
+								if(fmmfbdet='1' or fmmf8det='1')then
+									if(fmmf8det='1')then
+										crcin<=x"f8";
+									else
+										crcin<=x"fb";
+									end if;
+									crcwr<='1';
+									TCclr<='1';
+									execstate<=es_DATA;
+									scancomp<='0';
+								elsif(fmmf8det='1' or fmmfbdet='1'or fmmfcdet='1' or fmmfedet='1' or fmrxed='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							else
+								if(mfmma1det='1')then
+									crcin<=x"a1";
+									crcwr<='1';
+									execstate<=es_DAM1;
+								elsif(mfmmc2det='1' or mfmrxed='1')then
+									dembreak<='1';
+									crcclr<='1';
+									execstate<=es_IAM0;
+								end if;
+							end if;
+							if(N=x"00" and (rxN/=x"00" or DTL<x"80"))then
+								bytecount<=conv_integer(DTL);
+							elsif(rxN=x"00")then
+								bytecount<=128;
+							elsif(rxN=x"01")then
+								bytecount<=256;
+							elsif(rxN=x"02")then
+								bytecount<=512;
+							elsif(rxN=x"03")then
+								bytecount<=1024;
+							elsif(rxN=x"04")then
+								bytecount<=2048;
+							elsif(rxN=x"05")then
+								bytecount<=4096;
+							elsif(rxN=x"06")then
+								bytecount<=8192;
+							else
+								bytecount<=16384;
+							end if;
+						when es_DAM1 =>
+							if(mfmma1det='1')then
+								crcin<=x"a1";
+								crcwr<='1';
+								execstate<=es_DAM2;
+							elsif(mfmmc2det='1' or mfmrxed='1')then
+								dembreak<='1';
+								crcclr<='1';
+								execstate<=es_IAM0;
+							end if;
+						when es_DAM2 =>
+							if(mfmma1det='1')then
+								crcin<=x"a1";
+								crcwr<='1';
+								execstate<=es_DAM3;
+							elsif(mfmmc2det='1' or mfmrxed='1')then
+								dembreak<='1';
+								crcclr<='1';
+								execstate<=es_IAM0;
+							end if;
+						when es_DAM3 =>
+							if(mfmrxed='1')then
+								if(mfmrxdat=x"f8")then
+									sCM<='1';
+								end if;
+							end if;
+							if(mfmrxed='1' and (mfmrxdat=x"fb" or mfmrxdat=x"f8"))then
+								crcin<=mfmrxdat;
+								crcwr<='1';
+								TCclr<='1';
+								execstate<=es_DATA;
+								scancomp<='0';
+							elsif(mfmma1det='1' or mfmmc2det='1' or mfmrxed='1')then
+								dembreak<='1';
+								crcclr<='1';
+								execstate<=es_IAM0;
+							end if;
+						when es_DATA =>
+							if(MF='0')then
+								if(fmrxed='1')then
+									crcin<=fmrxdat;
+									crcwr<='1';
+									if(ND='0')then
+										DMARQ<='1';
+									else
+										sHD<=HD;
+										sUS<=US;
+										PCN<=cPCN;
+										sIC<="00";
+										INT<='1';
+										iSE<='0';
+									end if;
+									COMPDAT<=fmrxdat;
+									sDIOd<='0';
+									sRQM<='1';
+									execstate<=es_DATAw;
+								end if;
+							else
+								if(mfmrxed='1')then
+									crcin<=mfmrxdat;
+									crcwr<='1';
+									if(ND='0')then
+										DMARQ<='1';
+									else
+										sHD<=HD;
+										sUS<=US;
+										PCN<=cPCN;
+										sIC<="00";
+										INT<='1';
+										iSE<='0';
+									end if;
+									COMPDAT<=mfmrxdat;
+									sDIOd<='0';
+									sRQM<='1';
+									execstate<=es_DATAw;
+								end if;
+							end if;
+						when es_DATAw =>
+							if(CPUWR_DATf='1' or DMAWRxf='1')then
+								sRQM<='0';
+								if(CPUWRDAT=x"ff" or CPUWRDAT=COMPDAT or scancomp='1')then
+									if(bytecount>1)then
+										bytecount<=bytecount-1;
+										execstate<=es_DATA;
+									else
+										execstate<=es_CRCd0;
+									end if;
+								elsif(COMPDAT<CPUWRDAT and command=cmd_SCANLOWEQUAL)then
+									scancomp<='1';
+									if(bytecount>1)then
+										bytecount<=bytecount-1;
+										execstate<=es_DATA;
+									else
+										execstate<=es_CRCd0;
+									end if;
+								elsif(COMPDAT>CPUWRDAT and command=cmd_SCANHIGHEQUAL)then
+									scancomp<='1';
+									if(bytecount>1)then
+										bytecount<=bytecount-1;
+										execstate<=es_DATA;
+									else
+										execstate<=es_CRCd0;
+									end if;
+								else
+									sOR<='0';
+									sIC<="01";
+									sHD<=HD;
+									sUS<=US;
+									PCN<=cPCN;
+									INT<='1';
+									iSE<='0';
+									end_EXEC<='1';
+									execstate<=es_IDLE;
+								end if;
+							elsif((MF='0' and fmrxed='1') or (MF='1' and mfmrxed='1'))then
+								sOR<='1';
+								sIC<="01";
+								sHD<=HD;
+								sUS<=US;
+								PCN<=cPCN;
+								INT<='1';
+								iSE<='0';
+								end_EXEC<='1';
+								execstate<=es_IDLE;
+							end if;
+						when es_CRCd0 =>
+							if(scancomp='0')then
+								sSH<='1';
+							else
+								sSH<='0';
+							end if;
+							if(MF='0')then
+								if(fmrxed='1')then
+									crcin<=fmrxdat;
+									crcwr<='1';
+									execstate<=es_CRCd1;
+								end if;
+							else
+								if(mfmrxed='1')then
+									crcin<=mfmrxdat;
+									crcwr<='1';
+									execstate<=es_CRCd1;
+								end if;
+							end if;
+						when es_CRCd1 =>
+							if(MF='0')then
+								if(fmrxed='1')then
+									crcin<=fmrxdat;
+									crcwr<='1';
+									execstate<=es_CRCdc;
+								end if;
+							else
+								if(mfmrxed='1')then
+									crcin<=mfmrxdat;
+									crcwr<='1';
+									execstate<=es_CRCdc;
+								end if;
+							end if;
+						when es_CRCdc =>
+							if(crcdone='1')then
+								if(crczero='1')then
+									if(R<EOT)then
+										incR<='1';
+									elsif(MT='1')then
+										if(HD='0')then
+											resR<='1';
+											setH<='1';
+											setHD<='1';
+										else
+											resR<='1';
+											resH<='1';
+											resHD<='1';
+											incC<='1';
+										end if;
+									else
+										resR<='1';
+										incC<='1';
+									end if;
+									sDE<='0';
+									if(TCen='1')then
+										execstate<=es_IDLE;
+										sIC<="00";
+										sHD<=HD;
+										sUS<=US;
+										PCN<=cPCN;
+										INT<='1';
+										iSE<='1';
+										end_EXEC<='1';
+									elsif(R>=EOT)then
+										sEN<='1';
+										execstate<=es_IDLE;
+										sIC<="01";
+										sHD<=HD;
+										sUS<=US;
+										PCN<=cPCN;
+										INT<='1';
+										iSE<='1';
+										end_EXEC<='1';
+									else
+										nturns<=0;
+										crcclr<='1';
+										contdata<='1';
+										DETSECT<='0';
+										execstate<=es_IAM0;
+									end if;
+								else
+									sDE<='1';
+									sIC<="01";
+									sHD<=HD;
+									sUS<=US;
+									sDD<='1';
+									PCN<=cPCN;
+									INT<='1';
+									iSE<='0';
+									execstate<=es_idle;
+									end_EXEC<='1';
+								end if;
+							end if;
+						when others =>
+							execstate<=es_idle;
+						end case;
+	
+					when cmd_FORMATATRACK =>		--Format a Track
+						if(WPRT='0')then
+							sIC<="01";
+							sNW<='1';
+							sHD<=HD;
+							sUS<=US;
+							INT<='1';
+							iSE<='0';
+							end_EXEC<='1';
+							execstate<=es_IDLE;
+						elsif(lindex='1' and indexb='0')then
+							if(execstate/=es_windex)then
+								modbreak<='1';
+								sHD<=HD;
+								sUS<=US;
+								PCN<=cPCN;
+								sIC<="00";
+								INT<='1';
+								iSE<='0';
+								end_EXEC<='1';
+								execstate<=es_IDLE;
+							end if;
+						elsif(NOTRDY='1')then
+							sHD<=HD;
+							sUS<=US;
+							sIC<="11";
+							sND<='0';
+							sMA<='0';
+							PCN<=cPCN;
+							INT<='1';
+							iSE<='0';
+							end_EXEC<='1';
+							execstate<=es_IDLE;
+						end if;
+						case execstate is
+						when es_windex =>
+							if(lindex='1' and indexb='0')then
 								if(MF='0')then
+									bytecount<=nfmGap0-1;
 									txdat<=x"ff";
 									fmtxwr<='1';
 								else
+									bytecount<=nmfmGap0-1;
 									txdat<=x"4e";
 									mfmtxwr<='1';
 								end if;
-								bytecount<=bytecount-1;
-							else
-								txdat<=x"00";
-								if(MF='0')then
-									fmtxwr<='1';
-									bytecount<=nfmSyncp;
-								else
-									mfmtxwr<='1';
-									bytecount<=nmfmSyncp;
-								end if;
-								execstate<=es_syncp;
+								execstate<=es_GAP0;
 							end if;
-						end if;
-					when es_syncp =>
-						if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
-							if(bytecount>0)then
-								txdat<=x"00";
-								if(MF='0')then
-									fmtxwr<='1';
+						when es_GAP0 =>
+							if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
+								if(bytecount>0)then
+									if(MF='0')then
+										txdat<=x"ff";
+										fmtxwr<='1';
+									else
+										txdat<=x"4e";
+										mfmtxwr<='1';
+									end if;
+									bytecount<=bytecount-1;
 								else
-									mfmtxwr<='1';
+									txdat<=x"00";
+									if(MF='0')then
+										fmtxwr<='1';
+										bytecount<=nfmSyncp;
+									else
+										mfmtxwr<='1';
+										bytecount<=nmfmSyncp;
+									end if;
+									execstate<=es_syncp;
 								end if;
-								bytecount<=bytecount-1;
-							else
+							end if;
+						when es_syncp =>
+							if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
+								if(bytecount>0)then
+									txdat<=x"00";
+									if(MF='0')then
+										fmtxwr<='1';
+									else
+										mfmtxwr<='1';
+									end if;
+									bytecount<=bytecount-1;
+								else
+									if(MF='0')then
+										fmmfcwr<='1';
+									else
+										mfmmc2wr<='1';
+									end if;
+									execstate<=es_IM0;
+								end if;
+							end if;
+						when es_IM0 =>
+							if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
 								if(MF='0')then
-									fmmfcwr<='1';
+									txdat<=x"ff";
+									fmtxwr<='1';
+									bytecount<=nfmGap1-1;
+									execstate<=es_GAP1;
 								else
 									mfmmc2wr<='1';
+									execstate<=es_IM1;
 								end if;
-								execstate<=es_IM0;
 							end if;
-						end if;
-					when es_IM0 =>
-						if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
-							if(MF='0')then
-								txdat<=x"ff";
-								fmtxwr<='1';
-								bytecount<=nfmGap1-1;
-								execstate<=es_GAP1;
-							else
+						when es_IM1 =>
+							if(mfmtxemp='1')then
 								mfmmc2wr<='1';
-								execstate<=es_IM1;
+								execstate<=es_IM2;
 							end if;
-						end if;
-					when es_IM1 =>
-						if(mfmtxemp='1')then
-							mfmmc2wr<='1';
-							execstate<=es_IM2;
-						end if;
-					when es_IM2 =>
-						if(mfmtxemp='1')then
-							txdat<=x"fc";
-							mfmtxwr<='1';
-							execstate<=es_IM3;
-						end if;
-					when es_IM3 =>
-						if(mfmtxemp='1')then
-							txdat<=x"4e";
-							mfmtxwr<='1';
-							bytecount<=nmfmGap1-1;
-							execstate<=es_GAP1;
-						end if;
-					when es_GAP1 =>
-						if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
-							if(bytecount>0)then
-								if(MF='0')then
-									txdat<=x"ff";
-									fmtxwr<='1';
-								else
-									txdat<=x"4e";
-									mfmtxwr<='1';
-								end if;
-								bytecount<=bytecount-1;
-							else
-								txdat<=x"00";
-								if(MF='0')then
-									fmtxwr<='1';
-									bytecount<=nfmSynci-1;
-								else
-									mfmtxwr<='1';
-									bytecount<=nmfmSynci-1;
-								end if;
-								execstate<=es_Synci;
-								crcclr<='1';
+						when es_IM2 =>
+							if(mfmtxemp='1')then
+								txdat<=x"fc";
+								mfmtxwr<='1';
+								execstate<=es_IM3;
 							end if;
-						end if;
-					when es_Synci =>
-						if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
-							if(bytecount>0)then
-								txdat<=x"00";
-								if(MF='0')then
-									fmtxwr<='1';
+						when es_IM3 =>
+							if(mfmtxemp='1')then
+								txdat<=x"4e";
+								mfmtxwr<='1';
+								bytecount<=nmfmGap1-1;
+								execstate<=es_GAP1;
+							end if;
+						when es_GAP1 =>
+							if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
+								if(bytecount>0)then
+									if(MF='0')then
+										txdat<=x"ff";
+										fmtxwr<='1';
+									else
+										txdat<=x"4e";
+										mfmtxwr<='1';
+									end if;
+									bytecount<=bytecount-1;
 								else
-									mfmtxwr<='1';
+									txdat<=x"00";
+									if(MF='0')then
+										fmtxwr<='1';
+										bytecount<=nfmSynci-1;
+									else
+										mfmtxwr<='1';
+										bytecount<=nmfmSynci-1;
+									end if;
+									execstate<=es_Synci;
+									crcclr<='1';
 								end if;
-								bytecount<=bytecount-1;
-							else
+							end if;
+						when es_Synci =>
+							if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
+								if(bytecount>0)then
+									txdat<=x"00";
+									if(MF='0')then
+										fmtxwr<='1';
+									else
+										mfmtxwr<='1';
+									end if;
+									bytecount<=bytecount-1;
+								else
+									if(MF='0')then
+										fmmfewr<='1';
+										crcin<=x"fe";
+									else
+										mfmma1wr<='1';
+										crcin<=x"a1";
+									end if;
+									crcwr<='1';
+									execstate<=es_IAM0;
+								end if;
+							end if;
+						when es_iAM0 =>
+							if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
 								if(MF='0')then
-									fmmfewr<='1';
-									crcin<=x"fe";
+									if(ND='0')then
+										DMARQ<='1';
+									else
+										sHD<=HD;
+										sUS<=US;
+										PCN<=cPCN;
+										sIC<="00";
+										INT<='1';
+										iSE<='0';
+									end if;
+									sRQM<='1';
+									sDIOd<='0';
+									execstate<=es_C;
 								else
 									mfmma1wr<='1';
 									crcin<=x"a1";
+									execstate<=es_iAM1;
 								end if;
 								crcwr<='1';
-								execstate<=es_IAM0;
 							end if;
-						end if;
-					when es_iAM0 =>
-						if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
-							if(MF='0')then
+						when es_iAM1 =>
+							if(mfmtxemp='1')then
+								mfmma1wr<='1';
+								crcin<=x"a1";
+								crcwr<='1';
+								execstate<=es_iAM2;
+							end if;
+						when es_iAM2 =>
+							if(mfmtxemp='1')then
+								txdat<=x"fe";
+								crcin<=x"fe";
+								mfmtxwr<='1';
+								crcwr<='1';
+								execstate<=es_iAM3;
+							end if;
+						when es_iAM3 =>
+							if(mfmtxemp='1')then
 								if(ND='0')then
 									DMARQ<='1';
 								else
@@ -3752,308 +3798,103 @@ begin
 								sRQM<='1';
 								sDIOd<='0';
 								execstate<=es_C;
-							else
-								mfmma1wr<='1';
-								crcin<=x"a1";
-								execstate<=es_iAM1;
 							end if;
-							crcwr<='1';
-						end if;
-					when es_iAM1 =>
-						if(mfmtxemp='1')then
-							mfmma1wr<='1';
-							crcin<=x"a1";
-							crcwr<='1';
-							execstate<=es_iAM2;
-						end if;
-					when es_iAM2 =>
-						if(mfmtxemp='1')then
-							txdat<=x"fe";
-							crcin<=x"fe";
-							mfmtxwr<='1';
-							crcwr<='1';
-							execstate<=es_iAM3;
-						end if;
-					when es_iAM3 =>
-						if(mfmtxemp='1')then
-							if(ND='0')then
-								DMARQ<='1';
-							else
-								sHD<=HD;
-								sUS<=US;
-								PCN<=cPCN;
-								sIC<="00";
-								INT<='1';
-								iSE<='0';
-							end if;
-							sRQM<='1';
-							sDIOd<='0';
-							execstate<=es_C;
-						end if;
-					when es_C | es_H | es_R | es_N =>
-						if(CPUWR_DATf='1' or DMAWRxf='1')then
-							sRQM<='0';
-							txdat<=CPUWRDAT;
-							crcin<=CPUWRDAT;
-							if(MF='0')then
-								fmtxwr<='1';
-							else
-								mfmtxwr<='1';
-							end if;
-							crcwr<='1';
-							case execstate is
-							when es_C =>
-								execstate<=es_Cw;
-							when es_H =>
-								execstate<=es_Hw;
-							when es_R =>
-								execstate<=es_Rw;
-							when es_N =>
-								Nf<=CPUWRDAT;
-								execstate<=es_Nw;
-							when others =>
-								execstate<=es_IDLE;
-							end case;
-						elsif((MF='0' and fmtxend='1') or (MF='1' and mfmtxend='1'))then
-							sOR<='1';
-							sHD<=HD;
-							sUS<=US;
-							PCN<=cPCN;
-							sIC<="01";
-							INT<='1';
-							iSE<='0';
-							execstate<=es_IDLE;
-							end_EXEC<='1';
-						end if;
-					when es_Cw | es_Hw | es_Rw =>
-						if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
-							if(ND='0')then
-								DMARQ<='1';
-							else
-								sHD<=HD;
-								sUS<=US;
-								PCN<=cPCN;
-								sIC<="00";
-								INT<='1';
-								iSE<='0';
-							end if;
-							sRQM<='1';
-							sDIOd<='0';
-							case execstate is
-							when es_Cw =>
-								execstate<=es_H;
-							when es_Hw =>
-								execstate<=es_R;
-							when es_Rw =>
-								execstate<=es_N;
-							when others =>
-								execstate<=es_IDLE;
-							end case;
-						end if;
-					when es_Nw =>
-						if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
-							txdat<=crcdat(15 downto 8);
-							if(MF='0')then
-								fmtxwr<='1';
-							else
-								mfmtxwr<='1';
-							end if;
-							execstate<=es_CRCi0;
-						end if;
-					when es_CRCi0 =>
-						if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
-							txdat<=crcdat(7 downto 0);
-							if(MF='0')then
-								fmtxwr<='1';
-							else
-								mfmtxwr<='1';
-							end if;
-							execstate<=es_CRCi1;
-						end if;
-					when es_CRCi1 =>
-						if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
-							if(MF='0')then
-								txdat<=x"ff";
-								fmtxwr<='1';
-								bytecount<=nfmGap2-1;
-							else
-								txdat<=x"4e";
-								mfmtxwr<='1';
-								bytecount<=nmfmGap2-1;
-							end if;
-							execstate<=es_GAP2;
-						end if;
-					when es_GAP2 =>
-						if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
-							if(bytecount>0)then
-								if(MF='0')then
-									txdat<=x"ff";
-									fmtxwr<='1';
-								else
-									txdat<=x"4e";
-									mfmtxwr<='1';
-								end if;
-								bytecount<=bytecount-1;
-							else
-								txdat<=x"00";
-								if(MF='0')then
-									fmtxwr<='1';
-									bytecount<=nfmSyncd-1;
-								else
-									mfmtxwr<='1';
-									bytecount<=nmfmSyncd-1;
-								end if;
-								crcclr<='1';
-								execstate<=es_Syncd;
-							end if;
-						end if;
-					when es_Syncd =>
-						if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
-							if(bytecount>0)then
-								txdat<=x"00";
-								if(MF='0')then
-									fmtxwr<='1';
-								else
-									mfmtxwr<='1';
-								end if;
-								bytecount<=bytecount-1;
-							else
-								if(MF='0')then
-									fmmfbwr<='1';
-									crcin<=x"fb";
-								else
-									mfmma1wr<='1';
-									crcin<=x"a1";
-								end if;
-								crcwr<='1';
-								execstate<=es_DAM0;
-							end if;
-						end if;
-					when es_DAM0 =>
-						if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
-							if(MF='0')then
-								txdat<=D;
-								crcin<=D;
-								fmtxwr<='1';
-								execstate<=es_DATA;
-							else
-								mfmma1wr<='1';
-								crcin<=x"a1";
-								execstate<=es_DAM1;
-							end if;
-							crcwr<='1';
-							if(Nf=x"00")then
-								bytecount<=conv_integer(DTL);
-							elsif(Nf=x"00")then
-								bytecount<=128;
-							elsif(Nf=x"01")then
-								bytecount<=256;
-							elsif(Nf=x"02")then
-								bytecount<=512;
-							elsif(Nf=x"03")then
-								bytecount<=1024;
-							elsif(Nf=x"04")then
-								bytecount<=2048;
-							elsif(Nf=x"05")then
-								bytecount<=4096;
-							elsif(Nf=x"06")then
-								bytecount<=8192;
-							else
-								bytecount<=16384;
-							end if;
-						end if;
-					when es_DAM1 =>
-						if(mfmtxemp='1')then
-							mfmma1wr<='1';
-							crcin<=x"a1";
-							crcwr<='1';
-							execstate<=es_DAM2;
-						end if;
-					when es_DAM2 =>
-						if(mfmtxemp='1')then
-							txdat<=x"fb";
-							crcin<=x"fb";
-							mfmtxwr<='1';
-							crcwr<='1';
-							execstate<=es_DAM3;
-						end if;
-					when es_DAM3 =>
-						if(mfmtxemp='1')then
-							txdat<=D;
-							crcin<=D;
-							mfmtxwr<='1';
-							crcwr<='1';
-							execstate<=es_DATA;
-						end if;
-					when es_DATA =>
-						if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
-							if(bytecount>1)then
-								txdat<=D;
-								crcin<=D;
+						when es_C | es_H | es_R | es_N =>
+							if(CPUWR_DATf='1' or DMAWRxf='1')then
+								sRQM<='0';
+								txdat<=CPUWRDAT;
+								crcin<=CPUWRDAT;
 								if(MF='0')then
 									fmtxwr<='1';
 								else
 									mfmtxwr<='1';
 								end if;
 								crcwr<='1';
-								bytecount<=bytecount-1;
-							elsif(crcbusy='0')then
+								case execstate is
+								when es_C =>
+									execstate<=es_Cw;
+								when es_H =>
+									execstate<=es_Hw;
+								when es_R =>
+									execstate<=es_Rw;
+								when es_N =>
+									Nf<=CPUWRDAT;
+									execstate<=es_Nw;
+								when others =>
+									execstate<=es_IDLE;
+								end case;
+							elsif((MF='0' and fmtxend='1') or (MF='1' and mfmtxend='1'))then
+								sOR<='1';
+								sHD<=HD;
+								sUS<=US;
+								PCN<=cPCN;
+								sIC<="01";
+								INT<='1';
+								iSE<='0';
+								execstate<=es_IDLE;
+								end_EXEC<='1';
+							end if;
+						when es_Cw | es_Hw | es_Rw =>
+							if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
+								if(ND='0')then
+									DMARQ<='1';
+								else
+									sHD<=HD;
+									sUS<=US;
+									PCN<=cPCN;
+									sIC<="00";
+									INT<='1';
+									iSE<='0';
+								end if;
+								sRQM<='1';
+								sDIOd<='0';
+								case execstate is
+								when es_Cw =>
+									execstate<=es_H;
+								when es_Hw =>
+									execstate<=es_R;
+								when es_Rw =>
+									execstate<=es_N;
+								when others =>
+									execstate<=es_IDLE;
+								end case;
+							end if;
+						when es_Nw =>
+							if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
 								txdat<=crcdat(15 downto 8);
 								if(MF='0')then
 									fmtxwr<='1';
 								else
 									mfmtxwr<='1';
 								end if;
-								execstate<=es_CRCd0;
+								execstate<=es_CRCi0;
 							end if;
-						end if;
-					when es_CRCd0 =>
-						if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
-							txdat<=crcdat(7 downto 0);
-							if(MF='0')then
-								fmtxwr<='1';
-							else
-								mfmtxwr<='1';
+						when es_CRCi0 =>
+							if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
+								txdat<=crcdat(7 downto 0);
+								if(MF='0')then
+									fmtxwr<='1';
+								else
+									mfmtxwr<='1';
+								end if;
+								execstate<=es_CRCi1;
 							end if;
-							execstate<=es_CRCd1;
-							crcclr<='1';
-						end if;
-					when es_CRCd1 =>
-						if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
-							if(MF='0')then
-								txdat<=x"ff";
-								fmtxwr<='1';
-							else
-								txdat<=x"4e";
-								mfmtxwr<='1';
-							end if;
-							bytecount<=conv_integer(GPL);
-							execstate<=es_GAP3;
-						end if;
-					when es_GAP3 =>
-						if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
-							if(bytecount>1)then
+						when es_CRCi1 =>
+							if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
 								if(MF='0')then
 									txdat<=x"ff";
 									fmtxwr<='1';
+									bytecount<=nfmGap2-1;
 								else
 									txdat<=x"4e";
 									mfmtxwr<='1';
+									bytecount<=nmfmGap2-1;
 								end if;
-								bytecount<=bytecount-1;
-							else
-								if(cntR<SC)then
-									txdat<=x"00";
-									if(MF='0')then
-										fmtxwr<='1';
-										bytecount<=nfmSynci-1;
-									else
-										mfmtxwr<='1';
-										bytecount<=nmfmSynci-1;
-									end if;
-									cntR<=cntR+x"01";
-									execstate<=es_Synci;
-								else
+								execstate<=es_GAP2;
+							end if;
+						when es_GAP2 =>
+							if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
+								if(bytecount>0)then
 									if(MF='0')then
 										txdat<=x"ff";
 										fmtxwr<='1';
@@ -4061,59 +3902,228 @@ begin
 										txdat<=x"4e";
 										mfmtxwr<='1';
 									end if;
-									execstate<=es_GAP4;
+									bytecount<=bytecount-1;
+								else
+									txdat<=x"00";
+									if(MF='0')then
+										fmtxwr<='1';
+										bytecount<=nfmSyncd-1;
+									else
+										mfmtxwr<='1';
+										bytecount<=nmfmSyncd-1;
+									end if;
+									crcclr<='1';
+									execstate<=es_Syncd;
 								end if;
 							end if;
-						end if;
-					when es_GAP4 =>
-						if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
-							if(MF='0')then
-								txdat<=x"ff";
-								fmtxwr<='1';
-							else
-								txdat<=x"4e";
-								mfmtxwr<='1';
+						when es_Syncd =>
+							if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
+								if(bytecount>0)then
+									txdat<=x"00";
+									if(MF='0')then
+										fmtxwr<='1';
+									else
+										mfmtxwr<='1';
+									end if;
+									bytecount<=bytecount-1;
+								else
+									if(MF='0')then
+										fmmfbwr<='1';
+										crcin<=x"fb";
+									else
+										mfmma1wr<='1';
+										crcin<=x"a1";
+									end if;
+									crcwr<='1';
+									execstate<=es_DAM0;
+								end if;
 							end if;
-						end if;
+						when es_DAM0 =>
+							if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
+								if(MF='0')then
+									txdat<=D;
+									crcin<=D;
+									fmtxwr<='1';
+									execstate<=es_DATA;
+								else
+									mfmma1wr<='1';
+									crcin<=x"a1";
+									execstate<=es_DAM1;
+								end if;
+								crcwr<='1';
+								if(Nf=x"00")then
+									bytecount<=conv_integer(DTL);
+								elsif(Nf=x"00")then
+									bytecount<=128;
+								elsif(Nf=x"01")then
+									bytecount<=256;
+								elsif(Nf=x"02")then
+									bytecount<=512;
+								elsif(Nf=x"03")then
+									bytecount<=1024;
+								elsif(Nf=x"04")then
+									bytecount<=2048;
+								elsif(Nf=x"05")then
+									bytecount<=4096;
+								elsif(Nf=x"06")then
+									bytecount<=8192;
+								else
+									bytecount<=16384;
+								end if;
+							end if;
+						when es_DAM1 =>
+							if(mfmtxemp='1')then
+								mfmma1wr<='1';
+								crcin<=x"a1";
+								crcwr<='1';
+								execstate<=es_DAM2;
+							end if;
+						when es_DAM2 =>
+							if(mfmtxemp='1')then
+								txdat<=x"fb";
+								crcin<=x"fb";
+								mfmtxwr<='1';
+								crcwr<='1';
+								execstate<=es_DAM3;
+							end if;
+						when es_DAM3 =>
+							if(mfmtxemp='1')then
+								txdat<=D;
+								crcin<=D;
+								mfmtxwr<='1';
+								crcwr<='1';
+								execstate<=es_DATA;
+							end if;
+						when es_DATA =>
+							if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
+								if(bytecount>1)then
+									txdat<=D;
+									crcin<=D;
+									if(MF='0')then
+										fmtxwr<='1';
+									else
+										mfmtxwr<='1';
+									end if;
+									crcwr<='1';
+									bytecount<=bytecount-1;
+								elsif(crcbusy='0')then
+									txdat<=crcdat(15 downto 8);
+									if(MF='0')then
+										fmtxwr<='1';
+									else
+										mfmtxwr<='1';
+									end if;
+									execstate<=es_CRCd0;
+								end if;
+							end if;
+						when es_CRCd0 =>
+							if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
+								txdat<=crcdat(7 downto 0);
+								if(MF='0')then
+									fmtxwr<='1';
+								else
+									mfmtxwr<='1';
+								end if;
+								execstate<=es_CRCd1;
+								crcclr<='1';
+							end if;
+						when es_CRCd1 =>
+							if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
+								if(MF='0')then
+									txdat<=x"ff";
+									fmtxwr<='1';
+								else
+									txdat<=x"4e";
+									mfmtxwr<='1';
+								end if;
+								bytecount<=conv_integer(GPL);
+								execstate<=es_GAP3;
+							end if;
+						when es_GAP3 =>
+							if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
+								if(bytecount>1)then
+									if(MF='0')then
+										txdat<=x"ff";
+										fmtxwr<='1';
+									else
+										txdat<=x"4e";
+										mfmtxwr<='1';
+									end if;
+									bytecount<=bytecount-1;
+								else
+									if(cntR<SC)then
+										txdat<=x"00";
+										if(MF='0')then
+											fmtxwr<='1';
+											bytecount<=nfmSynci-1;
+										else
+											mfmtxwr<='1';
+											bytecount<=nmfmSynci-1;
+										end if;
+										cntR<=cntR+x"01";
+										execstate<=es_Synci;
+									else
+										if(MF='0')then
+											txdat<=x"ff";
+											fmtxwr<='1';
+										else
+											txdat<=x"4e";
+											mfmtxwr<='1';
+										end if;
+										execstate<=es_GAP4;
+									end if;
+								end if;
+							end if;
+						when es_GAP4 =>
+							if((MF='0' and fmtxemp='1') or (MF='1' and mfmtxemp='1'))then
+								if(MF='0')then
+									txdat<=x"ff";
+									fmtxwr<='1';
+								else
+									txdat<=x"4e";
+									mfmtxwr<='1';
+								end if;
+							end if;
+						when others=>
+							execstate<=es_idle;
+							end_EXEC<='1';
+						end case;
+					when cmd_RECALIBRATE | cmd_SEEK =>		--re-calibrate  / seek
+						case execstate is
+						when es_seek =>
+	--						end_EXEC<='1';
+	--						sRQM<='1';
+							if(seek_end='1')then
+								execstate<=es_IDLE;
+								sHD<=HD;
+								sUS<=US;
+								PCN<=cPCN;
+								sIC<="00";
+								INTs<='1';
+								iSE<='1';
+								sRQM<='1';
+								end_EXEC<='1';
+							elsif(seek_err='1')then
+								sIC<="01";
+								sHD<=HD;
+								sUS<=US;
+								PCN<=cPCN;
+								INTs<='1';
+								iSE<='1';
+								sRQM<='1';
+								end_EXEC<='1';
+								execstate<=es_idle;
+							end if;
+						when others=>
+							execstate<=es_IDLE;
+						end case;
 					when others=>
 						execstate<=es_idle;
 						end_EXEC<='1';
 					end case;
-				when cmd_RECALIBRATE | cmd_SEEK =>		--re-calibrate  / seek
-					case execstate is
-					when es_seek =>
---						end_EXEC<='1';
---						sRQM<='1';
-						if(seek_end='1')then
-							execstate<=es_IDLE;
-							sHD<=HD;
-							sUS<=US;
-							PCN<=cPCN;
-							sIC<="00";
-							INTs<='1';
-							iSE<='1';
-							sRQM<='1';
-							end_EXEC<='1';
-						elsif(seek_err='1')then
-							sIC<="01";
-							sHD<=HD;
-							sUS<=US;
-							PCN<=cPCN;
-							INTs<='1';
-							iSE<='1';
-							sRQM<='1';
-							end_EXEC<='1';
-							execstate<=es_idle;
-						end if;
-					when others=>
-						execstate<=es_IDLE;
-					end case;
-				when others=>
-					execstate<=es_idle;
-					end_EXEC<='1';
-				end case;
+				end if;
+				lindex<=indexb;
 			end if;
-			lindex<=indexb;
 		end if;
 	end process;
 	
@@ -4121,23 +4131,25 @@ begin
 	intstx:clktx port map(INTs,sINTs,fclk,sclk,rstn);
 	
 	process(sclk,rstn)begin
-		if(rstn='0')then
-			INTn<='1';
-			SISen<='0';
-		elsif(sclk' event and sclk='1')then
-			if(sINTs='1')then
-				INTn<='0';
-				SISen<='1';
-			elsif(sINT='1')then
-				INTn<='0';
-				if(ismode='1')then
-					SISen<='1';
-				end if;
-			elsif(CPUWR_DAT='1' or CPURD_DAT='1')then	-- or CPURD_STA='1' or DMARDx='1' or DMAWRx='1'
+		if rising_edge(sclk) then
+			if(rstn='0')then
 				INTn<='1';
-			end if;
-			if(SISclr='1')then
 				SISen<='0';
+			elsif(sys_ce = '1')then
+				if(sINTs='1')then
+					INTn<='0';
+					SISen<='1';
+				elsif(sINT='1')then
+					INTn<='0';
+					if(ismode='1')then
+						SISen<='1';
+					end if;
+				elsif(CPUWR_DAT='1' or CPURD_DAT='1')then	-- or CPURD_STA='1' or DMARDx='1' or DMAWRx='1'
+					INTn<='1';
+				end if;
+				if(SISclr='1')then
+					SISen<='0';
+				end if;
 			end if;
 		end if;
 	end process;
@@ -4165,25 +4177,29 @@ begin
 	process(sclk,rstn)
 	variable	ext	:std_logic_vector(3 downto 0);
 	begin
-		if(rstn='0')then
-			sTC<='0';
-		elsif(sclk' event and sclk='1')then
-			if(TC='1')then
-				sTC<='1';
-			elsif(TCen='1')then
+		if rising_edge(sclk) then
+			if(rstn='0')then
 				sTC<='0';
+			elsif(sys_ce = '1')then
+				if(TC='1')then
+					sTC<='1';
+				elsif(TCen='1')then
+					sTC<='0';
+				end if;
 			end if;
 		end if;
 	end process;
 	
 	process(fclk,rstn)begin
-		if(rstn='0')then
-			TCen<='0';
-		elsif(fclk' event and fclk='1')then
-			if(TCclr='1')then
+		if rising_edge(fclk) then
+			if(rstn='0')then
 				TCen<='0';
-			elsif(sTC='1')then
-				TCen<='1';
+			elsif(fd_ce = '1')then
+				if(TCclr='1')then
+					TCen<='0';
+				elsif(sTC='1')then
+					TCen<='1';
+				end if;
 			end if;
 		end if;
 	end process;
@@ -4196,23 +4212,25 @@ begin
 
 
 	process(fclk,rstn)begin
-		if(rstn='0')then
-			sDxB<=(others=>'0');
-		elsif(fclk' event and fclk='1')then
-			if(seek_busy0='1')then
-				sDxB(0)<='1';
-			end if;
-			if(seek_busy1='1')then
-				sDxB(1)<='1';
-			end if;
-			if(seek_busy2='1')then
-				sDxB(2)<='1';
-			end if;
-			if(seek_busy3='1')then
-				sDxB(3)<='1';
-			end if;
-			if(DxBclr='1')then
+		if rising_edge(fclk) then
+			if(rstn='0')then
 				sDxB<=(others=>'0');
+			elsif(fd_ce = '1')then
+				if(seek_busy0='1')then
+					sDxB(0)<='1';
+				end if;
+				if(seek_busy1='1')then
+					sDxB(1)<='1';
+				end if;
+				if(seek_busy2='1')then
+					sDxB(2)<='1';
+				end if;
+				if(seek_busy3='1')then
+					sDxB(3)<='1';
+				end if;
+				if(DxBclr='1')then
+					sDxB<=(others=>'0');
+				end if;
 			end if;
 		end if;
 	end process;
@@ -4376,14 +4394,16 @@ begin
 --	sSE<=not seek_busy;
 --	sSE<=iSE;
 
-		process(fclk,rstn)begin
-		if(rstn='0')then
-			sSE<='0';
-		elsif(fclk' event and fclk='1')then
-			if(seek_end='1')then
-				sSE<='1';
-			elsif(SEclr='1')then
+	process(fclk,rstn)begin
+		if rising_edge(fclk) then
+			if(rstn='0')then
 				sSE<='0';
+			elsif(fd_ce = '1')then
+				if(seek_end='1')then
+					sSE<='1';
+				elsif(SEclr='1')then
+					sSE<='0';
+				end if;
 			end if;
 		end if;
 	end process;

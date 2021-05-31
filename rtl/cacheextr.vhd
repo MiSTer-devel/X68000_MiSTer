@@ -17,7 +17,9 @@ port(
 	masken	:in std_logic;
 	
 	wclk	:in std_logic;
+	ram_ce  :in std_logic := '1';
 	rclk	:in std_logic;
+	sys_ce  :in std_logic := '1';
 	rstn	:in std_logic
 );
 end cacheextr;
@@ -57,63 +59,69 @@ port(
 	rd		:out std_logic;
 	
 	wclk	:in std_logic;
-	rclk	:in std_logic
+	ram_ce  :in std_logic := '1';
+	rclk	:in std_logic;
+	sys_ce  :in std_logic := '1'
 );
 end component;
 
 begin
 	
-	reg0	:cereg generic map(awidth) port map(wraddr0,wr0,wdat0,rdaddr,rd0,wclk,wclk);
-	reg1	:cereg generic map(awidth) port map(wraddr1,wr1,wdat1,rdaddr,rd1,wclk,wclk);
+	reg0	:cereg generic map(awidth) port map(wraddr0,wr0,wdat0,rdaddr,rd0,wclk,ram_ce,wclk,sys_ce);
+	reg1	:cereg generic map(awidth) port map(wraddr1,wr1,wdat1,rdaddr,rd1,wclk,ram_ce,wclk,sys_ce);
 	
 	process(wclk,rstn)begin
-		if(rstn='0')then
-			state<=st_INIT;
-			clraddr<=(others=>'0');
-			current<='0';
-		elsif(wclk' event and wclk='1')then
-			case state is
-			when st_INIT =>
-				if(clraddr=lastaddr)then
+		if rising_edge(wclk) then
+			if(rstn='0')then
+				state<=st_INIT;
+				clraddr<=(others=>'0');
+				current<='0';
+			elsif(ram_ce = '1')then
+				case state is
+				when st_INIT =>
+					if(clraddr=lastaddr)then
+						state<=st_IDLE;
+					else
+						clraddr<=clraddr+1;
+					end if;
+				when st_IDLE =>
+					if(clr='1')then
+						clraddr<=(others=>'0');
+						current<=not current;
+						state<=st_CLR;
+					end if;
+				when st_CLR =>
+					if(clraddr=lastaddr)then
+						state<=st_IDLE;
+					else
+						clraddr<=clraddr+1;
+					end if;
+				when others =>
 					state<=st_IDLE;
-				else
-					clraddr<=clraddr+1;
-				end if;
-			when st_IDLE =>
-				if(clr='1')then
-					clraddr<=(others=>'0');
-					current<=not current;
-					state<=st_CLR;
-				end if;
-			when st_CLR =>
-				if(clraddr=lastaddr)then
-					state<=st_IDLE;
-				else
-					clraddr<=clraddr+1;
-				end if;
-			when others =>
-				state<=st_IDLE;
-			end case;
+				end case;
+			end if;
 		end if;
 	end process;
 	
 	process(wclk,rstn)begin
-		if(rstn='0')then
-			mask<='1';
-			mcount<=0;
-			srclk<='1';
-			lrclk<='1';
-		elsif(wclk' event and wclk='1')then
-			srclk<=rclk;
-			lrclk<=srclk;
-			if(clr='1')then
-				mask<='0';
-				mcount<=2;
-			elsif(lrclk='0' and srclk='1')then
-				if(mcount>0)then
-					mcount<=mcount-1;
-				else
-					mask<='1';
+		if rising_edge(wclk) then
+			if(rstn='0')then
+				mask<='1';
+				mcount<=0;
+				srclk<='1';
+				lrclk<='1';
+			elsif (ram_ce = '1') then
+				srclk<=rclk;
+				lrclk<=srclk;
+				if(clr='1')then
+					mask<='0';
+					mcount<=2;
+				elsif(lrclk='0' and srclk='1')then
+					if(mcount>0)then
+						mcount<=mcount-1;
+					else
+						mask<='1';
+					end if;
 				end if;
 			end if;
 		end if;

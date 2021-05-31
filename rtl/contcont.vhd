@@ -19,6 +19,7 @@ port(
 	contrast:out std_logic_vector(3+extwid downto 0);
 	
 	sclk	:in std_logic;
+	sys_ce  :in std_logic := '1';
 	srstn	:in std_logic
 );
 end contcont;
@@ -35,14 +36,16 @@ begin
 	portwr<=	wr when addrx=x"e8e001" else '0';
 	doe<=		rd when addrx=x"e8e001" else '0';
 	process(sclk,srstn)begin
-		if(srstn='0')then
-			lportwr<='0';
-			target(extwid+3 downto extwid)<=(others=>'1');
-			target(extwid-1 downto 0)<=(others=>'0');
-		elsif(sclk' event and sclk='1')then
-			lportwr<=portwr;
-			if(lportwr='0' and portwr='1')then
-				target(extwid+3 downto extwid)<=wrdat(3 downto 0);
+		if rising_edge(sclk) then
+			if(srstn='0')then
+				lportwr<='0';
+				target(extwid+3 downto extwid)<=(others=>'1');
+				target(extwid-1 downto 0)<=(others=>'0');
+			elsif(sys_ce = '1')then
+				lportwr<=portwr;
+				if(lportwr='0' and portwr='1')then
+					target(extwid+3 downto extwid)<=wrdat(3 downto 0);
+				end if;
 			end if;
 		end if;
 	end process;
@@ -52,21 +55,21 @@ begin
 	process(sclk,srstn)
 	variable lviden	:std_logic;
 	begin
-		if(srstn='0')then
-			lviden:='0';
-			contval<=(others=>'0');
-		elsif(sclk' event and sclk='1')then
-			if(lviden='1' and vviden='0')then
-				if(contval>target)then
-					contval<=contval-1;
-				elsif(contval<target)then
-					contval<=contval+1;
+		if rising_edge(sclk) then
+			if(srstn='0')then
+				lviden:='0';
+				contval<=(others=>'0');
+			elsif(sys_ce = '1')then
+				if(lviden='1' and vviden='0')then
+					if(contval>target)then
+						contval<=contval-1;
+					elsif(contval<target)then
+						contval<=contval+1;
+					end if;
 				end if;
+				lviden:=vviden;
 			end if;
-			lviden:=vviden;
 		end if;
 	end process;
 
 end rtl;
-
-			

@@ -17,6 +17,7 @@ port(
 	reg		:out std_logic_vector(15 downto 0);
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end ramreg;
@@ -30,14 +31,16 @@ begin
 	reg_wr<=wr when reg_cs='1' else "00";
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			data<=(others=>'0');
-		elsif(clk' event and clk='1')then
-			if(reg_wr(1)='1')then
-				data(15 downto 8)<=wdat(15 downto 8);
-			end if;
-			if(reg_wr(0)='1')then
-				data(7 downto 0)<=wdat(7 downto 0);
+		if rising_edge(clk) then
+			if(rstn='0')then
+				data<=(others=>'0');
+			elsif(ce = '1')then
+				if(reg_wr(1)='1')then
+					data(15 downto 8)<=wdat(15 downto 8);
+				end if;
+				if(reg_wr(0)='1')then
+					data(7 downto 0)<=wdat(7 downto 0);
+				end if;
 			end if;
 		end if;
 	end process;

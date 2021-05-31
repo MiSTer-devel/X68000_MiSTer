@@ -43,6 +43,7 @@ port(
 	TDO		:out std_logic;
 
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end MFPtimer;
@@ -85,21 +86,23 @@ end component;
 begin
 
 	process(clk,rstn)begin
-		if(rstn='0')then
-			modeA<=(others=>'0');
-			modeB<=(others=>'0');
-			modeC<=(others=>'0');
-			modeD<=(others=>'0');
-		elsif(clk' event and clk='1')then
-			if(TACRWR='1')then
-				modeA<=wdat(3 downto 0);
-			end if;
-			if(TBCRWR='1')then
-				modeB<=wdat(3 downto 0);
-			end if;
-			if(TCDCRWR='1')then
-				modeC<='0' & wdat(6 downto 4);
-				modeD<='0' & wdat(2 downto 0);
+		if rising_edge(clk) then
+			if(rstn='0')then
+				modeA<=(others=>'0');
+				modeB<=(others=>'0');
+				modeC<=(others=>'0');
+				modeD<=(others=>'0');
+			elsif(ce = '1')then
+				if(TACRWR='1')then
+					modeA<=wdat(3 downto 0);
+				end if;
+				if(TBCRWR='1')then
+					modeB<=wdat(3 downto 0);
+				end if;
+				if(TCDCRWR='1')then
+					modeC<='0' & wdat(6 downto 4);
+					modeD<='0' & wdat(2 downto 0);
+				end if;
 			end if;
 		end if;
 	end process;
@@ -110,49 +113,57 @@ begin
 	TD	:MFPtimerS generic map(SCFREQ) port map(modeD,wdat,TDDR,TDDRWR,'0',INTDb,clk,rstn);
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			TOA<='0';
-		elsif(clk' event and clk='1')then
-			if(TACRWR='1')then
-				if(wdat(4)='1')then
-					TOA<='0';
+		if rising_edge(clk) then
+			if(rstn='0')then
+				TOA<='0';
+			elsif(ce = '1')then
+				if(TACRWR='1')then
+					if(wdat(4)='1')then
+						TOA<='0';
+					end if;
+				elsif(INTAb='1')then
+					TOA<=not TOA;
 				end if;
-			elsif(INTAb='1')then
-				TOA<=not TOA;
 			end if;
 		end if;
 	end process;
 		
 	process(clk,rstn)begin
-		if(rstn='0')then
-			TOB<='0';
-		elsif(clk' event and clk='1')then
-			if(TBCRWR='1')then
-				if(wdat(4)='1')then
-					TOB<='0';
+		if rising_edge(clk) then
+			if(rstn='0')then
+				TOB<='0';
+			elsif(ce = '1')then
+				if(TBCRWR='1')then
+					if(wdat(4)='1')then
+						TOB<='0';
+					end if;
+				elsif(INTAb='1')then
+					TOB<=not TOB;
 				end if;
-			elsif(INTAb='1')then
-				TOB<=not TOB;
 			end if;
 		end if;
 	end process;
 
 	process(clk,rstn)begin
-		if(rstn='0')then
-			TOC<='0';
-		elsif(clk' event and clk='1')then
-			if(INTCb='1')then
-				TOC<=not TOC;
+		if rising_edge(clk) then
+			if(rstn='0')then
+				TOC<='0';
+			elsif(ce = '1')then
+				if(INTCb='1')then
+					TOC<=not TOC;
+				end if;
 			end if;
 		end if;
 	end process;
 
 	process(clk,rstn)begin
-		if(rstn='0')then
-			TOD<='0';
-		elsif(clk' event and clk='1')then
-			if(INTDb='1')then
-				TOD<=not TOD;
+		if rising_edge(clk) then
+			if(rstn='0')then
+				TOD<='0';
+			elsif(ce = '1')then
+				if(INTDb='1')then
+					TOD<=not TOD;
+				end if;
 			end if;
 		end if;
 	end process;

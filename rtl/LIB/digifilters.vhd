@@ -12,6 +12,7 @@ entity DIGIFILTERS is
 		
 		sft	:in std_logic;
 		clk	:in std_logic;
+		ce  :in std_logic := '1';
 		rstn :in std_logic
 	);
 end DIGIFILTERS;
@@ -22,26 +23,28 @@ begin
 	process(clk,rstn)
 	variable TMPA,TMPO	:std_logic;
 	begin
-		if(rstn='0')then
-			LAST<=(others=>DEF);
-			Q<=DEF;
-		elsif(clk='1' and clk' event)then
-			if(sft='1')then
-				TMPA:=LAST(0);
-				TMPO:=LAST(0);
-				for i in 0 to TIME-1 loop
-					TMPA:=TMPA and LAST(i);
-					TMPO:=TMPO or LAST(i);
-				end loop;		
-				if(TMPA=TMPO)then
-					Q<=LAST(0);
+		if rising_edge(clk) then
+			if(rstn='0')then
+				LAST<=(others=>DEF);
+				Q<=DEF;
+			elsif(ce = '1')then
+				if(sft='1')then
+					TMPA:=LAST(0);
+					TMPO:=LAST(0);
+					for i in 0 to TIME-1 loop
+						TMPA:=TMPA and LAST(i);
+						TMPO:=TMPO or LAST(i);
+					end loop;		
+					if(TMPA=TMPO)then
+						Q<=LAST(0);
+					end if;
+					if(TIME>2)then
+						LAST(TIME-2 downto 0)<=LAST(TIME-1 downto 1);
+					elsif(TIME=2)then
+						LAST(0)<=LAST(1);
+					end if;
+					LAST(TIME-1)<=D;
 				end if;
-				if(TIME>2)then
-					LAST(TIME-2 downto 0)<=LAST(TIME-1 downto 1);
-				elsif(TIME=2)then
-					LAST(0)<=LAST(1);
-				end if;
-				LAST(TIME-1)<=D;
 			end if;
 		end if;
 	end process;

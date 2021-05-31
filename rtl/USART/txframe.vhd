@@ -22,6 +22,7 @@ entity txframe	is
 		BUFEMP	:out std_logic;		-- transmit buffer empty signal
 		
 		clk		:in std_logic;		-- system clock
+		ce      :in std_logic := '1';
 		rstn	:in std_logic		-- system reset
 	);
 end txframe;
@@ -36,44 +37,46 @@ constant widzero	:std_logic_vector(maxwid-1 downto 0)	:=(others=>'0');
 begin
 
 	process(clk,rstn)begin
-		if(rstn='0')then
-			NXTBUF<=(others=>'0');
-			EXDATA<='0';
-			SFTBUF<=(others=>'0');
-			BITCNT<=0;
-			SD<='1';
-			DRCNT<='0';
-			WCNT<=(others=>'0');
-		elsif(clk' event and clk='1')then
-			if(WRITE='1' and EXDATA='0')then	-- write to buffer
-				NXTBUF<=DATA;
-				EXDATA<='1';
-			end if;
-
-			if(SFT='1')then
-				if((WCNT=widzero) or (BITCNT<STPLEN and WCNT(maxwid-1)='0' and WCNT(maxwid-2 downto 0)=WIDTH(maxwid-1 downto 1)))then
-					if(BITCNT=0)then	-- shift register empty
-						if(EXDATA='1')then
-							SFTBUF(maxlen downto 1)<=NXTBUF;	--data
-							SFTBUF(LEN+1)<='1';	-- stop
-							SFTBUF(0)<='0';	-- start
-							BITCNT<=LEN+STPLEN;		-- last n bit
-							EXDATA<='0';	-- buffer empty
-							WCNT<=WIDTH-1;
-							DRCNT<='1';		-- transmitting
-							SD<='0';		-- start bit output
+		if rising_edge(clk) then
+			if(rstn='0')then
+				NXTBUF<=(others=>'0');
+				EXDATA<='0';
+				SFTBUF<=(others=>'0');
+				BITCNT<=0;
+				SD<='1';
+				DRCNT<='0';
+				WCNT<=(others=>'0');
+			elsif(ce = '1')then
+				if(WRITE='1' and EXDATA='0')then	-- write to buffer
+					NXTBUF<=DATA;
+					EXDATA<='1';
+				end if;
+	
+				if(SFT='1')then
+					if((WCNT=widzero) or (BITCNT<STPLEN and WCNT(maxwid-1)='0' and WCNT(maxwid-2 downto 0)=WIDTH(maxwid-1 downto 1)))then
+						if(BITCNT=0)then	-- shift register empty
+							if(EXDATA='1')then
+								SFTBUF(maxlen downto 1)<=NXTBUF;	--data
+								SFTBUF(LEN+1)<='1';	-- stop
+								SFTBUF(0)<='0';	-- start
+								BITCNT<=LEN+STPLEN;		-- last n bit
+								EXDATA<='0';	-- buffer empty
+								WCNT<=WIDTH-1;
+								DRCNT<='1';		-- transmitting
+								SD<='0';		-- start bit output
+							else
+								DRCNT<='0';		-- no transmitting
+							end if;
 						else
-							DRCNT<='0';		-- no transmitting
+							SD<=SFTBUF(1);	-- shift the register
+							SFTBUF(maxlen downto 0)<=SFTBUF(maxlen+1 downto 1);
+							SFTBUF(LEN)<='1';
+							BITCNT<=BITCNT-1;
+							WCNT<=WIDTH-1;
 						end if;
 					else
-						SD<=SFTBUF(1);	-- shift the register
-						SFTBUF(maxlen downto 0)<=SFTBUF(maxlen+1 downto 1);
-						SFTBUF(LEN)<='1';
-						BITCNT<=BITCNT-1;
-						WCNT<=WIDTH-1;
+						WCNT<=WCNT-1;
 					end if;
-				else
-					WCNT<=WCNT-1;
 				end if;
 			end if;
 		end if;

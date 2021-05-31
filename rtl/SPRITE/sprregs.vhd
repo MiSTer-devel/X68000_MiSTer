@@ -36,7 +36,9 @@ port(
 	HRES	:out std_logic_vector(1 downto 0);
 	
 	sclk	:in std_logic;
+	sys_ce  :in std_logic := '1';
 	vclk	:in std_logic;
+	vid_ce  :in std_logic := '1';
 	rstn	:in std_logic
 );
 end sprregs;

@@ -26,6 +26,7 @@ port(
 	
 	SFT		:in std_logic;
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end PS2IF;
@@ -71,118 +72,120 @@ begin
 
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			TXDAT<=(others=>'0');
-			STATE<=ST_IDLE;
-			SFTCNT<=0;
-			LASTCLK<='1';
-			KBDATOUT<='1';
-			KBCLKOUT<='1';
-			RXDAT<=(others=>'0');
-			RXED<='0';
-			COL<='0';
-			PERR<='0';
-			TIMECNT<=0;
-			LASTWRn<='1';
-		elsif(clk' event and clk='1')then
-			LASTCLK<=KBCLKIN;
-			LASTWRn<=WRn;
-			RXED<='0';
-			if(RESET='1')then
+		if rising_edge(clk) then
+			if(rstn='0')then
+				TXDAT<=(others=>'0');
 				STATE<=ST_IDLE;
-			elsif(WRn='0')then
-				if(STATE/=ST_IDLE)then
-					COL<='1';
-				else
-					COL<='0';
-					TXDAT<="110" & DATIN & '0';
-					SFTCNT<=11;
-					TIMECNT<=BITCNT;
-					KBCLKOUT<='0';
-					KBDATOUT<='1';
-					STATE<=ST_WRSTART;
-				end if;
-
-			elsif(STATE=ST_IDLE)then
-				if(TWAIT='1')then
-					KBCLKOUT<='0';
-				else
-					KBCLKOUT<='1';
-				end if;
-				if(KBCLKIN='0' and LASTCLK='1')then
-					if(KBDATIN='0')then
-						SFTCNT<=10;
-						STATE<=ST_READM2;
-					else
-						SFTCNT<=8;
-						STATE<=ST_READM1;
-					end if;
-					TIMECNT<=TOCNT;
-				end if;
-			elsif(STATE=ST_READM1 or STATE=ST_READM2)then
-				if(SFT='1')then
-					if(TIMECNT=0)then
-						STATE<=ST_IDLE;		--timeout
-					else
-						TIMECNT<=TIMECNT-1;
-					end if;
-				end if;
-				if(KBCLKIN='0' and LASTCLK='1')then
-					TIMECNT<=TOCNT;
-					TXDAT(8 downto 0)<=TXDAT(9 downto 1);
-					TXDAT(9)<=KBDATIN;
-					SFTCNT<=SFTCNT-1;
-				elsif(KBCLKIN='1' and LASTCLK='0')then
-					TIMECNT<=TOCNT;
-					if(SFTCNT=0)then
-						RXED<='1';
-						STATE<=ST_DATREL;
-						if(STATE=ST_READM2)then
-							RXDAT<=TXDAT(7 downto 0);
-						else
-							RXDAT<=TXDAT(9 downto 2);
-						end if;
-					end if;
-				end if;
-			elsif(STATE=ST_WRSTART)then
-				TXDAT(9)<=not PAR;
-				if(SFT='1')then
-					if(TIMECNT/=0)then
-						TIMECNT<=TIMECNT-1;
-					else
-						KBDATOUT<='0';
-						STATE<=ST_WRSTART1;
-						TIMECNT<=1;
-					end if;
-				end if;
-			elsif(STATE=ST_WRSTART1)then
-				if(SFT='1')then
-					TIMECNT<=TIMECNT-1;
-					if(TIMECNT=0)then
-						KBCLKOUT<='1';
-						STATE<=ST_WRITE;
-					end if;
-				end if;
-			elsif(STATE=ST_WRITE)then
-				if(KBCLKIN='0' and LASTCLK='1')then
-					KBDATOUT<=TXDAT(1);
-					TXDAT(10 downto 0)<=TXDAT(11 downto 1);
-					SFTCNT<=SFTCNT-1;
-					if(SFTCNT=1)then
-						if(KBDATIN='1')then
-							PERR<='1';
-						else
-							PERR<='0';
-						end if;
-					end if;
-				elsif(KBCLKIN='1' and LASTCLK='0')then
-					if(SFTCNT=0)then
-						STATE<=ST_DATREL;
-					end if;
-				end if;
-			else	--ST_DATREL
-				if(KBDATIN='1')then
+				SFTCNT<=0;
+				LASTCLK<='1';
+				KBDATOUT<='1';
+				KBCLKOUT<='1';
+				RXDAT<=(others=>'0');
+				RXED<='0';
+				COL<='0';
+				PERR<='0';
+				TIMECNT<=0;
+				LASTWRn<='1';
+			elsif(ce = '1')then
+				LASTCLK<=KBCLKIN;
+				LASTWRn<=WRn;
+				RXED<='0';
+				if(RESET='1')then
 					STATE<=ST_IDLE;
+				elsif(WRn='0')then
+					if(STATE/=ST_IDLE)then
+						COL<='1';
+					else
+						COL<='0';
+						TXDAT<="110" & DATIN & '0';
+						SFTCNT<=11;
+						TIMECNT<=BITCNT;
+						KBCLKOUT<='0';
+						KBDATOUT<='1';
+						STATE<=ST_WRSTART;
+					end if;
+	
+				elsif(STATE=ST_IDLE)then
+					if(TWAIT='1')then
+						KBCLKOUT<='0';
+					else
+						KBCLKOUT<='1';
+					end if;
+					if(KBCLKIN='0' and LASTCLK='1')then
+						if(KBDATIN='0')then
+							SFTCNT<=10;
+							STATE<=ST_READM2;
+						else
+							SFTCNT<=8;
+							STATE<=ST_READM1;
+						end if;
+						TIMECNT<=TOCNT;
+					end if;
+				elsif(STATE=ST_READM1 or STATE=ST_READM2)then
+					if(SFT='1')then
+						if(TIMECNT=0)then
+							STATE<=ST_IDLE;		--timeout
+						else
+							TIMECNT<=TIMECNT-1;
+						end if;
+					end if;
+					if(KBCLKIN='0' and LASTCLK='1')then
+						TIMECNT<=TOCNT;
+						TXDAT(8 downto 0)<=TXDAT(9 downto 1);
+						TXDAT(9)<=KBDATIN;
+						SFTCNT<=SFTCNT-1;
+					elsif(KBCLKIN='1' and LASTCLK='0')then
+						TIMECNT<=TOCNT;
+						if(SFTCNT=0)then
+							RXED<='1';
+							STATE<=ST_DATREL;
+							if(STATE=ST_READM2)then
+								RXDAT<=TXDAT(7 downto 0);
+							else
+								RXDAT<=TXDAT(9 downto 2);
+							end if;
+						end if;
+					end if;
+				elsif(STATE=ST_WRSTART)then
+					TXDAT(9)<=not PAR;
+					if(SFT='1')then
+						if(TIMECNT/=0)then
+							TIMECNT<=TIMECNT-1;
+						else
+							KBDATOUT<='0';
+							STATE<=ST_WRSTART1;
+							TIMECNT<=1;
+						end if;
+					end if;
+				elsif(STATE=ST_WRSTART1)then
+					if(SFT='1')then
+						TIMECNT<=TIMECNT-1;
+						if(TIMECNT=0)then
+							KBCLKOUT<='1';
+							STATE<=ST_WRITE;
+						end if;
+					end if;
+				elsif(STATE=ST_WRITE)then
+					if(KBCLKIN='0' and LASTCLK='1')then
+						KBDATOUT<=TXDAT(1);
+						TXDAT(10 downto 0)<=TXDAT(11 downto 1);
+						SFTCNT<=SFTCNT-1;
+						if(SFTCNT=1)then
+							if(KBDATIN='1')then
+								PERR<='1';
+							else
+								PERR<='0';
+							end if;
+						end if;
+					elsif(KBCLKIN='1' and LASTCLK='0')then
+						if(SFTCNT=0)then
+							STATE<=ST_DATREL;
+						end if;
+					end if;
+				else	--ST_DATREL
+					if(KBDATIN='1')then
+						STATE<=ST_IDLE;
+					end if;
 				end if;
 			end if;
 		end if;

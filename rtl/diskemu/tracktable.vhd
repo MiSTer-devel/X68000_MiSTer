@@ -12,7 +12,8 @@ port(
 	table	:in std_logic_vector(7 downto 0);
 	haddr	:out std_logic_vector(31 downto 0);
 	
-	clk		:in std_logic
+	clk		:in std_logic;
+	ce      :in std_logic := '1'
 );
 end tracktable;
  
@@ -29,21 +30,23 @@ begin
 	itable<=conv_integer(table);
 	
 	process(clk)begin
-		if(clk' event and clk='1')then
-			if(wr='1')then
-				case wraddr(1 downto 0) is
-				when "00" =>
-					RAM0(iwaddr)<=wrdat;
-				when "01" =>
-					RAM1(iwaddr)<=wrdat;
-				when "10" =>
-					RAM2(iwaddr)<=wrdat;
-				when "11" =>
-					RAM3(iwaddr)<=wrdat;
-				when others =>
-				end case;
+		if rising_edge(clk) then
+			if(ce = '1')then
+				if(wr='1')then
+					case wraddr(1 downto 0) is
+					when "00" =>
+						RAM0(iwaddr)<=wrdat;
+					when "01" =>
+						RAM1(iwaddr)<=wrdat;
+					when "10" =>
+						RAM2(iwaddr)<=wrdat;
+					when "11" =>
+						RAM3(iwaddr)<=wrdat;
+					when others =>
+					end case;
+				end if;
+				haddr<=RAM3(itable) & RAM2(itable) & RAM1(itable) & RAM0(itable);
 			end if;
-			haddr<=RAM3(itable) & RAM2(itable) & RAM1(itable) & RAM0(itable);
 		end if;
 	end process;
 	

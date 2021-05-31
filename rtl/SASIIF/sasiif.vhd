@@ -35,6 +35,7 @@ port(
 	RST		:out std_logic;
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end sasiif;
@@ -77,53 +78,57 @@ signal	STATE	:state_t;
 
 begin
 	process(clk,rstn)begin
-		if(rstn='0')then
-			ladrwr<=(others=>'0');
-			iowdat<=(others=>'0');
-			ladrrd<=(others=>'0');
-		elsif(clk' event and clk='1')then
-			ladrwr<=adrwr;
-			ladrrd<=adrrd;
-			if(cs='1' and wr='1')then
-				iowdat<=wdat;
+		if rising_edge(clk) then
+			if(rstn='0')then
+				ladrwr<=(others=>'0');
+				iowdat<=(others=>'0');
+				ladrrd<=(others=>'0');
+			elsif(ce = '1')then
+				ladrwr<=adrwr;
+				ladrrd<=adrrd;
+				if(cs='1' and wr='1')then
+					iowdat<=wdat;
+				end if;
 			end if;
 		end if;
 	end process;
 	
 --	process(clkcs,rd,wr,addr)begin
 	process(clk)begin
-		if(clk' event and clk='1')then
-			if(cs='1' and wr='1')then
-				case addr is
-				when "00" =>
-					adrwr<="0001";
-				when "01" =>
-					adrwr<="0010";
-				when "10" =>
-					adrwr<="0100";
-				when "11" =>
-					adrwr<="1000";
-				when others =>
+		if rising_edge(clk) then
+			if(ce = '1')then
+				if(cs='1' and wr='1')then
+					case addr is
+					when "00" =>
+						adrwr<="0001";
+					when "01" =>
+						adrwr<="0010";
+					when "10" =>
+						adrwr<="0100";
+					when "11" =>
+						adrwr<="1000";
+					when others =>
+						adrwr<="0000";
+					end case;
+				else
 					adrwr<="0000";
-				end case;
-			else
-				adrwr<="0000";
-			end if;
-			if(cs='1' and rd='1')then
-				case addr is
-				when "00" =>
-					adrrd<="0001";
-				when "01" =>
-					adrrd<="0010";
-				when "10" =>
-					adrrd<="0100";
-				when "11" =>
-					adrrd<="1000";
-				when others =>
+				end if;
+				if(cs='1' and rd='1')then
+					case addr is
+					when "00" =>
+						adrrd<="0001";
+					when "01" =>
+						adrrd<="0010";
+					when "10" =>
+						adrrd<="0100";
+					when "11" =>
+						adrrd<="1000";
+					when others =>
+						adrrd<="0000";
+					end case;
+				else
 					adrrd<="0000";
-				end case;
-			else
-				adrrd<="0000";
+				end if;
 			end if;
 		end if;
 	end process;
@@ -131,25 +136,27 @@ begin
 	process(clk,rstn)
 	variable wcount	:integer range 0 to inirstwait-1;
 	begin
-		if(rstn='0')then
-			initstate<=is_init;
-			wcount:=inirstwait-1;
-			inirst<='0';
-		elsif(clk' event and clk='1')then
-			inirst<='0';
-			case initstate is
-			when is_init =>
-				if(wcount>0)then
-					wcount:=wcount-1;
-				else
-					initstate<=is_reset;
-				end if;
-			when is_reset =>
-				inirst<='1';
-				initstate<=is_idle;
-			when is_idle =>
-			when others =>
-			end case;
+		if rising_edge(clk) then
+			if(rstn='0')then
+				initstate<=is_init;
+				wcount:=inirstwait-1;
+				inirst<='0';
+			elsif(ce = '1')then
+				inirst<='0';
+				case initstate is
+				when is_init =>
+					if(wcount>0)then
+						wcount:=wcount-1;
+					else
+						initstate<=is_reset;
+					end if;
+				when is_reset =>
+					inirst<='1';
+					initstate<=is_idle;
+				when is_idle =>
+				when others =>
+				end case;
+			end if;
 		end if;
 	end process;
 	
@@ -163,88 +170,94 @@ begin
 	process(clk,rstn)
 	variable lencount	:integer range 0 to rstlen-1;
 	begin
-		if(rstn='0')then
-			lencount:=0;
-			RST<='0';
-		elsif(clk' event and clk='1')then
-			if(BUSRST='1')then
-				RST<='1';
-				lencount:=rstlen-1;
-			elsif(lencount>0)then
-				lencount:=lencount-1;
-			else
+		if rising_edge(clk) then
+			if(rstn='0')then
+				lencount:=0;
 				RST<='0';
+			elsif(ce = '1')then
+				if(BUSRST='1')then
+					RST<='1';
+					lencount:=rstlen-1;
+				elsif(lencount>0)then
+					lencount:=lencount-1;
+				else
+					RST<='0';
+				end if;
 			end if;
 		end if;
 	end process;
 
 	process(clk,rstn)begin
-		if(rstn='0')then
-			drq<='0';
-			lACK<='0';
-			sREQ<='0';
-			lREQ<='0';
-			HSwait<='0';
-		elsif(clk' event and clk='1')then
-			lREQ<=sREQ;
-			sREQ<=REQ;
-			lACK<=ACKb;
-			if(BUSRST='1')then
+		if rising_edge(clk) then
+			if(rstn='0')then
 				drq<='0';
+				lACK<='0';
+				sREQ<='0';
+				lREQ<='0';
 				HSwait<='0';
-			elsif(sREQ='1' and lREQ='0')then
-				drq<='1';
-			elsif(DMACLR='1')then
-				drq<='0';
-			elsif(CMDRD='1' or CMDWR='1')then
-				HSwait<='1';
-			elsif(sREQ='0')then
-				HSwait<='0';
+			elsif(ce = '1')then
+				lREQ<=sREQ;
+				sREQ<=REQ;
+				lACK<=ACKb;
+				if(BUSRST='1')then
+					drq<='0';
+					HSwait<='0';
+				elsif(sREQ='1' and lREQ='0')then
+					drq<='1';
+				elsif(DMACLR='1')then
+					drq<='0';
+				elsif(CMDRD='1' or CMDWR='1')then
+					HSwait<='1';
+				elsif(sREQ='0')then
+					HSwait<='0';
+				end if;
 			end if;
 		end if;
 	end process;
 
 	process(clk,rstn)begin
-		if(rstn='0')then
-			STATE<=st_IDLE;
-		elsif(clk' event and clk='1')then
-			if(BUSRST='1')then
+		if rising_edge(clk) then
+			if(rstn='0')then
 				STATE<=st_IDLE;
-			else
-				case STATE is
-				when st_IDLE =>
-					if(SELb='1')then
-						STATE<=st_SEL;
-					end if;
-				when st_SEL =>
-					if(BSY='1')then
-						STATE<=st_SELA;
-					elsif(SELb='0')then
-						STATE<=st_IDLE;
-					end if;
-				when st_SELA =>
-					if(CD='1')then
-						STATE<=st_CMD;
-					end if;
-				when st_CMD =>
-					if(CD='0')then
-						STATE<=st_EXEC;
-					end if;
-				when st_EXEC =>
-					if(CD='1')then
-						STATE<=st_STA;
-					end if;
-				when st_STA =>
-					if(CMDRD='1')then
-						STATE<=st_MSG;
-					end if;
-				when st_MSG =>
-					if(BSY='0')then
-						STATE<=st_IDLE;
-					end if;
-				when others =>
+			elsif(ce = '1')then
+				if(BUSRST='1')then
 					STATE<=st_IDLE;
-				end case;
+				else
+					case STATE is
+					when st_IDLE =>
+						if(SELb='1')then
+							STATE<=st_SEL;
+						end if;
+					when st_SEL =>
+						if(BSY='1')then
+							STATE<=st_SELA;
+						elsif(SELb='0')then
+							STATE<=st_IDLE;
+						end if;
+					when st_SELA =>
+						if(CD='1')then
+							STATE<=st_CMD;
+						end if;
+					when st_CMD =>
+						if(CD='0')then
+							STATE<=st_EXEC;
+						end if;
+					when st_EXEC =>
+						if(CD='1')then
+							STATE<=st_STA;
+						end if;
+					when st_STA =>
+						if(CMDRD='1')then
+							STATE<=st_MSG;
+						end if;
+					when st_MSG =>
+						if(BSY='0')then
+							STATE<=st_IDLE;
+						end if;
+					when others =>
+						STATE<=st_IDLE;
+					end case;
+				end if;
 			end if;
 		end if;
 	end process;
@@ -260,58 +273,64 @@ begin
 	int<='1' when STATE=st_STA else '0';
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			ACKb<='0';
-		elsif(clk' event and clk='1')then
-			if(BUSRST='1')then
+		if rising_edge(clk) then
+			if(rstn='0')then
 				ACKb<='0';
-			elsif(CMDWR='1' or CMDRD='1')then
-				ACKb<='1';
-			elsif(sREQ='0')then
-				ACKb<='0';
+			elsif(ce = '1')then
+				if(BUSRST='1')then
+					ACKb<='0';
+				elsif(CMDWR='1' or CMDRD='1')then
+					ACKb<='1';
+				elsif(sREQ='0')then
+					ACKb<='0';
+				end if;
 			end if;
 		end if;
 	end process;
 	ACK<=ACKb;
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			SELb<='0';
-		elsif(clk' event and clk='1')then
-			if(BUSRST='1')then
+		if rising_edge(clk) then
+			if(rstn='0')then
 				SELb<='0';
-			elsif(IDWR='1')then
-				SELb<='1';
-			elsif(IDCLR='1')then
-				SELb<='0';
+			elsif(ce = '1')then
+				if(BUSRST='1')then
+					SELb<='0';
+				elsif(IDWR='1')then
+					SELb<='1';
+				elsif(IDCLR='1')then
+					SELb<='0';
+				end if;
 			end if;
 		end if;
 	end process;
 	SEL<=SELb;
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			ODAT<=(others=>'0');
-			ODEN<='0';
-		elsif(clk' event and clk='1')then
-			if(BUSRST='1')then
+		if rising_edge(clk) then
+			if(rstn='0')then
 				ODAT<=(others=>'0');
 				ODEN<='0';
-			elsif(IDWR='1')then
-				ODAT<=iowdat;
-				ODEN<='1';
-			elsif(IDCLR='1')then
-				ODAT<=iowdat;
-				ODEN<='0';
-			elsif(IO='1')then
-				ODAT<=(others=>'0');
-				ODEN<='0';
-			elsif(CMDWR='1')then
-				ODAT<=iowdat;
-				ODEN<='1';
-			elsif(CMDRD='1')then
-				ODAT<=(others=>'0');
-				ODEN<='0';
+			elsif(ce = '1')then
+				if(BUSRST='1')then
+					ODAT<=(others=>'0');
+					ODEN<='0';
+				elsif(IDWR='1')then
+					ODAT<=iowdat;
+					ODEN<='1';
+				elsif(IDCLR='1')then
+					ODAT<=iowdat;
+					ODEN<='0';
+				elsif(IO='1')then
+					ODAT<=(others=>'0');
+					ODEN<='0';
+				elsif(CMDWR='1')then
+					ODAT<=iowdat;
+					ODEN<='1';
+				elsif(CMDRD='1')then
+					ODAT<=(others=>'0');
+					ODEN<='0';
+				end if;
 			end if;
 		end if;
 	end process;

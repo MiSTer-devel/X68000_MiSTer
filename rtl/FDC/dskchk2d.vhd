@@ -35,6 +35,7 @@ port(
 	hmssft		:in std_logic;
 	
 	clk			:in std_logic;
+	ce          :in std_logic := '1';
 	rstn		:in std_logic
 );	
 end dskchk2d;
@@ -84,130 +85,136 @@ end component;
 begin
 
 	process(clk)begin
-		if(clk' event and clk='1')then
-			INDEXn<=FDD_INDEXn;
-			DATAn<=FDD_DATAn;
+		if rising_edge(clk) then
+			if(ce = '1')then
+				INDEXn<=FDD_INDEXn;
+				DATAn<=FDD_DATAn;
+			end if;
 		end if;
 	end process;
 	
 	process(clk,rstn)
 	variable sel	:std_logic;
 	begin
-		if(rstn='0')then
-			sel:='0';
-			mssft<='0';
-		elsif(clk' event and clk='1')then
-			mssft<='0';
-			if(hmssft='1')then
-				if(sel='0')then
-					sel:='1';
-				else
-					mssft<='1';
-					sel:='0';
+		if rising_edge(clk) then
+			if(rstn='0')then
+				sel:='0';
+				mssft<='0';
+			elsif(ce = '1')then
+				mssft<='0';
+				if(hmssft='1')then
+					if(sel='0')then
+						sel:='1';
+					else
+						mssft<='1';
+						sel:='0';
+					end if;
 				end if;
 			end if;
 		end if;
 	end process;
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			state<=st_IDLE;
-			wait_count<=(sysclk*chkint)-1;
-			cur_unit<=1;
-			indiskb<=(others=>'0');
-			CONT_DIR<='1';
-			CONT_STEP<='1';
-			CONT_MOTOR<=(others=>'0');
-		elsif(clk' event and clk='1')then
-			case state is
-			when st_IDLE =>
-				if(FDC_BUSY='1')then
-					wait_count<=(sysclk*chkint)-1;
-				else
-					if(wait_count=0)then
-						if(cur_unit=1)then
-							cur_unit<=0;
+		if rising_edge(clk) then
+			if(rstn='0')then
+				state<=st_IDLE;
+				wait_count<=(sysclk*chkint)-1;
+				cur_unit<=1;
+				indiskb<=(others=>'0');
+				CONT_DIR<='1';
+				CONT_STEP<='1';
+				CONT_MOTOR<=(others=>'0');
+			elsif(ce = '1')then
+				case state is
+				when st_IDLE =>
+					if(FDC_BUSY='1')then
+						wait_count<=(sysclk*chkint)-1;
+					else
+						if(wait_count=0)then
+							if(cur_unit=1)then
+								cur_unit<=0;
+							else
+								cur_unit<=cur_unit+1;
+							end if;
+							wait_count<=(signwait*sysclk/1000)-1;
+							state<=st_DCWAIT;
 						else
-							cur_unit<=cur_unit+1;
+							wait_count<=wait_count-1;
 						end if;
-						wait_count<=(signwait*sysclk/1000)-1;
-						state<=st_DCWAIT;
-					else
-						wait_count<=wait_count-1;
 					end if;
-				end if;
-			when st_DCWAIT =>
-				if(driveen(cur_unit)='0')then
-					indiskb(cur_unit)<='0';
-					wait_count<=(sysclk*chkint)-1;
-					state<=st_IDLE;
-				else
-					if(wait_count>0)then
-						wait_count<=wait_count-1;
-					else
-						state<=st_DCCHK;
-					end if;
-				end if;
-			when st_DCCHK =>
-				if(FDD_DSKCHGn='1')then
-					indiskb(cur_unit)<='1';
-					CONT_MOTOR(cur_unit)<='0';
-					wait_count<=(sysclk*chkint)-1;
-					state<=st_IDLE;
-				else
-					CONT_MOTOR(cur_unit)<='1';
-					wait_count<=(datwait*sysclk/1000)-1;
-					state<=st_DATCHK;
-				end if;
-			when st_DATCHK =>
-				if(DATAn='0' or INDEXn='0')then
-					state<=st_STEP0;
-				else
-					if(wait_count>0)then
-						wait_count<=wait_count-1;
-					else
+				when st_DCWAIT =>
+					if(driveen(cur_unit)='0')then
 						indiskb(cur_unit)<='0';
 						wait_count<=(sysclk*chkint)-1;
 						state<=st_IDLE;
+					else
+						if(wait_count>0)then
+							wait_count<=wait_count-1;
+						else
+							state<=st_DCCHK;
+						end if;
 					end if;
-				end if;
-			when st_STEP0 =>
-				if(mssft='1')then
-					CONT_DIR<='1';
-					state<=st_STEP1;
-				end if;
-			when st_STEP1 =>
-				if(mssft='1')then
-					CONT_STEP<='0';
-					state<=st_STEP2;
-				end if;
-			when st_STEP2 =>
-				if(mssft='1')then
-					CONT_STEP<='1';
-					state<=st_STEP3;
-				end if;
-			when st_STEP3 =>
-				if(mssft='1')then
-					CONT_DIR<='0';
-					state<=st_STEP4;
-				end if;
-			when st_STEP4 =>
-				if(mssft='1')then
-					CONT_STEP<='0';
-					state<=st_STEP5;
-				end if;
-			when st_STEP5 =>
-				if(mssft='1')then
-					CONT_STEP<='1';
-					CONT_DIR<='1';
-					indiskb(cur_unit)<='1';
-					wait_count<=(sysclk*chkint)-1;
-					CONT_MOTOR(cur_unit)<='0';
+				when st_DCCHK =>
+					if(FDD_DSKCHGn='1')then
+						indiskb(cur_unit)<='1';
+						CONT_MOTOR(cur_unit)<='0';
+						wait_count<=(sysclk*chkint)-1;
+						state<=st_IDLE;
+					else
+						CONT_MOTOR(cur_unit)<='1';
+						wait_count<=(datwait*sysclk/1000)-1;
+						state<=st_DATCHK;
+					end if;
+				when st_DATCHK =>
+					if(DATAn='0' or INDEXn='0')then
+						state<=st_STEP0;
+					else
+						if(wait_count>0)then
+							wait_count<=wait_count-1;
+						else
+							indiskb(cur_unit)<='0';
+							wait_count<=(sysclk*chkint)-1;
+							state<=st_IDLE;
+						end if;
+					end if;
+				when st_STEP0 =>
+					if(mssft='1')then
+						CONT_DIR<='1';
+						state<=st_STEP1;
+					end if;
+				when st_STEP1 =>
+					if(mssft='1')then
+						CONT_STEP<='0';
+						state<=st_STEP2;
+					end if;
+				when st_STEP2 =>
+					if(mssft='1')then
+						CONT_STEP<='1';
+						state<=st_STEP3;
+					end if;
+				when st_STEP3 =>
+					if(mssft='1')then
+						CONT_DIR<='0';
+						state<=st_STEP4;
+					end if;
+				when st_STEP4 =>
+					if(mssft='1')then
+						CONT_STEP<='0';
+						state<=st_STEP5;
+					end if;
+				when st_STEP5 =>
+					if(mssft='1')then
+						CONT_STEP<='1';
+						CONT_DIR<='1';
+						indiskb(cur_unit)<='1';
+						wait_count<=(sysclk*chkint)-1;
+						CONT_MOTOR(cur_unit)<='0';
+						state<=st_IDLE;
+					end if;
+				when others =>
 					state<=st_IDLE;
-				end if;
-			when others =>
-				state<=st_IDLE;
-			end case;
+				end case;
+			end if;
 		end if;
 	end process;
 			
@@ -226,20 +233,22 @@ begin
 	process(clk,rstn)
 	variable lindisk	:std_logic_vector(1 downto 0);
 	begin
-		if(rstn='0')then
-			indiske<=(others=>'0');
-			lindisk:=(others=>'0');
-		elsif(clk' event and clk='1')then
-			for i in 0 to 1 loop
-				if(lindisk(i)='0' and indiskb(i)='1')then
-					indiske(i)<='1';
-				elsif(lindisk(i)='1' and indiskb(i)='0')then
-					indiske(i)<='0';
-				elsif(f_eject(i)='1')then
-					indiske(i)<='0';
-				end if;
-			end loop;
-			lindisk:=indiskb;
+		if rising_edge(clk) then
+			if(rstn='0')then
+				indiske<=(others=>'0');
+				lindisk:=(others=>'0');
+			elsif(ce = '1')then
+				for i in 0 to 1 loop
+					if(lindisk(i)='0' and indiskb(i)='1')then
+						indiske(i)<='1';
+					elsif(lindisk(i)='1' and indiskb(i)='0')then
+						indiske(i)<='0';
+					elsif(f_eject(i)='1')then
+						indiske(i)<='0';
+					end if;
+				end loop;
+				lindisk:=indiskb;
+			end if;
 		end if;
 	end process;
 	

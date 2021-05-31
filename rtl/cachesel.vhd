@@ -14,6 +14,7 @@ port(
 	get		:in std_logic;
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end cachesel;
@@ -24,27 +25,29 @@ begin
 	process(clk,rstn)
 	variable tmp	:integer range 0 to blocks-1;
 	begin
-		if(rstn='0')then
-			for i in 0 to blocks-1 loop
-				prio(i)<=blocks-i-1;
-			end loop;
-		elsif(clk' event and clk='1')then
-			if(used='1')then
-				tmp:=prio(useno);
+		if rising_edge(clk) then
+			if(rstn='0')then
 				for i in 0 to blocks-1 loop
-					if(prio(i)<tmp)then
-						prio(i)<=prio(i)+1;
-					end if;
+					prio(i)<=blocks-i-1;
 				end loop;
-				prio(useno)<=0;
-			elsif(get='1')then
-				for i in 0 to blocks-1 loop
-					if(prio(i)=blocks-1)then
-						prio(i)<=0;
-					else
-						prio(i)<=prio(i)+1;
-					end if;
-				end loop;
+			elsif(ce = '1')then
+				if(used='1')then
+					tmp:=prio(useno);
+					for i in 0 to blocks-1 loop
+						if(prio(i)<tmp)then
+							prio(i)<=prio(i)+1;
+						end if;
+					end loop;
+					prio(useno)<=0;
+				elsif(get='1')then
+					for i in 0 to blocks-1 loop
+						if(prio(i)=blocks-1)then
+							prio(i)<=0;
+						else
+							prio(i)<=prio(i)+1;
+						end if;
+					end loop;
+				end if;
 			end if;
 		end if;
 	end process;

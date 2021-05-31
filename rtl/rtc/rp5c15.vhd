@@ -19,6 +19,7 @@ port(
 	RTCIN	:in std_logic_vector(64 downto 0);
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn		:in std_logic
 );
 end rp5c15;
@@ -197,14 +198,16 @@ begin
 	process(clk,rstn)
 	variable modx	:integer range 0 to (div16-1);
 	begin
-		if(rstn='0')then
-			Hz16<='0';
-		elsif(clk' event and clk='1')then
-			modx:=subHz mod div16;
-			if(modx>div32)then
-				Hz16<='1';
-			else
+		if rising_edge(clk) then
+			if(rstn='0')then
 				Hz16<='0';
+			elsif(ce = '1')then
+				modx:=subHz mod div16;
+				if(modx>div32)then
+					Hz16<='1';
+				else
+					Hz16<='0';
+				end if;
 			end if;
 		end if;
 	end process;
@@ -260,14 +263,16 @@ begin
 	SECLWD<=wdat 					when wr='1' else SECLID;
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			BNKSEL<='0';
-			RESET<=(others=>'0');
-		elsif(clk' event and clk='1')then
-			if(addr=x"d" and wr='1')then
-				BNKSEL<=wdat(0);
-			elsif(addr=x"f" and wr='1')then
-				RESET<=wdat(3 downto 0);
+		if rising_edge(clk) then
+			if(rstn='0')then
+				BNKSEL<='0';
+				RESET<=(others=>'0');
+			elsif(ce = '1')then
+				if(addr=x"d" and wr='1')then
+					BNKSEL<=wdat(0);
+				elsif(addr=x"f" and wr='1')then
+					RESET<=wdat(3 downto 0);
+				end if;
 			end if;
 		end if;
 	end process;
@@ -275,23 +280,25 @@ begin
 	process(clk,rstn)
 	variable state	:integer range 0 to 2;
 	begin
-		if(rstn='0')then
-			state:=0;
-			SYSSET<='0';
-		elsif(clk' event and clk='1')then
-			SYSSET<='0';
-			case state is
-			when 2 =>
-			when 1 =>
-				SYSSET<='1';
-				state:=2;
-			when 0 =>
-				if(RTCIN(64)='1')then
-					state:=1;
-				end if;
-			when others =>
-				state:=2;
-			end case;
+		if rising_edge(clk) then
+			if(rstn='0')then
+				state:=0;
+				SYSSET<='0';
+			elsif(ce = '1')then
+				SYSSET<='0';
+				case state is
+				when 2 =>
+				when 1 =>
+					SYSSET<='1';
+					state:=2;
+				when 0 =>
+					if(RTCIN(64)='1')then
+						state:=1;
+					end if;
+				when others =>
+					state:=2;
+				end case;
+			end if;
 		end if;
 	end process;
 	
@@ -310,18 +317,20 @@ begin
 	SECZWR<='1' when addr=x"0" and BNKSEL='0' and wr='1' else SYSSET;
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			MONHt<='0';
-			MONLt<=x"0";
-		elsif(clk' event and clk='1')then
-			if(wr='1' and BNKSEL='0')then
-				case addr is
-				when x"9" =>
-					MONLt<=wdat;
-				when x"a" =>
-					MONHt<=wdat(0);
-				when others =>
-				end case;
+		if rising_edge(clk) then
+			if(rstn='0')then
+				MONHt<='0';
+				MONLt<=x"0";
+			elsif(ce = '1')then
+				if(wr='1' and BNKSEL='0')then
+					case addr is
+					when x"9" =>
+						MONLt<=wdat;
+					when x"a" =>
+						MONHt<=wdat(0);
+					when others =>
+					end case;
+				end if;
 			end if;
 		end if;
 	end process;

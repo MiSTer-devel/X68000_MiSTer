@@ -20,7 +20,9 @@ port(
 	palout	:out std_logic_vector(15 downto 0);
 	
 	sclk	:in std_logic;
+	sys_ce  :in std_logic := '1';
 	vclk	:in std_logic;
+	vid_ce  :in std_logic := '1';
 	rstn	:in std_logic
 );
 end grpal;
@@ -73,8 +75,10 @@ begin
 						rdat0 when cs0='1' else
 						x"00";
 	process(vclk)begin
-		if(vclk' event and vclk='1')then
-			psel<=palnoh(0) & palnol(0);
+		if rising_edge(vclk) then
+			if(vid_ce = '1')then
+				psel<=palnoh(0) & palnol(0);
+			end if;
 		end if;
 	end process;
 	
