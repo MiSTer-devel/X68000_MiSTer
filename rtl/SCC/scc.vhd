@@ -72,6 +72,7 @@ port(
 	regwr	:out std_logic;
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -90,8 +91,9 @@ port(
 	MCLKOUT:out std_logic;
 	MDATIN	:in std_logic;
 	MDATOUT:out std_logic;
-	
+
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -107,8 +109,8 @@ begin
 	datAwr<='1' when addrx=x"e98007" and wr='1' else '0';
 	datArd<='1' when addrx=x"e98007" and rd='1' else '0';
 	
-	regA :sccreg port map(wdat,cmdAwr,cmdArd,regAno,regAwr,clk,rstn);
-	regB :sccreg port map(wdat,cmdBwr,cmdBrd,regBno,regBwr,clk,rstn);
+	regA :sccreg port map(wdat,cmdAwr,cmdArd,regAno,regAwr,clk,ce,rstn);
+	regB :sccreg port map(wdat,cmdBwr,cmdBrd,regBno,regBwr,clk,ce,rstn);
 
 	process(clk,rstn)begin
 		if rising_edge(clk) then
@@ -265,6 +267,7 @@ begin
 		MDATOUT	=>mdatout,
 		
 		clk		=>clk,
+		ce      =>ce,
 		rstn	=>rstn
 	);
 	

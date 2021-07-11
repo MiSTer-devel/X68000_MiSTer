@@ -18,15 +18,15 @@ port(
 	drv0hdi		:in std_logic;		--IBM 1.44MB format
 	drv1hd		:in std_logic;
 	drv1hdi		:in std_logic;		--IBM 1.44MB format
-	
+
 	drv0hds		:out std_logic;
 	drv1hds		:out std_logic;
-	
+
 	drv0int		:out integer range 0 to (BR_300_D*sysclk/1000000);
 	drv1int		:out integer range 0 to (BR_300_D*sysclk/1000000);
-	
+
 	hmssft		:out std_logic;
-	
+
 	clk			:in std_logic;
 	ce          :in std_logic := '1';
 	rstn		:in std_logic
@@ -41,8 +41,9 @@ generic(
 port(
 	len		:in integer range 0 to maxlen;
 	sft		:out std_logic;
-	
+
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -67,11 +68,10 @@ begin
 				BR_300_H*sysclk/1000000 when drv1sel='0' and drv1sele='0' and drv1hd='1' and drv1hdi='0' else
 				BR_300_I*sysclk/1000000 when drv1sel='0' and drv1hd='1' and drv1hdi='1' else
 				0;
-	
+
 	drv0hds<=	'1' when drv0sele='1' and drv0hd='1' and drv0hdi='0' else '0';
 	drv1hds<=	'1' when drv1sele='1' and drv1hd='1' and drv1hdi='0' else '0';
-	
-	hmss: sftgen generic map((sysclk/2)-1) port map((sysclk/2)-1,hmssft,clk,rstn);
+
+	hmss: sftgen generic map((sysclk/2)-1) port map((sysclk/2)-1,hmssft,clk,ce,rstn);
 end rtl;
 
-	

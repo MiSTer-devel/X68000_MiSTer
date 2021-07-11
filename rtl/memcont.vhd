@@ -173,8 +173,8 @@ port(
 	PMEMRAS_N	:OUT	STD_LOGIC;							-- SD-RAM ROW/RAS
 	PMEMCAS_N	:OUT	STD_LOGIC;							-- SD-RAM /CAS
 	PMEMWE_N	:OUT	STD_LOGIC;							-- SD-RAM /WE
-	PMEMUDQ		:OUT	STD_LOGIC;							-- SD-RAM UDQM
-	PMEMLDQ		:OUT	STD_LOGIC;							-- SD-RAM LDQM
+	PMemUdq     : out std_logic;                        -- SD-RAM UDQM
+	PMemLdq     : out std_logic;                        -- SD-RAM LDQM
 	PMEMBA1		:OUT	STD_LOGIC;							-- SD-RAM BANK SELECT ADDRESS 1
 	PMEMBA0		:OUT	STD_LOGIC;							-- SD-RAM BANK SELECT ADDRESS 0
 	PMEMADR		:OUT	STD_LOGIC_VECTOR( 12 DOWNTO 0 );	-- SD-RAM ADDRESS
@@ -195,9 +195,10 @@ port(
 	refrsh		:in std_logic;
 	abort		:in std_logic	:='0';
 	busy		:out std_logic;
-	
+
 	initdone	:out std_logic;
 	clk			:in std_logic;
+	ce          :in std_logic := '1';
 	rstn		:in std_logic
 );
 end component;
@@ -226,7 +227,7 @@ port(
 	b_cpy		:in std_logic;
 	b_cack	:out std_logic;
 
-	g00_addr	:in std_logic_vector(awidth-1 downto 0);
+	g00_addr:in std_logic_vector(awidth-1 downto 0);
 	g00_rd	:in std_logic;
 	g00_rdat	:out std_logic_vector(15 downto 0);
 	g00_ack	:out std_logic;
@@ -301,7 +302,7 @@ port(
 	fde_tlen	:in std_logic_vector(13 downto 0)	:=(others=>'1');
 	
 	fec_addr		:out std_logic_vector(7 downto 0);
-	fec_rdat			:out std_logic_vector(15 downto 0);
+	fec_rdat		:out std_logic_vector(15 downto 0);
 	fec_wdat		:in std_logic_vector(15 downto 0)	:=(others=>'0');
 	fec_we		:out std_logic;
 	fec_addrh	:in std_logic_vector(awidth-9 downto 0)	:=(others=>'0');
@@ -318,23 +319,23 @@ port(
 	ramrd			:out std_logic;
 	ramwr			:out std_logic;
 	ramrefrsh	:out std_logic;
-	ramabort		:out std_logic;
 	rambusy		:in std_logic;
 	ramde			:in std_logic;
 	ramrdat		:in std_logic_vector(15 downto 0);
 	ramwdat		:out std_logic_vector(15 downto 0);
 	ramwe			:out std_logic_vector(1 downto 0);
+	ramabort		:out std_logic;
 	
 	ini_end	:out std_logic;
-	sclk		:in std_logic;
-	sys_ce      :in std_logic;
-	vclk		:in std_logic;
-	vid_ce      :in std_logic;
-	fclk		:in std_logic;
-	fd_ce       :in std_logic;
-	rclk		:in std_logic;
-	ram_ce      :in std_logic;
-	rstn		:in std_logic
+	sclk	:in std_logic;
+	sys_ce  :in std_logic := '1';
+	vclk	:in std_logic;
+	vid_ce  :in std_logic := '1';
+	fclk	:in std_logic;
+	fd_ce   :in std_logic := '1';
+	rclk	:in std_logic;
+	ram_ce  :in std_logic := '1';
+	rstn	:in std_logic
 );
 end component;
 
@@ -375,6 +376,7 @@ begin
 		
 		initdone	=>ram_inidone,
 		clk			=>rclk,
+		ce          =>ram_ce,
 		rstn		=>rstn
 	);
 	

@@ -11,7 +11,7 @@ port(
 	change	:in std_logic;
 	rdaddr	:in std_logic_vector(8 downto 0);
 	rddat	:out std_logic_vector(7 downto 0);
-	
+
 	clk		:in std_logic;
 	ce      :in std_logic := '1';
 	rstn	:in std_logic
@@ -47,7 +47,7 @@ begin
 			end if;
 			end if;
 	end process;
-	
+
 	wr0<=	'1' when sel='0' and clr='1' else
 			wr when sel='0' else
 			'0';
@@ -56,7 +56,7 @@ begin
 			'0';
 	rddat<=rdat1 when sel='0' else rdat0;
 	wdat<=wrdat when clr='0' else x"00";
-	
-	buf0	:slinebuf port map(clk,wdat,rdaddr,wraddr,wr0,rdat0);
-	buf1	:slinebuf port map(clk,wdat,rdaddr,wraddr,wr1,rdat1);
+
+	buf0	:slinebuf port map(clk,wdat,rdaddr,wraddr,wr0 and ce,rdat0);
+	buf1	:slinebuf port map(clk,wdat,rdaddr,wraddr,wr1 and ce,rdat1);
 end rtl;

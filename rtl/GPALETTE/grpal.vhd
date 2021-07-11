@@ -63,10 +63,10 @@ begin
 	
 	datoe<=(cs3 or cs2 or cs1 or cs0) and rd;
 
-	ram3	:gpram port map(addr(7 downto 1),palnoh(7 downto 1),sclk,vclk,wdat(15 downto 8),(others=>'0'),wr3,'0',rdat3,pdat3);
-	ram2	:gpram port map(addr(7 downto 1),palnoh(7 downto 1),sclk,vclk,wdat( 7 downto 0),(others=>'0'),wr2,'0',rdat2,pdat2);
-	ram1	:gpram port map(addr(7 downto 1),palnol(7 downto 1),sclk,vclk,wdat(15 downto 8),(others=>'0'),wr1,'0',rdat1,pdat1);
-	ram0	:gpram port map(addr(7 downto 1),palnol(7 downto 1),sclk,vclk,wdat( 7 downto 0),(others=>'0'),wr0,'0',rdat0,pdat0);
+	ram3	:gpram port map(addr(7 downto 1),palnoh(7 downto 1),sclk,vclk,wdat(15 downto 8),(others=>'0'),wr3 and sys_ce,'0',rdat3,pdat3);
+	ram2	:gpram port map(addr(7 downto 1),palnoh(7 downto 1),sclk,vclk,wdat( 7 downto 0),(others=>'0'),wr2 and sys_ce,'0',rdat2,pdat2);
+	ram1	:gpram port map(addr(7 downto 1),palnol(7 downto 1),sclk,vclk,wdat(15 downto 8),(others=>'0'),wr1 and sys_ce,'0',rdat1,pdat1);
+	ram0	:gpram port map(addr(7 downto 1),palnol(7 downto 1),sclk,vclk,wdat( 7 downto 0),(others=>'0'),wr0 and sys_ce,'0',rdat0,pdat0);
 
 	rdat(15 downto 8)<=	rdat3 when cs3='1' else
 						rdat1 when cs1='1' else

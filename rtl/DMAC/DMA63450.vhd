@@ -144,6 +144,7 @@ port(
 	dtc			:out std_logic;
 
 	clk			:in std_logic;
+	ce          :in std_logic := '1';
 	rstn		:in std_logic
 );
 end component;
@@ -323,6 +324,7 @@ begin
 		dtc			=>open,
 
 		clk			=>clk,
+		ce          =>ce,
 		rstn		=>rstn
 	);
 
@@ -367,6 +369,7 @@ begin
 		dtc			=>open,
 
 		clk			=>clk,
+		ce          =>ce,
 		rstn		=>rstn
 	);
 
@@ -411,6 +414,7 @@ begin
 		dtc			=>open,
 
 		clk			=>clk,
+		ce          =>ce,
 		rstn		=>rstn
 	);
 
@@ -455,6 +459,7 @@ begin
 		dtc			=>open,
 
 		clk			=>clk,
+		ce          =>ce,
 		rstn		=>rstn
 	);
 	busreqv(4)<='1';

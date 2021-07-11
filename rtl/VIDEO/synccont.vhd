@@ -30,6 +30,7 @@ port(
 	VRTC	:out std_logic;
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end synccont;
@@ -62,20 +63,22 @@ begin
 	HRTC		<=	'1' when HUCOUNT<HIV else '0';
 	
 	process	(clk,rstn)begin
-		if(rstn='0')then
-			HSYNCB(6 downto 0)<=(others=>'0');
-			VSYNCB(6 downto 0)<=(others=>'0');
-			VISIBLEB(6 downto 0)<=(others=>'0');
-			HSYNC<='0';
-			VSYNC<='0';
-			VISIBLE<='0';
-		elsif(clk' event and clk='1')then
-			HSYNC<=HSYNCB(0);
-			VSYNC<=VSYNCB(0);
-			VISIBLE<=VISIBLEB(0);
-			VSYNCB(7 downto 0)<=VSYNCN & VSYNCB(7 downto 1);
-			HSYNCB(7 downto 0)<=HSYNCN & HSYNCB(7 downto 1);
-			VISIBLEB(7 downto 0)<=VISIBLEN & VISIBLEB(7 downto 1);
+		if rising_edge(clk) then
+			if(rstn='0')then
+				HSYNCB(6 downto 0)<=(others=>'0');
+				VSYNCB(6 downto 0)<=(others=>'0');
+				VISIBLEB(6 downto 0)<=(others=>'0');
+				HSYNC<='0';
+				VSYNC<='0';
+				VISIBLE<='0';
+			elsif(ce = '1')then
+				HSYNC<=HSYNCB(0);
+				VSYNC<=VSYNCB(0);
+				VISIBLE<=VISIBLEB(0);
+				VSYNCB(7 downto 0)<=VSYNCN & VSYNCB(7 downto 1);
+				HSYNCB(7 downto 0)<=HSYNCN & HSYNCB(7 downto 1);
+				VISIBLEB(7 downto 0)<=VISIBLEN & VISIBLEB(7 downto 1);
+			end if;
 		end if;
 	end process;
 end MAIN;

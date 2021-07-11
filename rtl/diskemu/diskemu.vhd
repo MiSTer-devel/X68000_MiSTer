@@ -41,7 +41,7 @@ port(
 	fdc_dencity	:in std_logic						:='1';	--1:2HD 0:2DD/2D
 	fdc_rpm		:in std_logic						:='0';	--1:360rpm 0:300rpm
 	fdc_mfm		:in std_logic						:='1';
-	
+
 --FD emulator
 	fde_tracklen:out std_logic_vector(13 downto 0);
 	fde_ramaddr	:out std_logic_vector(22 downto 0);
@@ -67,7 +67,7 @@ port(
 	sram_rd		:in std_logic						:='0';
 	sram_wr		:in std_logic_vector(1 downto 0)	:="00";
 	sram_wp		:in std_logic						:='0';
-	
+
 	sram_ld		:in std_logic;
 	sram_st		:in std_logic;
 
@@ -85,7 +85,7 @@ port(
 	mist_buffdout	:in std_logic_vector(7 downto 0);
 	mist_buffdin	:out std_logic_vector(7 downto 0);
 	mist_buffwr		:in std_logic;
-	
+
 --common
 	initdone	:out std_logic;
 	busy		:out std_logic;
@@ -327,11 +327,12 @@ port(
 	wraddr	:in std_logic_vector(9 downto 0);
 	wrdat	:in std_logic_vector(7 downto 0);
 	wr		:in std_logic;
-	
+
 	table	:in std_logic_vector(7 downto 0);
 	haddr	:out std_logic_vector(31 downto 0);
-	
-	clk		:in std_logic
+
+	clk		:in std_logic;
+	ce      :in std_logic := '1'
 );
 end component;
 
@@ -355,6 +356,7 @@ component CRCGENN
 		CRCZERO	:out std_logic;
 
 		clk		:in std_logic;
+		ce      :in std_logic := '1';
 		rstn	:in std_logic
 	);
 end component;
@@ -408,7 +410,7 @@ port(
 	wrote		:out std_logic_vector(3 downto 0);
 	wprot		:in std_logic_vector(3 downto 0);
 	tracklen	:out std_logic_vector(13 downto 0);
-	
+
 	USEL	:in std_logic_vector(1 downto 0);
 	MOTOR	:in std_logic;
 	READY	:out std_logic;
@@ -424,6 +426,7 @@ port(
 	siden	:in std_logic;		--pin32
 
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -440,9 +443,9 @@ port(
 	CD			:out std_logic;
 	MSG		:out std_logic;
 	RST		:in std_logic;
-	
+
 	idsel		:in std_logic_vector(7 downto 0);
-	
+
 	id			:out std_logic_vector(2 downto 0);
 	unit		:out std_logic_vector(2 downto 0);
 	capacity	:in std_logic_vector(63 downto 0);
@@ -454,8 +457,9 @@ port(
 	rddat		:in std_logic_vector(7 downto 0);
 	wrdat		:out std_logic_vector(7 downto 0);
 	sectbusy	:in std_logic;
-	
+
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn		:in std_logic
 );
 end component;
@@ -468,12 +472,13 @@ generic(
 port(
 	wrgate	:in std_logic;
 	usel	:in std_logic_vector(1 downto 0);
-	
+
 	busy	:out std_logic;
 	save	:out std_logic_vector(1 downto 0);
 	done	:in std_logic;
-	
+
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -484,7 +489,7 @@ port(
 	rdat	:out std_logic_vector(15 downto 0);
 	wdat	:in std_logic_vector(15 downto 0)	:=(others=>'0');
 	wr		:in std_logic_vector(1 downto 0)	:="00";
-	
+
 	ldreq	:in std_logic;
 	streq	:in std_logic;
 	done	:out std_logic;
@@ -492,37 +497,38 @@ port(
 	mist_rd	:out std_logic;
 	mist_wr	:out std_logic;
 	mist_ack:in std_logic;
-	
+
 	mist_lba	:out std_logic_vector(31 downto 0);
 	mist_addr	:in std_logic_vector(8 downto 0);
 	mist_wdat	:in std_logic_vector(7 downto 0);
 	mist_rdat	:out std_logic_vector(7 downto 0);
 	mist_we		:in std_logic;
-	
+
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
 
 begin
-	
+
 	initdone<=rstn;
-	
+
 	wc	:wrotecont generic map(sclkfreq,3000) port map(
 		wrgate	=>not fdc_wrenn,
 		usel	=>not fdc_useln,
-		
+
 		busy	=>busy,
 		save	=>fstore,
 		done	=>fddone,
-		
+
 		clk		=>sclk,
 		rstn	=>rstn
 	);
 
 	storef0<=fec_fdsync(0) or fstore(0);
 	storef1<=fec_fdsync(1) or fstore(1);
-	
+
 	process(sclk,rstn)
 	variable lmount	:std_logic_vector(3 downto 0);
 	variable fdload	:std_logic_vector(1 downto 0);
@@ -577,7 +583,7 @@ begin
 						fdload(1):='1';
 					end if;
 				end if;
-				
+
 				if(mist_mounted(bit_sasi)='1' and lmount(bit_sasi)='0')then
 					if(mist_imgsize=x"00000000")then
 						sasien<='0';
@@ -586,7 +592,7 @@ begin
 					end if;
 					sasi_cap<=mist_imgsize;
 				end if;
-				
+
 				if(mist_mounted(bit_sram)='1' and lmount(bit_sram)='0')then
 					if(mist_imgsize=x"00000000")then
 						sramen<='0';
@@ -594,21 +600,21 @@ begin
 						sramen<='1';
 					end if;
 				end if;
-				
+
 				if(storef0='1')then
 					fdstore(0):='1';
 				end if;
 				if(storef1='1')then
 					fdstore(1):='1';
 				end if;
-				
+
 				if(sram_ld='1' and sramen='1')then
 					sload:='1';
 				end if;
 				if(sram_st='1' and sramen='1')then
 					sstore:='1';
 				end if;
-				
+
 				if(fdc_eject(0)='1' and fdc_indiskb(0)='1')then
 					fdstore(0):='1';
 					fdc_indiskb(0)<='0';
@@ -617,7 +623,7 @@ begin
 					fdstore(1):='1';
 					fdc_indiskb(1)<='0';
 				end if;
-				
+
 				if(sasi_rdreq='1')then
 					sasirpend:='1';
 					sasi_bufbusy<='1';
@@ -627,7 +633,7 @@ begin
 				elsif(sasi_syncreq='1')then
 					sasispend:='1';
 				end if;
-				
+
 				lmount:=mist_mounted;
 				case emustate is
 				when es_IDLE =>
@@ -694,7 +700,7 @@ begin
 			end if;
 		end if;
 	end process;
-	
+
 	mist_lba<=	lba_fdd when emustate=es_fload0 else
 				lba_fdd when emustate=es_fload1 else
 				lba_fdd when emustate=es_fsave0 else
@@ -703,31 +709,32 @@ begin
 				lba_sram when emustate=es_sload else
 				lba_sram when emustate=es_ssave else
 				(others=>'0');
-	
+
 	tblramsel<=	'0' when fdstate=fs_loadtbl0 else
 				'1' when fdstate=fs_loadtbl1 else
 				'0';
 	tblramwr<=	mist_buffwr when fdstate=fs_loadtbl0 else
 				mist_buffwr when fdstate=fs_loadtbl1 else
 				'0';
-	
+
 	tblram	:tracktable port map(
 		wraddr	=>tblramsel & mist_buffaddr,
 		wrdat	=>mist_buffdout,
 		wr		=>tblramwr,
-		
+
 		table	=>tbladdr,
 		haddr	=>haddr,
-		
-		clk		=>sclk
+
+		clk		=>sclk,
+		ce      =>sys_ce
 	);
-	
+
 	fdsectwr<=	mist_buffwr when emustate=es_fload0 else
 					mist_buffwr when emustate=es_fload1 else
 					mist_buffwr when emustate=es_fsave0 else
 					mist_buffwr when emustate=es_fsave1 else
 					'0';
-					
+
 	sectbuf	:sectram port map(
 		address_a		=>mist_buffaddr,
 		address_b		=>sbufaddr,
@@ -739,7 +746,7 @@ begin
 		q_a				=>sbuf_odat,
 		q_b				=>img_rddat
 	);
-	
+
 	sbufaddr<=	img_addr(8 downto 0);
 
 	process(sclk,rstn)
@@ -892,7 +899,7 @@ begin
 				'0' when sbufstate=ss_idle else
 				'1';
 
-	
+
 	process(sclk,rstn)
 	variable swait	:integer range 0 to 3;
 	variable ambuf0,ambuf1,ambuf2,ambuf3	:std_logic_vector(9 downto 0);
@@ -1448,7 +1455,7 @@ begin
 								ambuf2:=ambuf1;
 								ambuf1:=ambuf0;
 								ambuf0:=trackrddat(9 downto 0);
-								
+
 								if(ambuf3=("11" & x"a1") and ambuf2=("11" & x"a1") and ambuf1=("11" & x"a1") and ambuf0=("10" & x"fe"))then
 									sectcount<=sectcount+1;
 								elsif(ambuf0=("01" & x"fe"))then
@@ -1738,7 +1745,7 @@ begin
 							img_addr<=cursecthead+x"08";
 							img_wrdat<=sectstatus;
 							img_wr<='1';
-							
+
 							if((sectcount+1)<numsect)then
 								sectcount<=sectcount+1;
 								cursecthead<=nxtsecthead;
@@ -1783,7 +1790,7 @@ begin
 			end if;
 		end if;
 	end process;
-	
+
 	tracklen<=	x"00000c35"	when diskmode="00" and mfm='0' else
 					x"00000c35" when diskmode="01" and mfm='0' else
 					x"0000186a" when diskmode="10" and mfm='0' else
@@ -1798,7 +1805,7 @@ begin
 				x"a4" when diskmode="10" else
 				x"a4" when diskmode="11" else
 				x"00";
-	
+
 		CRCG	:CRCGENN generic map(8,16) port map(
 		POLY	=>"10000100000010001",
 		DATA	=>crcwrdat,
@@ -1814,10 +1821,11 @@ begin
 		CRCZERO	=>open,
 
 		clk		=>sclk,
+		ce      =>sys_ce,
 		rstn	=>rstn
 	);
 
-	
+
 	fec	:fecbuf port map(
 		address_a		=>fbaddr,
 		address_b		=>fec_ramaddrl,
@@ -1825,12 +1833,12 @@ begin
 		clock_b			=>rclk,
 		data_a			=>trackwrdat,
 		data_b			=>fec_ramwdat,
-		wren_a			=>fbwr,
-		wren_b			=>fec_ramwe,
+		wren_a			=>fbwr and sys_ce,
+		wren_b			=>fec_ramwe and ram_ce,
 		q_a				=>trackrddat,
 		q_b				=>fec_ramrdat
 	);
-	
+
 	trackaddr<=	cur_unit & trackno(6 downto 1) & '0' & trackno(0) & track_curaddr when diskmode="00" else
 					cur_unit & trackno & track_curaddr;
 
@@ -1947,13 +1955,13 @@ begin
 			end if;
 		end if;
 	end process;
-	
+
 	trackbusy<=	'1' when trackrd='1' else
 				'1' when trackwr='1' else
 				'1' when tracksync='1' else
 				'0' when fbufstate=ss_idle else
 				'1';
-	
+
 	mfm0m<=	fdc_mfm when fdc_wrenn='0' else mfm0;
 	mfm1m<=	fdc_mfm when fdc_wrenn='0' else mfm1;
 
@@ -1966,7 +1974,7 @@ begin
 	fdc_motoren<=	not fdc_motorn(0) when fdc_useln(0)='0' else
 						not fdc_motorn(1) when fdc_useln(1)='0' else
 						'0';
-	
+
 	fde_ramaddr<=fde_ramaddrw(22 downto 0);
 	fde	:FDemu generic map(fclkfreq,fdwait) port map(
 		ramaddr		=>fde_ramaddrw,
@@ -1981,7 +1989,7 @@ begin
 		wrote			=>fde_wrote,
 		wprot			=>"00" & wrprot,
 		tracklen		=>fde_tracklen,
-		
+
 		USEL			=>fdc_usel,
 		MOTOR			=>fdc_motoren,
 		READY			=>open,
@@ -1997,6 +2005,7 @@ begin
 		siden			=>fdc_siden,
 
 		clk			=>fclk,
+		ce          =>fd_ce,
 		rstn			=>rstn
 	);
 	fdc_track0n<=	fde_track0n when fdc_useln="10" else
@@ -2008,15 +2017,15 @@ begin
 	fdc_rdbitn<=	fde_rdbitn	when fdc_useln="10" else
 						fde_rdbitn	when fdc_useln="01" else
 						'1';
-	
+
 	fdc_readyn<=fdc_motorn(0) when fdc_indiskb(0)='1' and fdc_useln(0)='0' else
 					fdc_motorn(1) when fdc_indiskb(1)='1' and fdc_useln(1)='0' else
 					'1';
 	fdc_indisk<=fdc_indiskb;
-	
+
 	sasi_idsel<=	"00000001" when sasien='1' else
 						"00000000";
-	
+
 	sasi	:sasidev port map(
 		IDAT	=>sasi_din,
 		ODAT	=>sasi_dout,
@@ -2028,9 +2037,9 @@ begin
 		CD		=>sasi_cd,
 		MSG	=>sasi_msg,
 		RST	=>sasi_rst,
-		
+
 		idsel	=>sasi_idsel,
-		
+
 		id		=>open,
 		unit	=>open,
 		capacity	=>sasi_cap,
@@ -2041,25 +2050,26 @@ begin
 		rddat		=>sasi_sectrddat,
 		wrdat		=>sasi_sectwrdat,
 		sectbusy	=>sasi_bufbusy,
-		
+
 		clk		=>sclk,
+		ce      =>sys_ce,
 		rstn		=>rstn
 	);
-	
+
 	sasisectwr<=	mist_buffwr when emustate=es_sasi else '0';
-	
+
 	sasibuf	:sectram port map(
 		address_a		=>mist_buffaddr,
 		address_b		=>sasi_lba(0) & sasi_sectaddr,
 		clock				=>sclk,
 		data_a			=>mist_buffdout,
 		data_b			=>sasi_sectwrdat,
-		wren_a			=>sasisectwr,
-		wren_b			=>sasibufwr,
+		wren_a			=>sasisectwr and sys_ce,
+		wren_b			=>sasibufwr and sys_ce,
 		q_a				=>sasi_bufodat,
 		q_b				=>sasi_sectrddat
 	);
-	
+
 	mist_buffdin<=	sbuf_odat		when emustate=es_fload0 else
 						sbuf_odat		when emustate=es_fload1 else
 						sbuf_odat		when emustate=es_fsave0 else
@@ -2068,7 +2078,7 @@ begin
 						sram_bufout		when emustate=es_sload else
 						sram_bufout		when emustate=es_ssave else
 						(others=>'0');
-						
+
 	process(sclk,rstn)
 	variable wrote	:std_logic;
 	variable swait	:integer range 0 to 2;
@@ -2195,21 +2205,21 @@ begin
 			end if;
 		end if;
 	end process;
-	
+
 	sramwr<=	"00" when sram_wp='0' else
 				"00" when sram_cs='0' else
 				sram_wr;
-	
+
 	sram_bufwr<=	mist_buffwr when emustate=es_sload else
 						mist_buffwr	when emustate=es_ssave else
 						'0';
-	
+
 	sram	:sramcont port map(
 		addr	=>sram_addr,
 		rdat	=>sram_rdat,
 		wdat	=>sram_wdat,
 		wr		=>sramwr,
-		
+
 		ldreq		=>sram_ldreq,
 		streq		=>sram_streq,
 		done		=>sramdone,
@@ -2217,17 +2227,18 @@ begin
 		mist_rd	=>mist_rd(bit_sram),
 		mist_wr	=>mist_wr(bit_sram),
 		mist_ack	=>mist_ack(bit_sram),
-		
+
 		mist_lba		=>lba_sram,
 		mist_addr	=>mist_buffaddr,
 		mist_wdat	=>mist_buffdout,
 		mist_rdat	=>sram_bufout,
 		mist_we		=>sram_bufwr,
-		
+
 		clk		=>sclk,
+		ce      =>sys_ce,
 		rstn		=>rstn
-	);						
-						
+	);
+
 end rtl;
-	
+
 

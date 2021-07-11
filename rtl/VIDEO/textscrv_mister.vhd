@@ -15,25 +15,25 @@ generic(
 port(
 	TRAMADR	:out std_logic_vector(TAWIDTH-1 downto 0);
 	TRAMDAT	:in std_logic_vector(7 downto 0);
-	
+
 	FRAMADR	:out std_logic_vector(11 downto 0);
 	FRAMDAT	:in std_logic_vector( 7 downto 0);
-	
+
 	BITOUT	:out std_logic;
 	FGCOLOR	:out std_logic_vector(2 downto 0);
 	BGCOLOR	:out std_logic_vector(2 downto 0);
 	THRUE	:out std_logic;
 	BLINK	:out std_logic;
-	
+
 	CURL	:in std_logic_vector(LWIDTH-1 downto 0);
 	CURC	:in std_logic_vector(CWIDTH-1 downto 0);
 	CURE	:in std_logic;
 	CURM	:in std_logic;
 	CBLINK	:in std_logic;
-	
+
 	HMODE	:in std_logic;
 	VMODE	:in std_logic;
-	
+
 	UCOUNT	:in integer;
 	HUCOUNT	:in integer;
 	VVCOUNT :in integer;
@@ -43,7 +43,7 @@ port(
 	HIR     :in std_logic;
 	HCOMP	:in std_logic;
 	VCOMP	:in std_logic;
-	
+
 	HUVIS   :in integer;
 	HIV     :in integer;
 	VIV     :in integer;
@@ -87,8 +87,9 @@ generic(
 port(
 	a		:in std_logic;
 	q		:out std_logic;
-	
+
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -98,8 +99,8 @@ begin
 	iCURL<=conv_integer(CURL);
 	iCURC<=conv_integer(CURC);
 
-	Hdelay	:delayer generic map(1) port map(HCOMP,DHCOMP,clk,rstn);
-	Vdelay	:delayer generic map(2) port map(VCOMP,DVCOMP,clk,rstn);
+	Hdelay	:delayer generic map(1) port map(HCOMP,DHCOMP,clk,ce,rstn);
+	Vdelay	:delayer generic map(2) port map(VCOMP,DVCOMP,clk,ce,rstn);
 
 	C_LIN<=0 when VIR = '0' else VVCOUNT mod CHRLINES;
 	C_COL<=0 when HIR = '0' else HVCOUNT;
@@ -110,7 +111,7 @@ begin
 	process(clk)
 	variable BNXTDOT	:std_logic_vector(7 downto 0);
 	begin
-		if(clk' event and clk='1')then
+		if rising_edge(clk) then
 			if(rstn='0')then
 				CURF<='1';
 				CICOUNT<=CBLINKINT-1;
@@ -143,7 +144,7 @@ begin
 						end if;
 					end if;
 				end if;
-	
+
 				if(VCOMP='1')then
 					if(BICOUNT=0)then
 						BLKF<=not BLKF;
@@ -152,12 +153,12 @@ begin
 						BICOUNT<=BICOUNT-1;
 					end if;
 				end if;
-	
+
 				if(VCOMP='1')then
 					HMODEC<=HMODE;
 					VMODEC<=VMODE;
 				end if;
-	
+
 	-- Data	section
 				if(DHCOMP='1')then
 					if(VIR = '1')then
@@ -172,7 +173,7 @@ begin
 					TRAMADRb<=(others=>'0');
 					C_LOW<=0;
 				end if;
-				
+
 				if(UCOUNT=4)then
 						FRAMADR(11 downto 4)<=TRAMDAT;
 					if(C_LIN<16)then
@@ -212,7 +213,7 @@ begin
 						NXTTH<='0';
 					end if;
 				end if;
-	
+
 				if(HMODEC='1')then
 					if(UCOUNT=0)then
 						BITOUT<=NXTDOT(7);
@@ -244,4 +245,4 @@ begin
 
 
 end MAIN;
-					
+

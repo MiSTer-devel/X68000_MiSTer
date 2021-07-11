@@ -24,7 +24,7 @@ begin
 		if rising_edge(fclk) then
 			if(rstn='0')then
 				txpend<='0';
-			elsif(fd_ce)then
+			elsif(fd_ce = '1')then
 				if(txin='1')then
 					txpend<='1';
 				elsif(txdone='1')then

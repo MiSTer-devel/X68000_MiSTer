@@ -133,7 +133,7 @@ signal	rstcmd		:std_logic;
 component datfifo
 generic(
 	datwidth	:integer	:=8;
-	depth		:integer	:=8
+	depth		:integer	:=32
 );
 port(
 	datin		:in std_logic_vector(datwidth-1 downto 0);
@@ -146,9 +146,10 @@ port(
 	empty		:out std_logic;
 	full		:out std_logic;
 	
-	clr		:in std_logic;
+	clr		:in std_logic	:='0';
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn		:in std_logic
 );
 end component;
@@ -173,6 +174,7 @@ component rxframe
 		SFTRST	:in std_logic;	-- stop receive and reset
 				
 		clk		:in std_logic;	-- system clock
+		ce      :in std_logic := '1';
 		rstn	:in std_logic	-- system reset
 	);
 end component;
@@ -196,13 +198,14 @@ component txframe
 		BUFEMP	:out std_logic;		-- transmit buffer empty signal
 		
 		clk		:in std_logic;		-- system clock
+		ce      :in std_logic := '1';
 		rstn	:in std_logic		-- system reset
 	);
 end component;
 
 begin
 
-	txfifo	:datfifo generic map(8,16) port map(
+	txfifo	:datfifo generic map(8,64) port map(
 		datin		=>txfifowdat,
 		datwr		=>txfifowr,
 		
@@ -216,6 +219,7 @@ begin
 		clr		=>txfifoclr,
 		
 		clk		=>clk,
+		ce      =>ce,
 		rstn		=>rstn
 	);
 	
@@ -233,6 +237,7 @@ begin
 		clr		=>rxfifoclr,
 		
 		clk		=>clk,
+		ce      =>ce,
 		rstn		=>rstn
 	);
 
@@ -1027,6 +1032,7 @@ begin
 		BUFEMP	=>txemp,
 		
 		clk		=>clk,
+		ce      =>ce,
 		rstn		=>crstn
 	);
 

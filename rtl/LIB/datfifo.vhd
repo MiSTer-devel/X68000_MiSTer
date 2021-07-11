@@ -21,7 +21,7 @@ port(
 	clr		:in std_logic	:='0';
 	
 	clk		:in std_logic;
-	ce      :in std_logic;
+	ce      :in std_logic := '1';
 	rstn		:in std_logic
 );
 end datfifo;

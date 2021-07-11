@@ -398,15 +398,16 @@ port(
 	txmfc	:in std_logic;
 	txmfe	:in std_logic;
 	break	:in std_logic;
-	
+
 	txemp	:out std_logic;
 	txend	:out std_logic;
-	
+
 	bitout	:out std_logic;
 	writeen	:out std_logic;
-	
+
 	sft		:in std_logic;
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -418,15 +419,16 @@ port(
 	txma1	:in std_logic;
 	txmc2	:in std_logic;
 	break	:in std_logic;
-	
+
 	txemp	:out std_logic;
 	txend	:out std_logic;
-	
+
 	bitout	:out std_logic;
 	writeen	:out std_logic;
-	
+
 	sft		:in std_logic;
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -437,22 +439,24 @@ generic(
 );
 port(
 	bitlen	:in integer range 0 to bwidth;
-	
+
 	datin	:in std_logic;
-	
+
 	init	:in std_logic;
 	break	:in std_logic;
-	
+
 	RXDAT	:out std_logic_vector(7 downto 0);
 	RXED	:out std_logic;
 	DetMF8	:out std_logic;
 	DetMFB	:out std_logic;
 	DetMFC	:out std_logic;
 	DetMFE	:out std_logic;
-	
+	broken	:out std_logic;
+
 	curlen	:out integer range 0 to bwidth*2;
-	
+
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -463,20 +467,22 @@ generic(
 );
 port(
 	bitlen	:in integer range 0 to bwidth;
-	
+
 	datin	:in std_logic;
-	
+
 	init	:in std_logic;
 	break	:in std_logic;
-	
+
 	RXDAT	:out std_logic_vector(7 downto 0);
 	RXED	:out std_logic;
 	DetMA1	:out std_logic;
 	DetMC2	:out std_logic;
-	
+	broken	:out std_logic;
+
 	curlen	:out integer range 0 to bwidth*2;
-	
+
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -506,6 +512,7 @@ port(
 	
 	sft			:in std_logic;
 	clk			:in std_logic;
+	ce          :in std_logic := '1';
 	rstn		:in std_logic
 );
 end component;
@@ -530,6 +537,7 @@ component CRCGENN
 		CRCZERO	:out std_logic;
 
 		clk		:in std_logic;
+		ce      :in std_logic := '1';
 		rstn	:in std_logic
 	);
 end component;
@@ -541,11 +549,12 @@ generic(
 port(
 	start	:in std_logic;
 	RDY		:in std_logic;
-	
+
 	NOTRDY	:out std_logic;
-	
+
 	mssft	:in std_logic;
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -559,6 +568,7 @@ port(
 	sft		:out std_logic;
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -574,6 +584,7 @@ port(
 	sftout	:out std_logic;
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -589,6 +600,7 @@ port(
 	signout	:out std_logic;
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -603,6 +615,7 @@ component DIGIFILTER
 		Q	:out std_logic;
 
 		clk	:in std_logic;
+		ce  :in std_logic := '1';
 		rstn :in std_logic
 	);
 end component;
@@ -613,7 +626,9 @@ port(
 	txout	:out std_logic;
 	
 	fclk	:in std_logic;
+	fd_ce   :in std_logic := '1';
 	sclk	:in std_logic;
+	sys_ce  :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -627,9 +642,9 @@ begin
 	DMAWR<='1' when DACKn='0' and WRn='0' else '0';
 	DMARD<='1' when DACKn='0' and RDn='0' else '0';
 	
-	ixflt	:DIGIFILTER generic map(1,'1') port map(index,indexb,fclk,rstn);
-	t0flt	:DIGIFILTER generic map(1,'1') port map(track0,track0b,fclk,rstn);
-	t0flts:DIGIFILTER generic map(1,'1') port map(track0,track0s,sclk,rstn);
+	ixflt	:DIGIFILTER generic map(1,'1') port map(index,indexb,fclk,fd_ce,rstn);
+	t0flt	:DIGIFILTER generic map(1,'1') port map(track0,track0b,fclk,fd_ce,rstn);
+	t0flts:DIGIFILTER generic map(1,'1') port map(track0,track0s,sclk,sys_ce,rstn);
 --	process(clk,rstn)begin
 --		if(rstn='0')then
 --			indexb<='0';
@@ -638,7 +653,7 @@ begin
 --		end if;
 --	end process;
 	
-	DMARQtx	:clktx port map(DMARQ,DMARQs,fclk,sclk,rstn);
+	DMARQtx	:clktx port map(DMARQ,DMARQs,fclk,fd_ce,sclk,sys_ce,rstn);
 
 	process(sclk,rstn)
 	begin
@@ -695,17 +710,17 @@ begin
 	
 	DATOE<='1' when IORD_DAT='1' or IORD_STA='1' or DMARD='1' else '0';
 	
-	setCtx	:clktx port map(setC,setCs,fclk,sclk,rstn);
-	incCtx	:clktx port map(incC,incCs,fclk,sclk,rstn);
-	resHtx	:clktx port map(resH,resHs,fclk,sclk,rstn);
-	setHtx	:clktx port map(setH,setHs,fclk,sclk,rstn);
-	setRtx	:clktx port map(setR,setRs,fclk,sclk,rstn);
-	incRtx	:clktx port map(incR,incRs,fclk,sclk,rstn);
-	resRtx	:clktx port map(resR,resRs,fclk,sclk,rstn);
-	setNtx	:clktx port map(setN,setNs,fclk,sclk,rstn);
-	setHDtx	:clktx port map(setHD,setHDs,fclk,sclk,rstn);
-	resHDtx	:clktx port map(resHD,resHDs,fclk,sclk,rstn);
-	endEXECtx	:clktx port map(end_EXEC,end_EXECs,fclk,sclk,rstn);
+	setCtx	:clktx port map(setC,setCs,fclk,fd_ce,sclk,sys_ce,rstn);
+	incCtx	:clktx port map(incC,incCs,fclk,fd_ce,sclk,sys_ce,rstn);
+	resHtx	:clktx port map(resH,resHs,fclk,fd_ce,sclk,sys_ce,rstn);
+	setHtx	:clktx port map(setH,setHs,fclk,fd_ce,sclk,sys_ce,rstn);
+	setRtx	:clktx port map(setR,setRs,fclk,fd_ce,sclk,sys_ce,rstn);
+	incRtx	:clktx port map(incR,incRs,fclk,fd_ce,sclk,sys_ce,rstn);
+	resRtx	:clktx port map(resR,resRs,fclk,fd_ce,sclk,sys_ce,rstn);
+	setNtx	:clktx port map(setN,setNs,fclk,fd_ce,sclk,sys_ce,rstn);
+	setHDtx	:clktx port map(setHD,setHDs,fclk,fd_ce,sclk,sys_ce,rstn);
+	resHDtx	:clktx port map(resHD,resHDs,fclk,fd_ce,sclk,sys_ce,rstn);
+	endEXECtx	:clktx port map(end_EXEC,end_EXECs,fclk,fd_ce,sclk,sys_ce,rstn);
 	
 	process(sclk,rstn)begin
 		if rising_edge(sclk) then
@@ -4127,8 +4142,8 @@ begin
 		end if;
 	end process;
 	
-	inttx	:clktx port map(INT,sINT,fclk,sclk,rstn);
-	intstx:clktx port map(INTs,sINTs,fclk,sclk,rstn);
+	inttx	:clktx port map(INT,sINT,fclk,fd_ce,sclk,sys_ce,rstn);
+	intstx:clktx port map(INTs,sINTs,fclk,fd_ce,sclk,sys_ce,rstn);
 	
 	process(sclk,rstn)begin
 		if rising_edge(sclk) then
@@ -4247,6 +4262,7 @@ begin
 		sftout	=>seek_sft,
 		
 		clk		=>fclk,
+		ce      =>fd_ce,
 		rstn	=>rstn
 	);
 
@@ -4289,6 +4305,7 @@ begin
 		seekerr		=>seek_err0,
 		sft			=>seek_sft0,
 		clk			=>fclk,
+		ce          =>fd_ce,
 		rstn		=>rstn
 	);
 	
@@ -4310,6 +4327,7 @@ begin
 		seekerr		=>seek_err1,
 		sft			=>seek_sft1,
 		clk			=>fclk,
+		ce          =>fd_ce,
 		rstn		=>rstn
 	);
 	
@@ -4331,6 +4349,7 @@ begin
 		seekerr		=>seek_err2,
 		sft			=>seek_sft2,
 		clk			=>fclk,
+		ce          =>fd_ce,
 		rstn		=>rstn
 	);
 	
@@ -4352,6 +4371,7 @@ begin
 		seekerr		=>seek_err3,
 		sft			=>seek_sft3,
 		clk			=>fclk,
+		ce          =>fd_ce,
 		rstn		=>rstn
 	);
 	
@@ -4423,6 +4443,7 @@ begin
 		CRCZERO	=>crczero,
 
 		clk		=>fclk,
+		ce      =>fd_ce,
 		rstn	=>rstn
 	);
 	
@@ -4447,6 +4468,7 @@ port map(
 	curlen	=>fmcurwid,
 	
 	clk		=>fclk,
+	ce      =>fd_ce,
 	rstn	=>rstn
 );
 
@@ -4469,6 +4491,7 @@ port map(
 	curlen	=>mfmcurwid,
 	
 	clk		=>fclk,
+	ce      =>fd_ce,
 	rstn	=>rstn
 );
 
@@ -4479,6 +4502,7 @@ port map(
 		sft		=>modsft,
 		
 		clk		=>fclk,
+		ce      =>fd_ce,
 		rstn	=>rstn
 	);
 
@@ -4500,6 +4524,7 @@ port map(
 	
 	sft		=>modsft,
 	clk		=>fclk,
+	ce      =>fd_ce,
 	rstn	=>rstn
 );
 
@@ -4519,6 +4544,7 @@ port map(
 	
 	sft		=>modsft,
 	clk		=>fclk,
+	ce      =>fd_ce,
 	rstn	=>rstn
 );
 
@@ -4530,14 +4556,15 @@ port map(
 		
 		mssft	=>hmssft,
 		clk		=>fclk,
+		ce      =>fd_ce,
 		rstn	=>rstn
 	);
 
 	wrbits<=fmwrbit when MF='0' else mfmwrbit;
 	wrens<=fmwren when MF='0' else mfmwren;
 	
-	wbext	:signext generic map(extcount) port map(extcount,wrbits,wrbitex,fclk,rstn);
-	weext	:signext generic map(extcount) port map(extcount,wrens,wrenex,fclk,rstn);
+	wbext	:signext generic map(extcount) port map(extcount,wrbits,wrbitex,fclk,fd_ce,rstn);
+	weext	:signext generic map(extcount) port map(extcount,wrens,wrenex,fclk,fd_ce,rstn);
 	
 	WREN<=not wrenex;
 	WRBIT<=not wrbitex;

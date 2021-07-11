@@ -85,6 +85,7 @@ port(
 	SFT		:out std_logic;
 
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -192,7 +193,7 @@ begin
 	monout<='0' & TBLDAT;
 --	monout<=WRDAT;
 	
-	KBSFT	:sftclk generic map(CLKCYC,SFTCYC,1) port map("1",SFT,clk,rstn);
+	KBSFT	:sftclk generic map(CLKCYC,SFTCYC,1) port map("1",SFT,clk,ce,rstn);
 	
 	KB	:PS2IF port map(
 	DATIN	=>KB_TXDAT,

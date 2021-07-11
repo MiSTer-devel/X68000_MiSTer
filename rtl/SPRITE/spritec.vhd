@@ -16,7 +16,7 @@ port(
 	bg0voff	:in std_logic_vector(9 downto 0);
 	bg1hoff	:in std_logic_vector(9 downto 0);
 	bg1voff	:in std_logic_vector(9 downto 0);
-	
+
 	sprno	:out std_logic_vector(6 downto 0);
 	sprxpos	:in std_logic_vector(9 downto 0);
 	sprypos	:in std_logic_vector(9 downto 0);
@@ -25,23 +25,23 @@ port(
 	sprCOLOR:in std_logic_vector(3 downto 0);
 	sprPAT	:in std_logic_vector(7 downto 0);
 	sprPRI	:in std_logic_vector(1 downto 0);
-	
+
 	bgaddr	:out std_logic_vector(12 downto 0);
 	bgVR	:in std_logic;
 	bgHR	:in std_logic;
 	bgCOLOR	:in std_logic_vector(3 downto 0);
 	bgPAT	:in std_logic_vector(7 downto 0);
-	
+
 	patno	:out std_logic_vector(9 downto 0);
 	dotx	:out std_logic_vector(2 downto 0);
 	doty	:out std_logic_vector(2 downto 0);
 	dotin	:in std_logic_vector(3 downto 0);
-	
+
 	rdaddr	:in std_logic_vector(8 downto 0);
 	dotout	:out std_logic_vector(7 downto 0);
 
 	debugsel	:in std_logic_vector(1 downto 0)	:="11";
-	
+
 	clk		:in std_logic;
 	ce      :in std_logic := '1';
 	rstn	:in std_logic
@@ -132,8 +132,9 @@ port(
 	change	:in std_logic;
 	rdaddr	:in std_logic_vector(8 downto 0);
 	rddat	:out std_logic_vector(7 downto 0);
-	
+
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -170,7 +171,7 @@ begin
 			end if;
 		end if;
 	end process;
-	
+
 	bg_asel<=	bg0asel	when state=st_BG0 else
 				bg1asel	when state=st_BG1 else
 				'1';
@@ -193,7 +194,7 @@ begin
 				not bg_xmodd(2 downto 0);
 	bg_doty<=	bg_ymod(2 downto 0) when bgVR='0' else
 				not bg_ymod(2 downto 0);
-	
+
 	BG0buf	:sline port map(
 		wraddr	=>bg_xd,
 		wrdat	=>bgCOLORd & dotin,
@@ -202,8 +203,9 @@ begin
 		change	=>hcomp,
 		rdaddr	=>rdaddr,
 		rddat	=>bg0rdat,
-		
+
 		clk		=>clk,
+		ce      =>ce,
 		rstn	=>rstn
 	);
 	BG1buf	:sline port map(
@@ -214,11 +216,12 @@ begin
 		change	=>hcomp,
 		rdaddr	=>rdaddr,
 		rddat	=>bg1rdat,
-		
+
 		clk		=>clk,
+		ce      =>ce,
 		rstn	=>rstn
 	);
-	
+
 
 	process(clk)
 	variable	bg0wrdly,bg1wrdly	:std_logic;
@@ -265,7 +268,7 @@ begin
 			end if;
 		end if;
 	end process;
-	
+
 	process(clk,rstn)begin
 		if rising_edge(clk) then
 			if(rstn='0')then
@@ -290,10 +293,10 @@ begin
 			end if;
 		end if;
 	end process;
-	
+
 	sp_clr<=bg0wr;
 	sp_linenum<=linenum+"0000010000";
-	
+
 	process(clk,rstn)
 	variable	sp_yposl	:std_logic_vector(9 downto 0);
 	begin
@@ -347,14 +350,14 @@ begin
 			end if;
 		end if;
 	end process;
-	
+
 	sprno<=sp_no;
 
 	sp_patsub<=sp_xpos(3) & sp_ypos(3);
 	sp_patnolsb(0)<=sp_patsub(0) xor sprVR;
 	sp_patnolsb(1)<=sp_patsub(1) xor sprHR;
 	sp_patno<=	sprPAT & sp_patnolsb;
-	
+
 	sp_dotx<=	sp_xpos(2 downto 0) when sprHR='0' else
 				not sp_xpos(2 downto 0);
 	sp_doty<=	sp_ypos(2 downto 0) when sprVR='0' else
@@ -371,12 +374,12 @@ begin
 				'0' when sp_wr='0' else
 				'1' when sprPRI="11" else
 				'0';
-	
+
 	sp_waddrsub<=sprxpos+("000000" & sp_xpos);
 	sp_waddr<=sp_waddrsub+"1111110000";
 	sp_wren<=not sp_waddr(9);
 	sp_maddr<=	bg_x when sp_clr='1' else sp_waddrd;
-				
+
 	SP1buf	:sline port map(
 		wraddr	=>sp_maddr,
 		wrdat	=>sprCOLORd & dotin,
@@ -385,8 +388,9 @@ begin
 		change	=>hcomp,
 		rdaddr	=>rdaddr,
 		rddat	=>sp1rdat,
-		
+
 		clk		=>clk,
+		ce      =>ce,
 		rstn	=>rstn
 	);
 	SP2buf	:sline port map(
@@ -397,8 +401,9 @@ begin
 		change	=>hcomp,
 		rdaddr	=>rdaddr,
 		rddat	=>sp2rdat,
-		
+
 		clk		=>clk,
+		ce      =>ce,
 		rstn	=>rstn
 	);
 	SP3buf	:sline port map(
@@ -409,8 +414,9 @@ begin
 		change	=>hcomp,
 		rdaddr	=>rdaddr,
 		rddat	=>sp3rdat,
-		
+
 		clk		=>clk,
+		ce      =>ce,
 		rstn	=>rstn
 	);
 	patno<=	bg_patno	when state=st_BG0 else
@@ -424,7 +430,7 @@ begin
 	doty<=	bg_doty		when state=st_BG0 else
 			bg_doty		when state=st_BG1 else
 			sp_doty		when state=st_SPRITE else
-			
+
 			(others=>'0');
 
 	dotout<=
@@ -435,8 +441,7 @@ begin
 		bg1rdat	when bg1rdat(3 downto 0)/="0000" and bgen(1)='1' and debugsel(1)='1' else
 		sp1rdat when sp1rdat(3 downto 0)/="0000" and debugsel(0)='1' else
 		(others=>'0');
-		
+
 end rtl;
 
 
-	

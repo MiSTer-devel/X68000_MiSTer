@@ -442,6 +442,7 @@ port(
 	ack		:out std_logic;
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -458,6 +459,7 @@ port(
 	get		:in std_logic;
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -468,7 +470,9 @@ port(
 	txout	:out std_logic;
 	
 	fclk	:in std_logic;
+	fd_ce   :in std_logic := '1';
 	sclk	:in std_logic;
+	sys_ce  :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -550,6 +554,7 @@ begin
 		get		=>bcget,
 		
 		clk		=>rclk,
+		ce      =>ram_ce,
 		rstn	=>rstn
 	);
 	
@@ -1011,8 +1016,8 @@ begin
 	bcgen	:for i in 0 to brblocks-1 generate
 	--FIXME: is ram clock supposed to be used as wclk, and sys clk as rclk?
 		brcache_extF0	:cacheext generic map(brsize) port map(ramaddrrc(brsize-1 downto 0),brcache_extwr(i),brcache_clr(i),brcache_busyv(i),bfaddr,brcache_ext(i),'1',rclk, ram_ce, sclk, sys_ce, rstn);
-		BRcache0h:CACHEMEMN generic map(brsize,8)port map(ramaddrrc(brsize-1 downto 0),b_addr(brsize-1 downto 0),rclk,sclk,brwdath,b_wdatm(15 downto 8),brwr(i),brwrb(i)(1),open,brdath(i));
-		BRcache0l:CACHEMEMN generic map(brsize,8)port map(ramaddrrc(brsize-1 downto 0),b_addr(brsize-1 downto 0),rclk,sclk,brwdatl,b_wdatm(7 downto 0),brwr(i),brwrb(i)(0),open,brdatl(i));
+		BRcache0h:CACHEMEMN generic map(brsize,8)port map(ramaddrrc(brsize-1 downto 0),b_addr(brsize-1 downto 0),rclk,sclk,brwdath,b_wdatm(15 downto 8),brwr(i),brwrb(i)(1) and ram_ce,open,brdath(i));
+		BRcache0l:CACHEMEMN generic map(brsize,8)port map(ramaddrrc(brsize-1 downto 0),b_addr(brsize-1 downto 0),rclk,sclk,brwdatl,b_wdatm(7 downto 0),brwr(i),brwrb(i)(0) and ram_ce,open,brdatl(i));
 	end generate;
 	
 	process(brcache_busyv)
@@ -1065,7 +1070,7 @@ begin
 		end if;
 	end process;
 	
-	bctx	:clktx port map(bcackx,b_cack,rclk,sclk,rstn);
+	bctx	:clktx port map(bcackx,b_cack,rclk,ram_ce,sclk,sys_ce,rstn);
 
 	process(sclk,rstn)begin
 		if(rstn='0')then
@@ -1139,10 +1144,10 @@ begin
 	BWext1l	:cacheext generic map(brsize) port map(ramaddrwex(brsize-1 downto 0),bwwr1m(0),bwcache_clr1,open,         ramaddrwc(brsize-1 downto 0),bwwe1(0),'0',rclk, ram_ce, rclk, ram_ce, rstn);
 	bwcache_busy<=bwcache_busy0 or bwcache_busy1;
 	
-	BWcache0h	:CACHEMEMN generic map(brsize,8)port map(ramaddrwcb(brsize-1 downto 0),b_addr(brsize-1 downto 0),rclk,sclk,ramrdat(15 downto 8),b_wdatm(15 downto 8),b_cwr0,bwwr0(1),bwwdat0h,open);
-	BWcache0l	:CACHEMEMN generic map(brsize,8)port map(ramaddrwcb(brsize-1 downto 0),b_addr(brsize-1 downto 0),rclk,sclk,ramrdat( 7 downto 0),b_wdatm( 7 downto 0),b_cwr0,bwwr0(0),bwwdat0l,open);
-	BWcache1h	:CACHEMEMN generic map(brsize,8)port map(ramaddrwcb(brsize-1 downto 0),b_addr(brsize-1 downto 0),rclk,sclk,ramrdat(15 downto 8),b_wdatm(15 downto 8),b_cwr1,bwwr1(1),bwwdat1h,open);
-	BWcache1l	:CACHEMEMN generic map(brsize,8)port map(ramaddrwcb(brsize-1 downto 0),b_addr(brsize-1 downto 0),rclk,sclk,ramrdat( 7 downto 0),b_wdatm( 7 downto 0),b_cwr1,bwwr1(0),bwwdat1l,open);
+	BWcache0h	:CACHEMEMN generic map(brsize,8)port map(ramaddrwcb(brsize-1 downto 0),b_addr(brsize-1 downto 0),rclk,sclk,ramrdat(15 downto 8),b_wdatm(15 downto 8),b_cwr0 and ram_ce,bwwr0(1) and sys_ce,bwwdat0h,open);
+	BWcache0l	:CACHEMEMN generic map(brsize,8)port map(ramaddrwcb(brsize-1 downto 0),b_addr(brsize-1 downto 0),rclk,sclk,ramrdat( 7 downto 0),b_wdatm( 7 downto 0),b_cwr0 and ram_ce,bwwr0(0) and sys_ce,bwwdat0l,open);
+	BWcache1h	:CACHEMEMN generic map(brsize,8)port map(ramaddrwcb(brsize-1 downto 0),b_addr(brsize-1 downto 0),rclk,sclk,ramrdat(15 downto 8),b_wdatm(15 downto 8),b_cwr1 and ram_ce,bwwr1(1) and sys_ce,bwwdat1h,open);
+	BWcache1l	:CACHEMEMN generic map(brsize,8)port map(ramaddrwcb(brsize-1 downto 0),b_addr(brsize-1 downto 0),rclk,sclk,ramrdat( 7 downto 0),b_wdatm( 7 downto 0),b_cwr1 and ram_ce,bwwr1(0) and sys_ce,bwwdat1l,open);
 	
 	ramwe<=	bwwens when RAM_STATE=ST_BWRITE else
 			"11" when RAM_STATE=ST_FDEWRITE else
@@ -1223,9 +1228,9 @@ begin
 				'0' when RAM_STATE/=ST_G00READ else
 				ramde;
 	g00rwdat<=g00rwdath & g00rwdatl;
-	g00Rcache	:CACHEMEMWN generic map(7)port map(g00rwdat,g00_addr(6 downto 0),vclk,ramaddrrc(6 downto 0),rclk,g00rwr,g00_rdat);
+	g00Rcache	:CACHEMEMWN generic map(7)port map(g00rwdat,g00_addr(6 downto 0),vclk,ramaddrrc(6 downto 0),rclk,g00rwr and ram_ce,g00_rdat);
 
-	g00ack	:vrcack generic map(awidth,7)port map(g00_rd,g00_addr,g00addrh,ramaddrrc(6 downto 0),g00rwr,g00_ack,vclk,rstn);
+	g00ack	:vrcack generic map(awidth,7)port map(g00_rd,g00_addr,g00addrh,ramaddrrc(6 downto 0),g00rwr,g00_ack,vclk,vid_ce,rstn);
 
 
 	g01rwdath<=	
@@ -1241,9 +1246,9 @@ begin
 				'0' when RAM_STATE/=ST_G01READ else
 				ramde;
 	g01rwdat<=g01rwdath & g01rwdatl;
-	g01Rcache	:CACHEMEMWN generic map(7)port map(g01rwdat,g01_addr(6 downto 0),vclk,ramaddrrc(6 downto 0),rclk,g01rwr,g01_rdat);
+	g01Rcache	:CACHEMEMWN generic map(7)port map(g01rwdat,g01_addr(6 downto 0),vclk,ramaddrrc(6 downto 0),rclk,g01rwr and ram_ce,g01_rdat);
 
-	g01ack	:vrcack generic map(awidth,7)port map(g01_rd,g01_addr,g01addrh,ramaddrrc(6 downto 0),g01rwr,g01_ack,vclk,rstn);
+	g01ack	:vrcack generic map(awidth,7)port map(g01_rd,g01_addr,g01addrh,ramaddrrc(6 downto 0),g01rwr,g01_ack,vclk,vid_ce,rstn);
 
 
 	g02rwdath<=	
@@ -1259,9 +1264,9 @@ begin
 				'0' when RAM_STATE/=ST_G02READ else
 				ramde;
 	g02rwdat<=g02rwdath & g02rwdatl;
-	g02Rcache	:CACHEMEMWN generic map(7)port map(g02rwdat,g02_addr(6 downto 0),vclk,ramaddrrc(6 downto 0),rclk,g02rwr,g02_rdat);
+	g02Rcache	:CACHEMEMWN generic map(7)port map(g02rwdat,g02_addr(6 downto 0),vclk,ramaddrrc(6 downto 0),rclk,g02rwr and ram_ce,g02_rdat);
 
-	g02ack	:vrcack generic map(awidth,7)port map(g02_rd,g02_addr,g02addrh,ramaddrrc(6 downto 0),g02rwr,g02_ack,vclk,rstn);
+	g02ack	:vrcack generic map(awidth,7)port map(g02_rd,g02_addr,g02addrh,ramaddrrc(6 downto 0),g02rwr,g02_ack,vclk,vid_ce,rstn);
 
 
 	g03rwdath<=	
@@ -1276,9 +1281,9 @@ begin
 	g03rwr<=	'1' when RAM_STATE=ST_G3CLR else
 				'0' when RAM_STATE/=ST_g03READ else ramde;
 	g03rwdat<=g03rwdath & g03rwdatl;
-	g03Rcache	:CACHEMEMWN generic map(7)port map(g03rwdat,g03_addr(6 downto 0),vclk,ramaddrrc(6 downto 0),rclk,g03rwr,g03_rdat);
+	g03Rcache	:CACHEMEMWN generic map(7)port map(g03rwdat,g03_addr(6 downto 0),vclk,ramaddrrc(6 downto 0),rclk,g03rwr and ram_ce,g03_rdat);
 
-	g03ack	:vrcack generic map(awidth,7)port map(g03_rd,g03_addr,g03addrh,ramaddrrc(6 downto 0),g03rwr,g03_ack,vclk,rstn);
+	g03ack	:vrcack generic map(awidth,7)port map(g03_rd,g03_addr,g03addrh,ramaddrrc(6 downto 0),g03rwr,g03_ack,vclk,vid_ce,rstn);
 
 
 	t0rwdath<=	bwwdat(15 downto 8) when t0_addr(19 downto 6)=bwaddr_sel and bwwes(1)='1' else
@@ -1293,13 +1298,13 @@ begin
 	t0rwrq(3)<=t0rwr when ramaddrrc(1 downto 0)="11" else '0';
 
 	t0rwdat<=t0rwdath & t0rwdatl;
-	T00Rcache	:CACHEMEMWN generic map(6)port map(t0rwdat,t0_addr(5 downto 0),vclk,ramaddrrc(7 downto 2),rclk,t0rwrq(0),t0_rdat0);
-	T01Rcache	:CACHEMEMWN generic map(6)port map(t0rwdat,t0_addr(5 downto 0),vclk,ramaddrrc(7 downto 2),rclk,t0rwrq(1),t0_rdat1);
-	T02Rcache	:CACHEMEMWN generic map(6)port map(t0rwdat,t0_addr(5 downto 0),vclk,ramaddrrc(7 downto 2),rclk,t0rwrq(2),t0_rdat2);
-	T03Rcache	:CACHEMEMWN generic map(6)port map(t0rwdat,t0_addr(5 downto 0),vclk,ramaddrrc(7 downto 2),rclk,t0rwrq(3),t0_rdat3);
+	T00Rcache	:CACHEMEMWN generic map(6)port map(t0rwdat,t0_addr(5 downto 0),vclk,ramaddrrc(7 downto 2),rclk,t0rwrq(0) and ram_ce,t0_rdat0);
+	T01Rcache	:CACHEMEMWN generic map(6)port map(t0rwdat,t0_addr(5 downto 0),vclk,ramaddrrc(7 downto 2),rclk,t0rwrq(1) and ram_ce,t0_rdat1);
+	T02Rcache	:CACHEMEMWN generic map(6)port map(t0rwdat,t0_addr(5 downto 0),vclk,ramaddrrc(7 downto 2),rclk,t0rwrq(2) and ram_ce,t0_rdat2);
+	T03Rcache	:CACHEMEMWN generic map(6)port map(t0rwdat,t0_addr(5 downto 0),vclk,ramaddrrc(7 downto 2),rclk,t0rwrq(3) and ram_ce,t0_rdat3);
 
 	t0_addra<=t0_addr & "11";
-	t0ack	:vrcack generic map(awidth,8)port map(t0_rd,t0_addra,t0addrh,ramaddrrc,t0rwr,t0_ack,vclk,rstn);
+	t0ack	:vrcack generic map(awidth,8)port map(t0_rd,t0_addra,t0addrh,ramaddrrc,t0rwr,t0_ack,vclk,vid_ce,rstn);
 
 
 	g10rwdath<=	
@@ -1317,7 +1322,7 @@ begin
 	g10rwdat<=g10rwdath & g10rwdatl;
 	g10Rcache	:CACHEMEMWN generic map(7)port map(g10rwdat,g10_addr(6 downto 0),vclk,ramaddrrc(6 downto 0),rclk,g10rwr,g10_rdat);
 
-	g10ack	:vrcack generic map(awidth,7)port map(g10_rd,g10_addr,g10addrh,ramaddrrc(6 downto 0),g10rwr,g10_ack,vclk,rstn);
+	g10ack	:vrcack generic map(awidth,7)port map(g10_rd,g10_addr,g10addrh,ramaddrrc(6 downto 0),g10rwr,g10_ack,vclk,vid_ce,rstn);
 
 
 	g11rwdath<=	
@@ -1333,9 +1338,9 @@ begin
 				'0' when RAM_STATE/=ST_g11READ else
 				ramde;
 	g11rwdat<=g11rwdath & g11rwdatl;
-	g11Rcache	:CACHEMEMWN generic map(7)port map(g11rwdat,g11_addr(6 downto 0),vclk,ramaddrrc(6 downto 0),rclk,g11rwr,g11_rdat);
+	g11Rcache	:CACHEMEMWN generic map(7)port map(g11rwdat,g11_addr(6 downto 0),vclk,ramaddrrc(6 downto 0),rclk,g11rwr and ram_ce,g11_rdat);
 
-	g11ack	:vrcack generic map(awidth,7)port map(g11_rd,g11_addr,g11addrh,ramaddrrc(6 downto 0),g11rwr,g11_ack,vclk,rstn);
+	g11ack	:vrcack generic map(awidth,7)port map(g11_rd,g11_addr,g11addrh,ramaddrrc(6 downto 0),g11rwr,g11_ack,vclk,vid_ce,rstn);
 
 
 	g12rwdath<=	
@@ -1351,9 +1356,9 @@ begin
 				'0' when RAM_STATE/=ST_g12READ else
 				ramde;
 	g12rwdat<=g12rwdath & g12rwdatl;
-	g12Rcache	:CACHEMEMWN generic map(7)port map(g12rwdat,g12_addr(6 downto 0),vclk,ramaddrrc(6 downto 0),rclk,g12rwr,g12_rdat);
+	g12Rcache	:CACHEMEMWN generic map(7)port map(g12rwdat,g12_addr(6 downto 0),vclk,ramaddrrc(6 downto 0),rclk,g12rwr and ram_ce,g12_rdat);
 
-	g12ack	:vrcack generic map(awidth,7)port map(g12_rd,g12_addr,g12addrh,ramaddrrc(6 downto 0),g12rwr,g12_ack,vclk,rstn);
+	g12ack	:vrcack generic map(awidth,7)port map(g12_rd,g12_addr,g12addrh,ramaddrrc(6 downto 0),g12rwr,g12_ack,vclk,vid_ce,rstn);
 
 
 	g13rwdath<=	
@@ -1369,9 +1374,9 @@ begin
 				'0' when RAM_STATE/=ST_g13READ else
 				ramde;
 	g13rwdat<=g13rwdath & g13rwdatl;
-	g13Rcache	:CACHEMEMWN generic map(7)port map(g13rwdat,g13_addr(6 downto 0),vclk,ramaddrrc(6 downto 0),rclk,g13rwr,g13_rdat);
+	g13Rcache	:CACHEMEMWN generic map(7)port map(g13rwdat,g13_addr(6 downto 0),vclk,ramaddrrc(6 downto 0),rclk,g13rwr and ram_ce,g13_rdat);
 
-	g13ack	:vrcack generic map(awidth,7)port map(g13_rd,g13_addr,g13addrh,ramaddrrc(6 downto 0),g13rwr,g13_ack,vclk,rstn);
+	g13ack	:vrcack generic map(awidth,7)port map(g13_rd,g13_addr,g13addrh,ramaddrrc(6 downto 0),g13rwr,g13_ack,vclk,vid_ce,rstn);
 
 
 	t1rwdath<=	bwwdat(15 downto 8) when t1_addr(19 downto 6)=bwaddr_sel and bwwes(1)='1' else
@@ -1386,13 +1391,13 @@ begin
 	t1rwrq(3)<=t1rwr when ramaddrrc(1 downto 0)="11" else '0';
 
 	t1rwdat<=t1rwdath & t1rwdatl;
-	T10Rcache	:CACHEMEMWN generic map(6)port map(t1rwdat,t1_addr(5 downto 0),vclk,ramaddrrc(7 downto 2),rclk,t1rwrq(0),t1_rdat0);
-	T11Rcache	:CACHEMEMWN generic map(6)port map(t1rwdat,t1_addr(5 downto 0),vclk,ramaddrrc(7 downto 2),rclk,t1rwrq(1),t1_rdat1);
-	T12Rcache	:CACHEMEMWN generic map(6)port map(t1rwdat,t1_addr(5 downto 0),vclk,ramaddrrc(7 downto 2),rclk,t1rwrq(2),t1_rdat2);
-	T13Rcache	:CACHEMEMWN generic map(6)port map(t1rwdat,t1_addr(5 downto 0),vclk,ramaddrrc(7 downto 2),rclk,t1rwrq(3),t1_rdat3);
+	T10Rcache	:CACHEMEMWN generic map(6)port map(t1rwdat,t1_addr(5 downto 0),vclk,ramaddrrc(7 downto 2),rclk,t1rwrq(0) and ram_ce,t1_rdat0);
+	T11Rcache	:CACHEMEMWN generic map(6)port map(t1rwdat,t1_addr(5 downto 0),vclk,ramaddrrc(7 downto 2),rclk,t1rwrq(1) and ram_ce,t1_rdat1);
+	T12Rcache	:CACHEMEMWN generic map(6)port map(t1rwdat,t1_addr(5 downto 0),vclk,ramaddrrc(7 downto 2),rclk,t1rwrq(2) and ram_ce,t1_rdat2);
+	T13Rcache	:CACHEMEMWN generic map(6)port map(t1rwdat,t1_addr(5 downto 0),vclk,ramaddrrc(7 downto 2),rclk,t1rwrq(3) and ram_ce,t1_rdat3);
 
 	t1_addra<=t1_addr & "11";
-	t1ack	:vrcack generic map(awidth,8)port map(t1_rd,t1_addra,t1addrh,ramaddrrc,t1rwr,t1_ack,vclk,rstn);
+	t1ack	:vrcack generic map(awidth,8)port map(t1_rd,t1_addra,t1addrh,ramaddrrc,t1rwr,t1_ack,vclk,vid_ce,rstn);
 
 	e0cwr<='0' when RAM_STATE/=ST_FDEREAD else ramde and (not fde_sel);
 	e1cwr<='0' when RAM_STATE/=ST_FDEREAD else ramde and fde_sel;
@@ -1401,10 +1406,10 @@ begin
 						ramaddrwc;
 
 	
-	FEcache0h	:CACHEMEMN generic map(8,8)port map(ramaddrwcf,fde_addr(7 downto 0),rclk,fclk,ramrdat(15 downto 8),fde_wdat(15 downto 8),e0cwr,fde_wr0,ewdat0(15 downto 8),fde_rdat0(15 downto 8));
-	FEcache0l	:CACHEMEMN generic map(8,8)port map(ramaddrwcf,fde_addr(7 downto 0),rclk,fclk,ramrdat( 7 downto 0),fde_wdat( 7 downto 0),e0cwr,fde_wr0,ewdat0( 7 downto 0),fde_rdat0( 7 downto 0));
-	FEcache1h	:CACHEMEMN generic map(8,8)port map(ramaddrwcf,fde_addr(7 downto 0),rclk,fclk,ramrdat(15 downto 8),fde_wdat(15 downto 8),e1cwr,fde_wr1,ewdat1(15 downto 8),fde_rdat1(15 downto 8));
-	FEcache1l	:CACHEMEMN generic map(8,8)port map(ramaddrwcf,fde_addr(7 downto 0),rclk,fclk,ramrdat( 7 downto 0),fde_wdat( 7 downto 0),e1cwr,fde_wr1,ewdat1( 7 downto 0),fde_rdat1( 7 downto 0));
+	FEcache0h	:CACHEMEMN generic map(8,8)port map(ramaddrwcf,fde_addr(7 downto 0),rclk,fclk,ramrdat(15 downto 8),fde_wdat(15 downto 8),e0cwr and ram_ce,fde_wr0 and fd_ce,ewdat0(15 downto 8),fde_rdat0(15 downto 8));
+	FEcache0l	:CACHEMEMN generic map(8,8)port map(ramaddrwcf,fde_addr(7 downto 0),rclk,fclk,ramrdat( 7 downto 0),fde_wdat( 7 downto 0),e0cwr and ram_ce,fde_wr0 and fd_ce,ewdat0( 7 downto 0),fde_rdat0( 7 downto 0));
+	FEcache1h	:CACHEMEMN generic map(8,8)port map(ramaddrwcf,fde_addr(7 downto 0),rclk,fclk,ramrdat(15 downto 8),fde_wdat(15 downto 8),e1cwr and ram_ce,fde_wr1 and fd_ce,ewdat1(15 downto 8),fde_rdat1(15 downto 8));
+	FEcache1l	:CACHEMEMN generic map(8,8)port map(ramaddrwcf,fde_addr(7 downto 0),rclk,fclk,ramrdat( 7 downto 0),fde_wdat( 7 downto 0),e1cwr and ram_ce,fde_wr1 and fd_ce,ewdat1( 7 downto 0),fde_rdat1( 7 downto 0));
 	
 	ewdat<=ewdat1 when fde_sel='1' else ewdat0;
 	

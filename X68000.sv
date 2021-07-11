@@ -689,7 +689,7 @@ endfunction
 
 reg [15:0] cmp_l, cmp_r;
 
-always @(posedge clk_snd) begin
+always @(posedge CLK_AUDIO) begin
 	reg signed [17:0] tmp_l, tmp_r;
 
 	out_l <= aud_l + mt32_i2s_l;

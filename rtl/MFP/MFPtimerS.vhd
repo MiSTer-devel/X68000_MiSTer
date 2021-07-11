@@ -42,6 +42,7 @@ port(
 	sft		:out std_logic;
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -57,7 +58,7 @@ begin
 		SCFREQ*  4/4000 when mode(2 downto 0)="001" else
 		0;
 
-	prescaler:sftgen generic map(MAXpres)port map(prescale,psclk,clk,rstn);
+	prescaler:sftgen generic map(MAXpres)port map(prescale,psclk,clk,ce,rstn);
 	
 	process(clk,rstn)begin
 		if rising_edge(clk) then

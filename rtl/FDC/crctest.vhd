@@ -5,13 +5,13 @@ entity CRCTEST is
 port(
 	CRCWR	:in std_logic;
 	CRCIN	:in std_logic_vector(7 downto 0);
-	
+
 	CLR		:in std_logic;
 	CLRDAT	:in std_logic_vector(15 downto 0);
-	
+
 	CRC		:out std_logic_vector(15 downto 0);
 	busy	:out std_logic;
-	
+
 	clk		:in std_logic;
 	ce      :in std_logic := '1';
 	rstn	:in std_logic
@@ -39,6 +39,7 @@ component CRCGENN
 		CRCZERO	:out std_logic;
 
 		clk		:in std_logic;
+		ce      :in std_logic := '1';
 		rstn	:in std_logic
 	);
 end component;
@@ -58,6 +59,7 @@ begin
 		CRCZERO	=>open,
 
 		clk		=>clk,
+		ce      =>ce,
 		rstn	=>rstn
 	);
 end rtl;

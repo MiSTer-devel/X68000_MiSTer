@@ -22,7 +22,7 @@ port(
 	wrote		:out std_logic_vector(3 downto 0);
 	wprot		:in std_logic_vector(3 downto 0);
 	tracklen	:out std_logic_vector(13 downto 0);
-	
+
 	USEL	:in std_logic_vector(1 downto 0);
 	MOTOR	:in std_logic;
 	READY	:out std_logic;
@@ -131,15 +131,16 @@ port(
 	txmfc	:in std_logic;
 	txmfe	:in std_logic;
 	break	:in std_logic;
-	
+
 	txemp	:out std_logic;
 	txend	:out std_logic;
-	
+
 	bitout	:out std_logic;
 	writeen	:out std_logic;
-	
+
 	sft		:in std_logic;
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -151,15 +152,16 @@ port(
 	txma1	:in std_logic;
 	txmc2	:in std_logic;
 	break	:in std_logic;
-	
+
 	txemp	:out std_logic;
 	txend	:out std_logic;
-	
+
 	bitout	:out std_logic;
 	writeen	:out std_logic;
-	
+
 	sft		:in std_logic;
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -170,22 +172,24 @@ generic(
 );
 port(
 	bitlen	:in integer range 0 to bwidth;
-	
+
 	datin	:in std_logic;
-	
+
 	init	:in std_logic;
 	break	:in std_logic;
-	
+
 	RXDAT	:out std_logic_vector(7 downto 0);
 	RXED	:out std_logic;
 	DetMF8	:out std_logic;
 	DetMFB	:out std_logic;
 	DetMFC	:out std_logic;
 	DetMFE	:out std_logic;
-	
+	broken	:out std_logic;
+
 	curlen	:out integer range 0 to bwidth*2;
-	
+
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -196,20 +200,22 @@ generic(
 );
 port(
 	bitlen	:in integer range 0 to bwidth;
-	
+
 	datin	:in std_logic;
-	
+
 	init	:in std_logic;
 	break	:in std_logic;
-	
+
 	RXDAT	:out std_logic_vector(7 downto 0);
 	RXED	:out std_logic;
 	DetMA1	:out std_logic;
 	DetMC2	:out std_logic;
-	
+	broken	:out std_logic;
+
 	curlen	:out integer range 0 to bwidth*2;
-	
+
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -221,8 +227,9 @@ generic(
 port(
 	len		:in integer range 0 to maxlen;
 	sft		:out std_logic;
-	
+
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -234,10 +241,11 @@ generic(
 port(
 	len		:in integer range 0 to extmax;
 	signin	:in std_logic;
-	
+
 	signout	:out std_logic;
-	
+
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -246,17 +254,18 @@ component mkgapsync
 port(
 	GAPS	:in integer	range 0 to 31;
 	SYNCS	:in integer	range 0 to 15;
-	
+
 	GAPDAT	:in std_logic_vector(7 downto 0);
-	
+
 	WRENn		:in std_logic;
-	
+
 	MKEN		:out std_logic;
 	MKDAT		:out std_logic_vector(7 downto 0);
 	MK			:out std_logic;
-	MKDONE		:in std_logic	:='1';
-	
+	MKDONE	:in std_logic	:='1';
+
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn		:in std_logic
 );
 end component;
@@ -298,8 +307,8 @@ begin
 			end if;
 		end if;
 	end process;
-	
-	
+
+
 	selfdmode<=	fdmode0	when USEL="00" else
 					fdmode1	when USEL="01" else
 					fdmode2	when USEL="10" else
@@ -308,9 +317,9 @@ begin
 	curfdmode<=fdmode3 & fdmode2 & fdmode1 & fdmode0;
 
 	bitlenr<=	4000*sysclk/1000000	when selfdmode(1)='0' else 2000*sysclk/1000000;
-				
+
 	bitlenw<=	4000*sysclk/1000000	when WRFDMODE(1)='0' else 2000*sysclk/1000000;
-				
+
 	tracklen0<=	conv_std_logic_vector( 6250,14) when fdmode0="00" else
 				conv_std_logic_vector( 6250,14) when fdmode0="01" else
 				conv_std_logic_vector(10416,14) when fdmode0="10" else
@@ -354,7 +363,7 @@ begin
 			end if;
 		end if;
 	end process;
-	
+
 	process(clk,rstn)begin
 		if rising_edge(clk) then
 			if(rstn='0')then
@@ -370,12 +379,12 @@ begin
 			end if;
 		end if;
 	end process;
-				
-	
+
+
 	txdat<=ramrdat(7 downto 0);
 	mcrdat<=ramrdat(8);
 	RDMFM<=ramrdat(9);
-	
+
 	fmtxwr<=	'0' when RDMFM='1' else
 				'0' when mcrdat='1' else
 				txwr;
@@ -383,12 +392,12 @@ begin
 				'0' when mcrdat='0' else
 				'1' when txdat=x"f8" and txwr='1' else
 				'0';
-	
+
 	fmmfbwr<=	'0' when RDMFM='1' else
 				'0' when mcrdat='0' else
 				'1' when txdat=x"fb" and txwr='1' else
 				'0';
-	
+
 	fmmfcwr<=	'0' when RDMFM='1' else
 				'0' when mcrdat='0' else
 				'1' when txdat=x"fc" and txwr='1' else
@@ -398,26 +407,26 @@ begin
 				'0' when mcrdat='0' else
 				'1' when txdat=x"fe" and txwr='1' else
 				'0';
-	
+
 	mfmtxwr<=	'0' when RDMFM='0' else
 				'0' when mcrdat='1' else
 				txwr;
-				
+
 	mfmma1wr<=	'0' when RDMFM='0' else
 				'0' when mcrdat='0' else
 				'1' when txdat=x"a1" and txwr='1' else
 				'0';
-			
+
 	mfmmc2wr<=	'0' when RDMFM='0' else
 				'0' when mcrdat='0' else
 				'1' when txdat=x"c2" and txwr='1' else
 				'0';
-			
+
 	indexn<='0' when curpos="00000000000000" else '1';
-	
-	wsftfm	:sftgen generic map(maxbwidth) port map(bitlenr,modsftfm,clk,rstn);
-	wsftmfm	:sftgen generic map(maxbwidth/2) port map(bitlenr/2,modsftmfm,clk,rstn);
-	
+
+	wsftfm	:sftgen generic map(maxbwidth) port map(bitlenr,modsftfm,clk,ce,rstn);
+	wsftmfm	:sftgen generic map(maxbwidth/2) port map(bitlenr/2,modsftmfm,clk,ce,rstn);
+
 	fmtx	:fmmod port map(
 		txdat	=>txdat,
 		txwr	=>fmtxwr,
@@ -426,44 +435,46 @@ begin
 		txmfc	=>fmmfcwr,
 		txmfe	=>fmmfewr,
 		break	=>'0',
-		
+
 		txemp	=>fmtxemp,
 		txend	=>fmtxend,
-		
+
 		bitout	=>fmwrbit,
 		writeen	=>open,
-		
+
 		sft		=>modsftfm,
 		clk		=>clk,
+		ce      =>ce,
 		rstn	=>rstn
 	);
-	
+
 	mfmtx	:mfmmod port map(
 		txdat	=>txdat,
 		txwr	=>mfmtxwr,
 		txma1	=>mfmma1wr,
 		txmc2	=>mfmmc2wr,
 		break	=>'0',
-		
+
 		txemp	=>mfmtxemp,
 		txend	=>mfmtxend,
-		
+
 		bitout	=>mfmwrbit,
 		writeen	=>open,
-		
+
 		sft		=>modsftmfm,
 		clk		=>clk,
+		ce      =>ce,
 		rstn	=>rstn
 	);
 	txemp<=fmtxemp and mfmtxemp;
 	txwrbit<=fmwrbit or mfmwrbit;
-	wdatext	:signext generic map(extcount) port map(extcount,txwrbit,txwrbitex,clk,rstn);
-	
+	wdatext	:signext generic map(extcount) port map(extcount,txwrbit,txwrbitex,clk,ce,rstn);
+
 	RDBITn<=not txwrbitex;
-	
+
 	fmrxbit<=not WRBITn when WRMFM='0' and WRENn='0' else '0';
 	mfmrxbit<=not WRBITn when WRMFM='1' and WRENn='0' else '0';
-	
+
 	process(clk,rstn)
 	variable lREADY	:std_logic;
 	begin
@@ -486,69 +497,72 @@ begin
 			end if;
 		end if;
 	end process;
-	
+
 	fmrx	:fmdem generic map(maxbwidth) port map(
 		bitlen	=>bitlenw,
-		
+
 		datin	=>fmrxbit,
-		
+
 		init	=>fmdeminit,
 		break	=>WRENn,
-		
+
 		RXDAT	=>fmrxdat,
 		RXED	=>fmrxed,
 		DetMF8	=>fmmf8det,
 		DetMFB	=>fmmfbdet,
 		DetMFC	=>fmmfcdet,
 		DetMFE	=>fmmfedet,
-		
+
 		curlen	=>open,
-		
+
 		clk		=>clk,
+		ce      =>ce,
 		rstn	=>rstn
 	);
 
 	mfmrx	:mfmdem generic map(maxbwidth/2)port map(
 		bitlen	=>bitlenw/2,
-		
+
 		datin	=>mfmrxbit,
-		
+
 		init	=>mfmdeminit,
 		break	=>WRENn,
-		
+
 		RXDAT	=>mfmrxdat,
 		RXED	=>mfmrxed,
 		DetMA1	=>mfmma1det,
 		DetMC2	=>mfmmc2det,
-		
+
 		curlen	=>open,
-		
+
 		clk		=>clk,
+		ce      =>ce,
 		rstn	=>rstn
 	);
-	
+
 	GAPS<=	4 when WRMFM='0' else 8;
 	SYNCS<=	6 when WRMFM='0' else 12;
 	GAPDAT<=x"ff" when WRMFM='0' else x"4e";
-	
+
 	GS	:mkgapsync port map(
 		GAPS	=>GAPS,
 		SYNCS	=>SYNCS,
-		
+
 		GAPDAT	=>GAPDAT,
-		
+
 		WRENn	=>WRENn,
-		
+
 		MKEN	=>open,
 		MKDAT	=>GSDAT,
 		MK		=>GSwrite,
 		MKDONE	=>rxed,
-		
+
 		clk		=>clk,
+		ce      =>ce,
 		rstn	=>rstn
 	);
-	
-	
+
+
 	process(clk,rstn)
 	variable wrbusy	:std_logic;
 	variable mwait		:integer range 0 to 3;
@@ -577,8 +591,8 @@ begin
 			end if;
 		end if;
 	end process;
-			
-	
+
+
 	process(clk,rstn)
 	begin
 		if rising_edge(clk) then
@@ -635,7 +649,7 @@ begin
 			end if;
 		end if;
 	end process;
-	
+
 	process(clk,rstn)
 	variable lSTEPn		:std_logic;
 	begin
@@ -686,7 +700,7 @@ begin
 			end if;
 		end if;
 	end process;
-	
+
 	track0n<='0' when curtrack0="0000000" and USEL="00" else
 				'0' when curtrack1="0000000" and USEL="01" else
 				'0' when curtrack2="0000000" and USEL="10" else
@@ -698,5 +712,5 @@ begin
 				curtrack3	when USEL="11" else
 				(others=>'1');
 	ramaddr<=USEL & curtrack & not siden & curpos;
-	
+
 end rtl;

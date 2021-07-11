@@ -39,7 +39,7 @@ port(
 	refrsh		:in std_logic;
 	abort		:in std_logic	:='0';
 	busy		:out std_logic;
-	
+
 	initdone	:out std_logic;
 	clk			:in std_logic;
 	ce          :in std_logic := '1';
@@ -103,18 +103,18 @@ constant lastlow	:std_logic_vector(LAWIDTH-1 downto 0)	:=(others=>'1');
 signal	blkmask		:std_logic_vector(LAWIDTH-1 downto 0);
 
 begin
-	
+
 	addr1	<=conv_std_logic_vector(1,LAWIDTH);
 	addr2	<=conv_std_logic_vector(2,LAWIDTH);
 	addr3	<=conv_std_logic_vector(3,LAWIDTH);
 	addr4	<=conv_std_logic_vector(4,LAWIDTH);
-	
+
 	busy<=	'1' when STATE/=ST_IDLE else
 			'1' when rd='1' else
 			'1' when wr='1' else
 			'1' when refrsh='1' else
 			'0';
-			
+
 	process(bwidth)begin
 		for i in 0 to LAWIDTH-1 loop
 			if(i<bwidth)then
@@ -124,7 +124,7 @@ begin
 			end if;
 		end loop;
 	end process;
-	
+
 	BADDR<=	addr_high(AWIDTH-LAWIDTH-1 downto AWIDTH-LAWIDTH-2);
 	process(addr_high,bgnaddr,bwidth)begin
 		RADDR<=(others=>'0');
@@ -149,8 +149,8 @@ begin
 		CEADDR(CAWIDTH-1 downto LAWIDTH)<=addr_high(CAWIDTH-LAWIDTH-1 downto 0);
 		CEADDR(LAWIDTH-1 downto 0)<=endaddr;
 	end process;
-	
-	
+
+
 	process(clk,rstn)
 	variable tmpaddr	:std_logic_vector(LAWIDTH-1 downto 0);
 	begin
@@ -161,10 +161,11 @@ begin
 				MADDR<=(others=>'0');
 				MDATA<=(others=>'0');
 				MDOE<='0';
-				
+				--PMEMDAT<=(others=>'Z');
+
 				clkstate<=0;
 				curaddr<=(others=>'0');
-				
+
 				STATE<=ST_INITPALL;
 				INITR_COUNT	<=INITR_TIMES;
 				INITTIMER	<=INITTIMERCNT;
@@ -194,6 +195,7 @@ begin
 							BA<="00";
 							MADDR<=(others=>'1');
 							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
 							clkstate<=clkstate+1;
 						when 3 =>
 							COMMAND<=cmd_NOP;
@@ -201,6 +203,7 @@ begin
 							BA<="00";
 							MADDR<=(others=>'0');
 							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
 							STATE<=ST_INITREF;
 							INITR_COUNT<=INITR_TIMES;
 							clkstate<=0;
@@ -210,6 +213,7 @@ begin
 							BA<="00";
 							MADDR<=(others=>'0');
 							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
 							clkstate<=clkstate+1;
 						end case;
 					when ST_INITREF | ST_REFRESH =>
@@ -220,6 +224,7 @@ begin
 							BA<="00";
 							MADDR<=(others=>'0');
 							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
 							clkstate<=clkstate+1;
 						when 9 =>
 							COMMAND<=cmd_NOP;
@@ -227,6 +232,7 @@ begin
 							BA<="00";
 							MADDR<=(others=>'0');
 							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
 							if(STATE=ST_INITREF)then
 								if(INITR_COUNT>0)then
 									INITR_COUNT<=INITR_COUNT-1;
@@ -243,6 +249,7 @@ begin
 							BA<="00";
 							MADDR<=(others=>'0');
 							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
 							clkstate<=clkstate+1;
 						end case;
 					when ST_INITMRS =>
@@ -259,6 +266,7 @@ begin
 							BA<="00";
 							MADDR<=(others=>'0');
 							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
 							STATE<=ST_REFRESH;
 							clkstate<=0;
 							initdone<='1';
@@ -268,6 +276,7 @@ begin
 							BA<="00";
 							MADDR<=(others=>'0');
 							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
 							clkstate<=clkstate+1;
 						end case;
 					when ST_READ =>
@@ -278,6 +287,7 @@ begin
 							BA<=BADDR;
 							MADDR<=RADDR;
 							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
 							clkstate<=clkstate+1;
 						when 3 =>
 							COMMAND<=cmd_READ;
@@ -285,6 +295,7 @@ begin
 							BA<=BADDR;
 							MADDR<="00" & '0' & CBADDR(9 downto 0);
 							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
 							curaddr<=bgnaddr;
 							clkstate<=clkstate+1;
 						when 4 =>
@@ -295,10 +306,12 @@ begin
 								COMMAND<=cmd_READ;
 								MADDR<="00" & '0' & CZADDR(9 downto 0);
 								MDOE<='0';
+								--PMEMDAT<=(others=>'Z');
 							else
 								COMMAND<=cmd_NOP;
 								MADDR<=(others=>'0');
 								MDOE<='0';
+								--PMEMDAT<=(others=>'Z');
 							end if;
 							clkstate<=clkstate+1;
 						when 5 =>
@@ -309,10 +322,12 @@ begin
 								COMMAND<=cmd_READ;
 								MADDR<="00" & '0' & CZADDR(9 downto 0);
 								MDOE<='0';
+								--PMEMDAT<=(others=>'Z');
 							else
 								COMMAND<=cmd_NOP;
 								MADDR<=(others=>'0');
 								MDOE<='0';
+								--PMEMDAT<=(others=>'Z');
 							end if;
 							clkstate<=clkstate+1;
 						when 6 =>
@@ -323,10 +338,12 @@ begin
 								COMMAND<=cmd_READ;
 								MADDR<="00" & '0' & CZADDR(9 downto 0);
 								MDOE<='0';
+								--PMEMDAT<=(others=>'Z');
 							else
 								COMMAND<=cmd_NOP;
 								MADDR<=(others=>'0');
 								MDOE<='0';
+								--PMEMDAT<=(others=>'Z');
 							end if;
 							clkstate<=clkstate+1;
 						when 7 =>
@@ -337,10 +354,12 @@ begin
 								COMMAND<=cmd_READ;
 								MADDR<="00" & '0' & CZADDR(9 downto 0);
 								MDOE<='0';
+								--PMEMDAT<=(others=>'Z');
 							else
 								COMMAND<=cmd_NOP;
 								MADDR<=(others=>'0');
 								MDOE<='0';
+								--PMEMDAT<=(others=>'Z');
 							end if;
 							curaddr<=curaddr+addr1;
 							if((tmpaddr or blkmask)=(endaddr or blkmask))then
@@ -355,6 +374,7 @@ begin
 							BA<="00";
 							MADDR<=(others=>'1');
 							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
 							curaddr<=curaddr+addr1;
 							clkstate<=clkstate+1;
 						when 10  =>
@@ -365,6 +385,7 @@ begin
 							MADDR<=(others=>'0');
 							MADDR(12 downto 11)<="11";
 							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
 							STATE<=ST_IDLE;
 							clkstate<=0;
 						when others =>
@@ -374,6 +395,7 @@ begin
 							MADDR<=(others=>'0');
 							MADDR(12 downto 11)<="11";
 							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
 							clkstate<=clkstate+1;
 						end case;
 					when ST_WRITE =>
@@ -384,6 +406,7 @@ begin
 							BA<=BADDR;
 							MADDR<=RADDR;
 							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
 							curaddr<=bgnaddr;
 							clkstate<=clkstate+1;
 						when 1 =>
@@ -394,6 +417,7 @@ begin
 	--						de<='1';
 							MADDR(12 downto 11)<="11";
 							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
 							clkstate<=clkstate+1;
 						when 2 =>
 							COMMAND<=cmd_NOP;
@@ -402,6 +426,7 @@ begin
 							MADDR<=(others=>'0');
 							MADDR(12 downto 11)<="11";
 							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
 							curaddr<=curaddr+addr1;
 							clkstate<=clkstate+1;
 						when 3 =>
@@ -411,6 +436,7 @@ begin
 							MADDR<=(not we) & '0' & CBADDR(9 downto 0);
 							curaddr<=curaddr+addr1;
 							MDOE<='1';
+							--PMEMDAT<=MDATA;
 							MDATA<=wrdat;
 							clkstate<=clkstate+1;
 						when 4 =>
@@ -420,6 +446,7 @@ begin
 							MADDR<=(others=>'0');
 							MADDR(12 downto 11)<=not we;
 							MDOE<='1';
+							--PMEMDAT<=MDATA;
 							MDATA<=wrdat;
 							if((curaddr-addr1)>=endaddr or (curaddr-addr1)<bgnaddr)then
 	--						if(curaddr/=endaddr or curaddr<bgnaddr)then
@@ -434,6 +461,7 @@ begin
 							MADDR(12 downto 11)<="11";
 							MDATA<=x"ffff";
 							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
 							clkstate<=clkstate+1;
 						when 6 =>
 							COMMAND<=cmd_PALL;
@@ -442,6 +470,7 @@ begin
 							MADDR<=(others=>'1');
 							MADDR(12 downto 11)<="11";
 							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
 							clkstate<=clkstate+1;
 						when 8 =>
 							COMMAND<=cmd_NOP;
@@ -450,6 +479,7 @@ begin
 							MADDR<=(others=>'0');
 							MADDR(12 downto 11)<="11";
 							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
 							STATE<=ST_IDLE;
 							clkstate<=0;
 						when others =>
@@ -459,6 +489,7 @@ begin
 							MADDR<=(others=>'0');
 							MADDR(12 downto 11)<="11";
 							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
 							clkstate<=clkstate+1;
 						end case;
 					when others =>		--ST_IDLE
@@ -478,7 +509,7 @@ begin
 			end if;
 		end if;
 	end process;
-	
+
 --	process(clk)begin
 --		if(clk' event and clk='0')then
 			PMEMCKE		<=COMMAND(4);
@@ -493,13 +524,13 @@ begin
 			PMEMADR		<=MADDR;
 			PMEMDAT		<=(others=>'Z') when MDOE='0' else MDATA;
 --			if(MDOE='1')then
---				PMEMDAT<=MDATA;
+--				--PMEMDAT<=MDATA;
 --			else
---				PMEMDAT<=(others=>'Z');
+--				--PMEMDAT<=(others=>'Z');
 --			end if;
 --		end if;
 --	end process;
-	
+
 	process(clk)begin
 		if rising_edge(clk) then
 			if(ce = '1')then
@@ -507,7 +538,7 @@ begin
 			end if;
 		end if;
 	end process;
-	
+
 	addr_wc<=curaddr;
 	process(clk)
 	variable addr_dly	:std_logic_vector(7 downto 0);
@@ -520,9 +551,4 @@ begin
 			end if;
 		end if;
 	end process;
-end rtl;			
-					
-						
-						
-			
-			
+end rtl;

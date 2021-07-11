@@ -8,7 +8,7 @@ generic(
 	chkint	:integer	:=300;		--check interval(msec)
 	signwait:integer	:=1;		--signal wait length(usec)
 	datwait	:integer	:=10;		--data wait length(usec)
-	motordly:integer	:=500		--motor rotate delay(msec)	
+	motordly:integer	:=500		--motor rotate delay(msec)
 );
 port(
 	FDC_USEL	:in std_logic_vector(1 downto 0);
@@ -18,7 +18,7 @@ port(
 	FDC_STEPn	:in std_logic;
 	FDC_READYn	:out std_logic;
 	FDC_WAIT	:out std_logic;
-	
+
 	FDD_USEL	:out std_logic_vector(3 downto 0);
 	FDD_MOTORn	:out std_logic_vector(3 downto 0);
 	FDD_DATAn	:in std_logic;
@@ -26,18 +26,18 @@ port(
 	FDD_DSKCHGn	:in std_logic;
 	FDD_DIRn	:out std_logic;
 	FDD_STEPn	:out std_logic;
-	
+
 	driveen		:in std_logic_vector(3 downto 0)	:=(others=>'1');
 	f_eject		:in std_logic_vector(3 downto 0)	:=(others=>'0');
-	
+
 	indisk		:out std_logic_vector(3 downto 0);
-	
+
 	hmssft		:in std_logic;
-	
+
 	clk			:in std_logic;
 	ce          :in std_logic := '1';
 	rstn		:in std_logic
-);	
+);
 end dskchk;
 
 architecture rtl of dskchk is
@@ -76,8 +76,9 @@ generic(
 port(
 	delayin	:in std_logic;
 	delayout:out std_logic;
-	
+
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -92,7 +93,7 @@ begin
 			end if;
 		end if;
 	end process;
-	
+
 	process(clk,rstn)
 	variable sel	:std_logic;
 	begin
@@ -113,7 +114,7 @@ begin
 			end if;
 		end if;
 	end process;
-	
+
 	process(clk,rstn)begin
 		if rising_edge(clk) then
 			if(rstn='0')then
@@ -217,10 +218,10 @@ begin
 			end if;
 		end if;
 	end process;
-			
+
 	BUSY<='0' when state=st_IDLE else '1';
 	FDC_WAIT<=BUSY;
-	
+
 	FDD_STEPn<=	FDC_STEPn when BUSY='0' else CONT_STEP;
 	FDD_DIRn<=	FDC_DIRn  when BUSY='0' else CONT_DIR;
 	FDD_USEL<=	"1110" when BUSY='0' and FDC_USEL="00" and FDC_BUSY='1' else
@@ -255,20 +256,19 @@ begin
 			end if;
 		end if;
 	end process;
-	
-	delay0	:delayon generic map(sysclk*motordly) port map(FDC_MOTOR(0),MOTOREN(0),clk,rstn);
-	delay1	:delayon generic map(sysclk*motordly) port map(FDC_MOTOR(1),MOTOREN(1),clk,rstn);
-	delay2	:delayon generic map(sysclk*motordly) port map(FDC_MOTOR(2),MOTOREN(2),clk,rstn);
-	delay3	:delayon generic map(sysclk*motordly) port map(FDC_MOTOR(3),MOTOREN(3),clk,rstn);
-	
+
+	delay0	:delayon generic map(sysclk*motordly) port map(FDC_MOTOR(0),MOTOREN(0),clk,ce,rstn);
+	delay1	:delayon generic map(sysclk*motordly) port map(FDC_MOTOR(1),MOTOREN(1),clk,ce,rstn);
+	delay2	:delayon generic map(sysclk*motordly) port map(FDC_MOTOR(2),MOTOREN(2),clk,ce,rstn);
+	delay3	:delayon generic map(sysclk*motordly) port map(FDC_MOTOR(3),MOTOREN(3),clk,ce,rstn);
+
 	FDC_READYn<=	not (indiske(0) and MOTOREN(0)) when FDC_USEL="00" else
 					not (indiske(1) and MOTOREN(1)) when FDC_USEL="01" else
 					not (indiske(2) and MOTOREN(2)) when FDC_USEL="10" else
 					not (indiske(3) and MOTOREN(3)) when FDC_USEL="11" else
 					'1';
-	
+
 	indisk<=indiske;
 
 end rtl;
 
-	

@@ -12,12 +12,12 @@ port(
 	wdat	:in std_logic_vector(3 downto 0);
 	rdat	:out std_logic_vector(3 downto 0);
 	wr		:in std_logic;
-	
+
 	clkout	:out std_logic;
 	alarm	:out std_logic;
-	
+
 	RTCIN	:in std_logic_vector(64 downto 0);
-	
+
 	clk		:in std_logic;
 	ce      :in std_logic := '1';
 	rstn		:in std_logic
@@ -120,7 +120,7 @@ port(
 	SECLIN	:in std_logic_vector(3 downto 0);
 	SECLWR	:in std_logic;
 	SECZERO	:in std_logic;
-	
+
 	YERHOUT	:out std_logic_vector(3 downto 0);
 	YERLOUT	:out std_logic_vector(3 downto 0);
 	MONOUT	:out std_logic_vector(3 downto 0);
@@ -136,10 +136,11 @@ port(
 
 	OUT1Hz	:out std_logic;
 	SUBSEC	:out integer range 0 to clkfreq-1;
-	
+
 	fast	:in std_logic;
 
  	sclk	:in std_logic;
+ 	sys_ce  :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -172,7 +173,7 @@ begin
 		SECLIN	=>SECLWD,
 		SECLWR	=>SECLWR,
 		SECZERO	=>SECZWR,
-		
+
 		YERHOUT	=>YEH,
 		YERLOUT	=>YEL,
 		MONOUT	=>MON,
@@ -188,13 +189,14 @@ begin
 
 		OUT1Hz	=>Hz,
 		SUBSEC	=>subHz,
-		
+
 		fast	=>'0',
 
 		sclk	=>clk,
+		sys_ce  =>ce,
 		rstn	=>rstn
 	);
-	
+
 	process(clk,rstn)
 	variable modx	:integer range 0 to (div16-1);
 	begin
@@ -211,9 +213,9 @@ begin
 			end if;
 		end if;
 	end process;
-	
+
 	alarm<=(Hz and (not RESET(3))) or (Hz16 and (not RESET(2)));
-			
+
 	SECLID<=RTCIN(3 downto 0);
 	SECHID<=RTCIN(6 downto 4);
 	MINLID<=RTCIN(11 downto 8);
@@ -224,7 +226,7 @@ begin
 	DAYHID<=RTCIN(29 downto 28);
 	MONID<=	RTCIN(35 downto 32) when RTCIN(36)='0' else
 				RTCIN(35 downto 32)+x"a";
-	
+
 	process(RTCIN)
 	variable carry	:std_logic;
 	variable	tmpval	:std_logic_vector(4 downto 0);
@@ -261,7 +263,7 @@ begin
 	MINLWD<=wdat 					when wr='1' else MINLID;
 	SECHWD<=wdat(2 downto 0)	when wr='1' else SECHID;
 	SECLWD<=wdat 					when wr='1' else SECLID;
-	
+
 	process(clk,rstn)begin
 		if rising_edge(clk) then
 			if(rstn='0')then
@@ -276,7 +278,7 @@ begin
 			end if;
 		end if;
 	end process;
-	
+
 	process(clk,rstn)
 	variable state	:integer range 0 to 2;
 	begin
@@ -301,7 +303,7 @@ begin
 			end if;
 		end if;
 	end process;
-	
+
 	YEHWR<=	'1' when addr=x"c" and BNKSEL='0' and wr='1' else SYSSET;
 	YELWR<=	'1' when addr=x"b" and BNKSEL='0' and wr='1' else SYSSET;
 	MONWR<=	'1' when (addr=x"9" or addr=x"a") and BNKSEL='0' and wr='1' else SYSSET;
@@ -315,7 +317,7 @@ begin
 	SECHWR<='1' when addr=x"1" and BNKSEL='0' and wr='1' else SYSSET;
 	SECLWR<='1' when addr=x"0" and BNKSEL='0' and wr='1' else SYSSET;
 	SECZWR<='1' when addr=x"0" and BNKSEL='0' and wr='1' else SYSSET;
-	
+
 	process(clk,rstn)begin
 		if rising_edge(clk) then
 			if(rstn='0')then
@@ -354,6 +356,6 @@ begin
 			"000" & BNKSEL when addr=x"d" else
 			RESET		when addr=x"f" else
 			x"0";
-	
+
 end rtl;
-			
+

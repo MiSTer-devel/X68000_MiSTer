@@ -9,12 +9,12 @@ port(
 	datout	:out std_logic_vector(7 downto 0);
 	datwr	:in std_logic;
 	drq		:out std_logic;
-	
+
 	clkdiv	:in std_logic_vector(1 downto 0);
 	sft		:in std_logic;
-	
+
 	sndout	:out std_logic_vector(11 downto 0);
-	
+
 	sysclk	:in std_logic;
 	sys_ce  :in std_logic := '1';
 	sndclk		:in std_logic;
@@ -30,7 +30,7 @@ port(
 	datin	:in std_logic_vector(3 downto 0);
 	datemp	:in std_logic;
 	datwr	:in std_logic;
-	
+
 	datout	:out std_logic_vector(11 downto 0);
 
 	clkdiv	:in std_logic_vector(1 downto 0);
@@ -117,7 +117,7 @@ begin
 			end if;
 		end if;
 	end process;
-	
+
 	process(sndclk,rstn)begin
 		if rising_edge(sndclk) then
 			if(rstn='0')then
@@ -168,13 +168,13 @@ begin
 			end if;
 		end if;
 	end process;
-	
+
 	adpcm	:calcadpcm port map(
 		playen	=>playen,
 		datin	=>playdat,
 		datemp	=>datemp,
 		datwr	=>playwr,
-		
+
 		datout	=>sndout,
 
 		clkdiv	=>clkdiv,
@@ -183,7 +183,7 @@ begin
 		ce      =>snd_ce,
 		rstn	=>rstn
 	);
-	
+
 	datout<=	(playen or recen) & '1' & "000000" when addr='0' else
 				(others=>'0');
 	end rtl;

@@ -36,7 +36,7 @@ signal	WSTART	:std_logic;				-- start bit waiting
 signal	SDtr	:std_logic;				-- digital filtered SD signal
 constant widzero	:std_logic_vector(maxwid-1 downto 0)	:=(others=>'0');
 constant widone		:std_logic_vector(maxwid-1 downto 0)	:=widzero(maxwid-1 downto 1) & '1';
-component TWICEREAD
+component TWICEREAD --FIXME: Unused
 	port(
 		D	:in std_logic;
 		Q	:out std_logic;

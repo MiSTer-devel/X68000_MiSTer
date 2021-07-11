@@ -17,7 +17,7 @@ port(
 	MCLKOUT:out std_logic;
 	MDATIN	:in std_logic;
 	MDATOUT:out std_logic;
-	
+
 	clk		:in std_logic;
 	ce      :in std_logic := '1';
 	rstn	:in std_logic
@@ -41,15 +41,16 @@ port(
 	RESET	:in std_logic;
 	COL		:out std_logic;
 	PERR	:out std_logic;
-	TWAIT	:in std_logic;
-	
+	TWAIT	:in std_logic	:='0';
+
 	KBCLKIN	:in	std_logic;
 	KBCLKOUT :out std_logic;
 	KBDATIN	:in std_logic;
 	KBDATOUT :out std_logic;
-	
+
 	SFT		:in std_logic;
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -65,6 +66,7 @@ port(
 	SFT		:out std_logic;
 
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -123,11 +125,11 @@ signal	TXDAT1		:std_logic_vector(7 downto 0);
 signal	TXDAT2		:std_logic_vector(7 downto 0);
 constant waitrlen	:integer	:=RXINT*CLKCYC;
 signal	waitrcount	:integer range 0 to waitrlen-1;
-	
+
 begin
-	
-	MSFT	:sftclk generic map(CLKCYC,SFTCYC,1) port map("1",SFT,clk,rstn);
-	
+
+	MSFT	:sftclk generic map(CLKCYC,SFTCYC,1) port map("1",SFT,clk,ce,rstn);
+
 	MOUSE	:PS2IF port map(
 	DATIN	=>M_TXDAT,
 	DATOUT	=>M_RXDAT,
@@ -138,14 +140,15 @@ begin
 	COL		=>M_COL,
 	PERR	=>M_PERR,
 	TWAIT	=>'0',
-	
+
 	KBCLKIN	=>MCLKIN,
 	KBCLKOUT=>MCLKOUT,
 	KBDATIN	=>MDATIN,
 	KBDATOUT=>MDATOUT,
-	
+
 	SFT		=>SFT,
 	clk		=>clk,
+	ce      =>ce,
 	rstn	=>rstn
 	);
 
@@ -273,7 +276,7 @@ begin
 						PS2STATE<=P2ST_IDLE;
 					end case;
 				end if;
-				
+
 				if(waitrcount>0)then
 					waitrcount<=waitrcount-1;
 				else
@@ -291,7 +294,7 @@ begin
 								TXDAT0(6)<='0';
 								TXDAT0(4)<='0';
 							end case;
-							
+
 							case valY(9 downto 8) is
 							when "01" =>
 								TXDAT0(7)<='0';
@@ -303,13 +306,13 @@ begin
 								TXDAT0(7)<='0';
 								TXDAT0(5)<='0';
 							end case;
-							
+
 							TXDAT0(3 downto 0)<="00" & sw1 & sw0;
 							TXDAT1<=valX(8 downto 1);
 							TXDAT2<=valY(8 downto 1);
 							valX<=(others=>'0');
 							valY<=(others=>'0');
-							
+
 							waitrcount<=waitrlen-1;
 							SCCSTATE<=SCST_TX0;
 						end if;
@@ -330,7 +333,7 @@ begin
 					when others =>
 						SCCSTATE<=SCST_IDLE;
 					end case;
-				end if;	
+				end if;
 			end if;
 		end if;
 	end process;

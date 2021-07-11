@@ -13,7 +13,7 @@ port(
 	irq			:out std_logic;
 	ivect		:out std_logic_vector(7 downto 0);
 	iack		:in std_logic;
-	
+
 	busreq		:out std_logic;
 	busact		:in std_logic;
 	buschk		:out std_logic;
@@ -42,7 +42,7 @@ port(
 	doneo		:out std_logic;
 
 	dtc			:out std_logic;
-	
+
 	clk			:in std_logic;
 	ce          :in std_logic := '1';
 	rstn		:in std_logic
@@ -186,22 +186,23 @@ component g_srff
 port(
 	set		:in std_logic;
 	reset	:in std_logic;
-	
+
 	q		:out std_logic;
-	
+
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
 begin
-	
-	COCR	:g_srff port map(S_COCset,S_COCres,S_COC,clk,rstn);
-	BTCR	:g_srff port map(S_BTCset,S_BTCres,S_BTC,clk,rstn);
-	NDTR	:g_srff port map(S_NDTset,S_NDTres,S_NDT,clk,rstn);
-	ERRR	:g_srff port map(S_ERRset,S_ERRres,S_ERR,clk,rstn);
-	DITR	:g_srff port map(S_DITset,S_DITres,S_DIT,clk,rstn);
-	PCTR	:g_srff port map(S_PCTset,S_PCTres,S_PCT,clk,rstn);
-	
+
+	COCR	:g_srff port map(S_COCset,S_COCres,S_COC,clk,ce,rstn);
+	BTCR	:g_srff port map(S_BTCset,S_BTCres,S_BTC,clk,ce,rstn);
+	NDTR	:g_srff port map(S_NDTset,S_NDTres,S_NDT,clk,ce,rstn);
+	ERRR	:g_srff port map(S_ERRset,S_ERRres,S_ERR,clk,ce,rstn);
+	DITR	:g_srff port map(S_DITset,S_DITres,S_DIT,clk,ce,rstn);
+	PCTR	:g_srff port map(S_PCTset,S_PCTres,S_PCT,clk,ce,rstn);
+
 	S_BTCres<=CCR_CNT;
 	S_COCset<=int_comp;
 
@@ -211,7 +212,7 @@ begin
 	S_ERRres<=regwdat(12) when regaddr(5 downto 1)="00000" and regwr(1)='1' else '0';
 	S_DITres<=regwdat(10) when regaddr(5 downto 1)="00000" and regwr(1)='1' else '0';
 	S_PCTres<=regwdat( 9) when regaddr(5 downto 1)="00000" and regwr(1)='1' else '0';
-	
+
 	process(clk,rstn)
 	variable ldrqx	:std_logic;
 	begin
@@ -231,7 +232,7 @@ begin
 			end if;
 		end if;
 	end process;
-	
+
 	process(clk,rstn)begin
 		if rising_edge(clk) then
 			if(rstn='0')then
@@ -299,7 +300,7 @@ begin
 			end if;
 		end if;
 	end process;
-	
+
 	process(clk,rstn)begin
 		if rising_edge(clk) then
 			if(rstn='0')then
@@ -309,7 +310,7 @@ begin
 			end if;
 		end if;
 	end process;
-	
+
 	process(clk,rstn)begin
 		if rising_edge(clk) then
 			if(rstn='0')then
@@ -335,7 +336,7 @@ begin
 			end if;
 		end if;
 	end process;
-	
+
 	process(clk,rstn)begin
 		if rising_edge(clk) then
 			if(rstn='0')then
@@ -380,7 +381,7 @@ begin
 			end if;
 		end if;
 	end process;
-	
+
 	process(clk,rstn)begin
 		if rising_edge(clk) then
 			if(rstn='0')then
@@ -419,7 +420,7 @@ begin
 			end if;
 		end if;
 	end process;
-	
+
 	process(clk,rstn)begin
 		if rising_edge(clk) then
 			if(rstn='0')then
@@ -439,7 +440,7 @@ begin
 			end if;
 		end if;
 	end process;
-	
+
 	process(clk,rstn)begin
 		if rising_edge(clk) then
 			if(rstn='0')then
@@ -484,7 +485,7 @@ begin
 			end if;
 		end if;
 	end process;
-	
+
 	process(clk,rstn)begin
 		if rising_edge(clk) then
 			if(rstn='0')then
@@ -496,7 +497,7 @@ begin
 			end if;
 		end if;
 	end process;
-	
+
 	process(clk,rstn)begin
 		if rising_edge(clk) then
 			if(rstn='0')then
@@ -508,13 +509,13 @@ begin
 			end if;
 		end if;
 	end process;
-	
-	
-	S_PCS<=pcli; 
-	
+
+
+	S_PCS<=pcli;
+
 	S_ACT<='0' when STATE=ST_IDLE else '1';
 	buschk<=reqwait when STATE=ST_BUSWAIT or STATE=ST_CHAINBUSWAIT else '0';
-	
+
 	regrdatx<=
 		S_COC & S_BTC & S_NDT & S_ERR & S_ACT & S_DIT & S_PCT & S_PCS & "000" & S_CER when regaddr(5 downto 1)="00000" else
 		DCR_XRM & DCR_DTYPE & DCR_DPS & '0' & DCR_PCL & OCR_DIR & OCR_BTD & OCR_SIZE & OCR_CHAIN & OCR_REQG when regaddr(5 downto 1)="00010" else
@@ -535,7 +536,7 @@ begin
 		x"00" & "000000" & CPR_CP when regaddr(5 downto 1)="10110" else
 		x"000" & GCR_BT & GCR_BR when regaddr(5 downto 1)="11111" else
 		x"0000";
-	
+
 --	process(clk)begin
 --		if(ce = '1')then
 			regrdat<=regrdatx;
@@ -557,14 +558,14 @@ begin
 			end if;
 		end if;
 	end process;
-	
+
 	packen<=	'0' when OCR_SIZE/="00" else
 				'0' when DCR_DPS='0' else
 				'0' when MTC<x"0002" else
 				'1' when DAR(0)='0' and MAR(0)='0' and SCR_DAC(1)='0' and SCR_MAC(1)='0' else
 				'1' when DAR(0)='1' and MAR(0)='1' and SCR_DAC(1)='1' and SCR_MAC(1)='1' else
 				'0';
-	
+
 	process(clk,rstn)begin
 		if rising_edge(clk) then
 			if(rstn='0')then
@@ -583,12 +584,12 @@ begin
 				d_wr<='0';
 				TXDAT<=(others=>'0');
 				bytecnt<=0;
-				
+
 				MTC_dec		<='0';
 				MTC_dec2		<='0';
 				MTC_load	<='0';
 				MTC_BTC		<='0';
-	
+
 				MAR_incb	<='0';
 				MAR_decb	<='0';
 				MAR_incw	<='0';
@@ -598,22 +599,22 @@ begin
 				MAR_loadh	<='0';
 				MAR_loadl	<='0';
 				MAR_BAR		<='0';
-	
+
 				DAR_incb		<='0';
 				DAR_decb		<='0';
 				DAR_incw		<='0';
 				DAR_decw		<='0';
 				DAR_incl		<='0';
 				DAR_decl		<='0';
-	
+
 				BTC_dec		<='0';
-	
+
 				BAR_loadh	<='0';
 				BAR_loadl	<='0';
 				BAR_inc		<='0';
-	
+
 				MFC_BFC		<='0';
-				
+
 				CONT_clr<='0';
 				int_comp<='0';
 				S_BTCset<='0';
@@ -871,7 +872,7 @@ begin
 							end if;
 						when others =>
 						end case;
-						
+
 						case SCR_DAC is
 						when "01" =>
 							if(DCR_DPS='0')then
@@ -904,7 +905,7 @@ begin
 									MTC_dec<='1';
 								end if;
 								if(MTC=x"0001" or (packen='1' and MTC=x"0002"))then
-									if(CCR_CNT='1')then	
+									if(CCR_CNT='1')then
 										S_BTCset<='1';
 										STATE<=ST_NBLOCK;
 									elsif(OCR_CHAIN(1)='1')then
@@ -934,7 +935,7 @@ begin
 									bytecnt<=0;
 									MTC_dec<='1';
 									if(MTC=x"0001")then
-										if(CCR_CNT='1')then	
+										if(CCR_CNT='1')then
 											S_BTCset<='1';
 											STATE<=ST_NBLOCK;
 										elsif(OCR_CHAIN(1)='1')then
@@ -970,7 +971,7 @@ begin
 							when "00" | "11" =>
 								MTC_dec<='1';
 								if(MTC=x"0001")then
-									if(CCR_CNT='1')then	
+									if(CCR_CNT='1')then
 										S_BTCset<='1';
 										STATE<=ST_NBLOCK;
 									elsif(OCR_CHAIN(1)='1')then
@@ -998,7 +999,7 @@ begin
 									bytecnt<=0;
 									MTC_dec<='1';
 									if(MTC=x"0001")then
-										if(CCR_CNT='1')then	
+										if(CCR_CNT='1')then
 											S_BTCset<='1';
 											STATE<=ST_NBLOCK;
 										elsif(OCR_CHAIN(1)='1')then
@@ -1213,7 +1214,7 @@ begin
 			end if;
 		end if;
 	end process;
-	
+
 	process(clk,rstn)
 	variable lCNT	:std_logic;
 	begin
@@ -1264,8 +1265,8 @@ begin
 			end if;
 		end if;
 	end process;
-			
-	
+
+
 	process(clk,rstn)begin
 		if rising_edge(clk) then
 			if(rstn='0')then
@@ -1295,10 +1296,10 @@ begin
 	reqg<='1' when OCR_REQG="00" else '0';
 	pri<=CPR_CP;
 	b_addr<=BUSADDR(23 downto 0);
-	
+
 	doneo<=int_comp;
-	
+
 	bt<=GCR_BT;
 	BR<=GCR_BR;
-	
+
 end rtl;

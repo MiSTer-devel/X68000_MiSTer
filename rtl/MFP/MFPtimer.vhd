@@ -14,7 +14,7 @@ port(
 	INTB	:out std_logic;
 	INTC	:out std_logic;
 	INTD	:out std_logic;
-	
+
 	TACRRD	:in std_logic;
 	TACRWR	:in std_logic;
 	TBCRRD	:in std_logic;
@@ -77,8 +77,9 @@ port(
 	wr		:in std_logic;
 	TI		:in std_logic;
 	INT		:out std_logic;
-	
+
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -107,11 +108,11 @@ begin
 		end if;
 	end process;
 
-	TA	:MFPtimerS generic map(SCFREQ) port map(modeA,wdat,TADR,TADRWR,TAI,INTAb,clk,rstn);
-	TB	:MFPtimerS generic map(SCFREQ) port map(modeB,wdat,TBDR,TBDRWR,TBI,INTBb,clk,rstn);
-	TC	:MFPtimerS generic map(SCFREQ) port map(modeC,wdat,TCDR,TCDRWR,'0',INTCb,clk,rstn);
-	TD	:MFPtimerS generic map(SCFREQ) port map(modeD,wdat,TDDR,TDDRWR,'0',INTDb,clk,rstn);
-	
+	TA	:MFPtimerS generic map(SCFREQ) port map(modeA,wdat,TADR,TADRWR,TAI,INTAb,clk,ce,rstn);
+	TB	:MFPtimerS generic map(SCFREQ) port map(modeB,wdat,TBDR,TBDRWR,TBI,INTBb,clk,ce,rstn);
+	TC	:MFPtimerS generic map(SCFREQ) port map(modeC,wdat,TCDR,TCDRWR,'0',INTCb,clk,ce,rstn);
+	TD	:MFPtimerS generic map(SCFREQ) port map(modeD,wdat,TDDR,TDDRWR,'0',INTDb,clk,ce,rstn);
+
 	process(clk,rstn)begin
 		if rising_edge(clk) then
 			if(rstn='0')then
@@ -127,7 +128,7 @@ begin
 			end if;
 		end if;
 	end process;
-		
+
 	process(clk,rstn)begin
 		if rising_edge(clk) then
 			if(rstn='0')then
@@ -172,12 +173,12 @@ begin
 	TBO<=TOB;
 	TCO<=TOC;
 	TDO<=TOD;
-	
+
 	INTA<=INTAb;
 	INTB<=INTBb;
 	INTC<=INTCb;
 	INTD<=INTDb;
-	
+
 	rdat<=	"0000" & modeA when TACRRD='1' else
 			"0000" & modeB when TBCRRD='1' else
 			modeC & modeD when TCDCRRD='1' else
@@ -186,7 +187,7 @@ begin
 			TCDR when TCDRRD='1' else
 			TDDR when TDDRRD='1' else
 			x"00";
-	
+
 	doe<=	'1' when TACRRD='1' else
 			'1' when TBCRRD='1' else
 			'1' when TCDCRRD='1' else
