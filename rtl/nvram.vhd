@@ -5,7 +5,6 @@ USE	IEEE.STD_LOGIC_UNSIGNED.ALL;
 entity nvram is
 port(
 	addr	:in std_logic_vector(12 downto 0);
-	ce		:in std_logic;
 	rd		:in std_logic;
 	wr		:in std_logic_vector(1 downto 0);
 	wdat	:in std_logic_vector(15 downto 0);
@@ -20,6 +19,7 @@ port(
 	
 	I2Csft	:in std_logic;
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end nvram;
@@ -65,6 +65,7 @@ begin
 			"00" when wp/=x"31" else
 			wr;
 	
+	-- FIXME: had an existing ce
 	doe<='1' when ce='1' and rd='1' else '0';
 	
 	cont_wrs<=	"10" when cont_addr(0)='0' and cont_wr='1' else

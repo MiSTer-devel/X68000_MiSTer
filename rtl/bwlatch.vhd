@@ -9,7 +9,6 @@ generic(
 );
 port(
 	addr	:in std_logic_vector(awidth-1 downto 0);
-	ce		:in std_logic;
 	wr		:in std_logic;
 	din		:in std_logic_vector(dwidth-1 downto 0);
 	
@@ -17,18 +16,22 @@ port(
 	pout	:out std_logic_vector(dwidth-1 downto 0);
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end bwlatch;
 
+--FIXME: had an existing ce
 architecture rtl of bwlatch is
 begin
 	process(clk,rstn)begin
-		if(rstn='0')then
-			pout<=(others=>'0');
-		elsif(clk' event and clk='1')then
-			if(addr=myaddr and ce='1' and wr='1')then
-				pout<=din;
+		if rising_edge(clk) then
+			if(rstn='0')then
+				pout<=(others=>'0');
+			elsif(ce = '1')then
+				if(addr=myaddr and ce='1' and wr='1')then
+					pout<=din;
+				end if;
 			end if;
 		end if;
 	end process;

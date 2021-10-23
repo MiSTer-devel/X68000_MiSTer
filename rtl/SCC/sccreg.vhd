@@ -12,6 +12,7 @@ port(
 	regwr	:out std_logic;
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end sccreg;
@@ -22,24 +23,26 @@ signal	lwr		:std_logic;
 signal	lrd		:std_logic;
 begin
 	process(clk,rstn)begin
-		if(rstn='0')then
-			regno<=(others=>'0');
-			regsel<='0';
-			lwr<='0';
-			lrd<='0';
-		elsif(clk' event and clk='1')then
-			lwr<=wr;
-			if(lwr='0' and wr='1')then
-				if(regsel='0' and wrdat(7 downto 4)="0000")then
-					regno<=wrdat(3 downto 0);
-					regsel<='1';
-				else
+		if rising_edge(clk) then
+			if(rstn='0')then
+				regno<=(others=>'0');
+				regsel<='0';
+				lwr<='0';
+				lrd<='0';
+			elsif(ce = '1')then
+				lwr<=wr;
+				if(lwr='0' and wr='1')then
+					if(regsel='0' and wrdat(7 downto 4)="0000")then
+						regno<=wrdat(3 downto 0);
+						regsel<='1';
+					else
+						regno<=(others=>'0');
+						regsel<='0';
+					end if;
+				elsif(lrd='1' and rd='0')then
 					regno<=(others=>'0');
 					regsel<='0';
 				end if;
-			elsif(lrd='1' and rd='0')then
-				regno<=(others=>'0');
-				regsel<='0';
 			end if;
 		end if;
 	end process;

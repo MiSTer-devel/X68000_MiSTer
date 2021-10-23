@@ -12,20 +12,22 @@ generic(
 );
 port(
 	-- SDRAM PORTS
-	SDRAM_CKE     	: out std_logic;                 			-- SD-RAM Clock enable
-	SDRAM_nCS    	: out std_logic;                        	-- SD-RAM Chip select
-	SDRAM_nRAS   	: out std_logic;                        	-- SD-RAM Row/RAS
-	SDRAM_nCAS   	: out std_logic;                        	-- SD-RAM /CAS
-	SDRAM_nWE    	: out std_logic;                        	-- SD-RAM /WE
-	SDRAM_DQMH    	: out std_logic;                        	-- SD-RAM DQMH
-	SDRAM_DQML    	: out std_logic;                        	-- SD-RAM DQML
-	SDRAM_BA     	: out std_logic_vector(1 downto 0);      	-- SD-RAM Bank select address
-	SDRAM_A     	: out std_logic_vector(12 downto 0);    	-- SD-RAM Address
-	SDRAM_DQ     	: inout std_logic_vector(15 downto 0);  	-- SD-RAM Data
+	PMEMCKE		:OUT	STD_LOGIC;							-- SD-RAM CLOCK ENABLE
+	PMEMCS_N	:OUT	STD_LOGIC;							-- SD-RAM CHIP SELECT
+	PMEMRAS_N	:OUT	STD_LOGIC;							-- SD-RAM ROW/RAS
+	PMEMCAS_N	:OUT	STD_LOGIC;							-- SD-RAM /CAS
+	PMEMWE_N	:OUT	STD_LOGIC;							-- SD-RAM /WE
+	PMemUdq     : out std_logic;                        -- SD-RAM UDQM
+	PMemLdq     : out std_logic;                        -- SD-RAM LDQM
+	PMEMBA1		:OUT	STD_LOGIC;							-- SD-RAM BANK SELECT ADDRESS 1
+	PMEMBA0		:OUT	STD_LOGIC;							-- SD-RAM BANK SELECT ADDRESS 0
+	PMEMADR		:OUT	STD_LOGIC_VECTOR( 12 DOWNTO 0 );	-- SD-RAM ADDRESS
+	PMEMDAT		:INOUT	STD_LOGIC_VECTOR( 15 DOWNTO 0 );	-- SD-RAM DATA
 
 	addr_high	:in std_logic_vector(AWIDTH-LAWIDTH-1 downto 0);
 	bgnaddr		:in std_logic_vector(LAWIDTH-1 downto 0);
 	endaddr		:in std_logic_vector(LAWIDTH-1 downto 0);
+	bwidth		:integer range 1 to LAWIDTH	:=8;
 	addr_rc		:out std_logic_vector(LAWIDTH-1 downto 0);
 	addr_wc		:out std_logic_vector(LAWIDTH-1 downto 0);
 	rddat		:out std_logic_vector(15 downto 0);
@@ -35,10 +37,12 @@ port(
 	rd			:in std_logic;
 	wr			:in std_logic;
 	refrsh		:in std_logic;
+	abort		:in std_logic	:='0';
 	busy		:out std_logic;
-	
+
 	initdone	:out std_logic;
 	clk			:in std_logic;
+	ce          :in std_logic := '1';
 	rstn		:in std_logic
 );
 end SDRAMC;
@@ -58,21 +62,24 @@ signal	STATE	:state_t;
 constant RAWIDRG	:integer	:=AWIDTH-CAWIDTH;
 
 --command: CKE & CSN & RAS_N & CAS_N & WE_N
-constant cmd_CWAIT	:std_logic_vector(2 downto 0)	:="111";
-constant cmd_NOP	   :std_logic_vector(2 downto 0)	:="111";
-constant cmd_BNKE	   :std_logic_vector(2 downto 0)	:="011";
-constant cmd_READ	   :std_logic_vector(2 downto 0)	:="101";
-constant cmd_WRITE	:std_logic_vector(2 downto 0)	:="100";
-constant cmd_PALL	   :std_logic_vector(2 downto 0)	:="010";
-constant cmd_REFRSH	:std_logic_vector(2 downto 0)	:="001";
-constant cmd_MRS	   :std_logic_vector(2 downto 0)	:="000";
+constant cmd_CWAIT	:std_logic_vector(4 downto 0)	:="01111";
+constant cmd_NOP	:std_logic_vector(4 downto 0)	:="11111";
+constant cmd_BNKE	:std_logic_vector(4 downto 0)	:="10011";
+constant cmd_READ	:std_logic_vector(4 downto 0)	:="10101";
+constant cmd_WRITE	:std_logic_vector(4 downto 0)	:="10100";
+constant cmd_PALL	:std_logic_vector(4 downto 0)	:="10010";
+constant cmd_REFRSH	:std_logic_vector(4 downto 0)	:="10001";
+constant cmd_MRS	:std_logic_vector(4 downto 0)	:="10000";
+constant cmd_BST	:std_logic_vector(4 downto 0)	:="10110";
 
-signal	COMMAND  :std_logic_vector(2 downto 0);
-signal	BA		   :std_logic_vector(1 downto 0);
-signal	MADDR	   :std_logic_vector(12 downto 0);
+signal	COMMAND	:std_logic_vector(4 downto 0);
+signal	DQE		:std_logic_vector(1 downto 0);
+signal	BA		:std_logic_vector(1 downto 0);
+signal	MADDR	:std_logic_vector(12 downto 0);
+signal	MDATA	:std_logic_vector(15 downto 0);
+signal	MDOE	:std_logic;
 
 signal	clkstate	:integer range 0 to 11;
-signal	csshift		:std_logic;
 signal	curaddr		:std_logic_vector(7 downto 0);
 
 constant INITR_TIMES	:integer	:=20;
@@ -93,26 +100,44 @@ signal	addr2		:std_logic_vector(LAWIDTH-1 downto 0);
 signal	addr3		:std_logic_vector(LAWIDTH-1 downto 0);
 signal	addr4		:std_logic_vector(LAWIDTH-1 downto 0);
 constant lastlow	:std_logic_vector(LAWIDTH-1 downto 0)	:=(others=>'1');
+signal	blkmask		:std_logic_vector(LAWIDTH-1 downto 0);
 
 begin
-	
+
 	addr1	<=conv_std_logic_vector(1,LAWIDTH);
 	addr2	<=conv_std_logic_vector(2,LAWIDTH);
 	addr3	<=conv_std_logic_vector(3,LAWIDTH);
 	addr4	<=conv_std_logic_vector(4,LAWIDTH);
-	
+
 	busy<=	'1' when STATE/=ST_IDLE else
 			'1' when rd='1' else
 			'1' when wr='1' else
 			'1' when refrsh='1' else
 			'0';
-	
+
+	process(bwidth)begin
+		for i in 0 to LAWIDTH-1 loop
+			if(i<bwidth)then
+				blkmask(i)<='0';
+			else
+				blkmask(i)<='1';
+			end if;
+		end loop;
+	end process;
+
 	BADDR<=	addr_high(AWIDTH-LAWIDTH-1 downto AWIDTH-LAWIDTH-2);
-	process(addr_high)begin
+	process(addr_high,bgnaddr,bwidth)begin
 		RADDR<=(others=>'0');
 		RADDR(AWIDTH-CAWIDTH-3 downto 0)<=	addr_high(AWIDTH-LAWIDTH-3 downto CAWIDTH-LAWIDTH);
 		CZADDR<=(others=>'0');
 		CZADDR(CAWIDTH-1 downto LAWIDTH)<=addr_high(CAWIDTH-LAWIDTH-1 downto 0);
+		for i in 0 to LAWIDTH-1 loop
+			if(i<bwidth)then
+				CZADDR(i)<='0';
+			else
+				CZADDR(i)<=bgnaddr(i);
+			end if;
+		end loop;
 	end process;
 	process(addr_high,bgnaddr)begin
 		CBADDR<=(others=>'0');
@@ -124,277 +149,406 @@ begin
 		CEADDR(CAWIDTH-1 downto LAWIDTH)<=addr_high(CAWIDTH-LAWIDTH-1 downto 0);
 		CEADDR(LAWIDTH-1 downto 0)<=endaddr;
 	end process;
-	
-	
+
+
 	process(clk,rstn)
-	variable	st_next	:std_logic;
+	variable tmpaddr	:std_logic_vector(LAWIDTH-1 downto 0);
 	begin
-		if(rstn='0')then
-			COMMAND<=cmd_NOP;
-			BA<="11";
-			MADDR<=(others=>'0');
-			clkstate<=0;
-			csshift<='1';
-			curaddr<=(others=>'0');
-			STATE<=ST_INITPALL;
-			INITR_COUNT	<=INITR_TIMES;
-			INITTIMER	<=INITTIMERCNT;
-			CLOCKWAIT	<=cwaitcnt;
-			de<='0';
-			initdone<='0';
-			SDRAM_DQ <=(others=>'Z');
-		elsif(clk' event and clk='1')then
-			st_next:='0';
-			if(INITTIMER>0)then
-				if(INITTIMER=1)then
-					COMMAND<=cmd_NOP;
-					CLOCKWAIT<=cwaitcnt;
-				else
-					COMMAND<=cmd_CWAIT;
-				end if;
-				INITTIMER<=INITTIMER-1;
-			elsif(CLOCKWAIT>0)then
-				CLOCKWAIT<=CLOCKWAIT-1;
+		if rising_edge(clk) then
+			if(rstn='0')then
+				COMMAND<=cmd_NOP;
+				BA<="11";
+				MADDR<=(others=>'0');
+				MDATA<=(others=>'0');
+				MDOE<='0';
+				--PMEMDAT<=(others=>'Z');
+
 				clkstate<=0;
+				curaddr<=(others=>'0');
+
 				STATE<=ST_INITPALL;
-			else
-				case STATE is
-				when ST_INITPALL =>
-					case clkstate is
-					when 0 =>
-						COMMAND<=cmd_PALL;
-						BA<="00";
-						MADDR<="0010000000000";
-					when 3 =>
+				INITR_COUNT	<=INITR_TIMES;
+				INITTIMER	<=INITTIMERCNT;
+				CLOCKWAIT	<=cwaitcnt;
+				de<='0';
+				initdone<='0';
+			elsif(ce = '1')then
+				if(INITTIMER>0)then
+					if(INITTIMER=1)then
 						COMMAND<=cmd_NOP;
-						BA<="00";
-						MADDR<=(others=>'0');
-						st_next:='1';
-					when others =>
-						COMMAND<=cmd_NOP;
-						BA<="00";
-						MADDR<=(others=>'0');
-					end case;
-				when ST_INITREF | ST_REFRESH =>
-					case clkstate is
-					when 0 =>
-						COMMAND<=cmd_REFRSH;
-						BA<="00";
-						MADDR<=(others=>'1');
-					when 9 =>
-						COMMAND<=cmd_NOP;
-						BA<="00";
-						MADDR<=(others=>'1');
-						st_next:='1';
-					when others =>
-						COMMAND<=cmd_NOP;
-						BA<="00";
-						MADDR<=(others=>'1');
-					end case;
-				when ST_INITMRS =>
-					case clkstate is
-					when 0 =>
-						COMMAND<=cmd_MRS;
-						BA<="00";
-						MADDR<="0000000110111";		--CAS3, full page burst
-					when 2 =>
-						COMMAND<=cmd_NOP;
-						BA<="00";
-						MADDR<=(others=>'0');
-						st_next:='1';
-					when others =>
-						COMMAND<=cmd_NOP;
-						BA<="00";
-						MADDR<=(others=>'0');
-					end case;
-				when ST_READ =>
-					case clkstate is
-					when 0 =>
-						COMMAND<=cmd_BNKE;
-						BA<=BADDR;
-						MADDR<=RADDR;
-					when 3 =>
-						COMMAND<=cmd_READ;
-						BA<=BADDR;
-						MADDR<="000" & CBADDR(9 downto 0);
-						curaddr<=bgnaddr;
-					when 4 =>
-						if(curaddr=lastlow)then
-							COMMAND<=cmd_READ;
-							BA<=BADDR;
-							MADDR<="000" & CZADDR(9 downto 0);
-						else
-							COMMAND<=cmd_NOP;
-							BA<="00";
-							MADDR<=(others=>'0');
-						end if;
-					when 5 =>
-						if((curaddr+addr1)=lastlow)then
-							COMMAND<=cmd_READ;
-							BA<=BADDR;
-							MADDR<="000" & CZADDR(9 downto 0);
-						else
-							COMMAND<=cmd_NOP;
-							BA<="00";
-							MADDR<=(others=>'0');
-						end if;
-					when 6 =>
-						if((curaddr+addr2)=lastlow)then
-							COMMAND<=cmd_READ;
-							BA<=BADDR;
-							MADDR<="000" & CZADDR(9 downto 0);
-						else
-							COMMAND<=cmd_NOP;
-							BA<="00";
-							MADDR<=(others=>'0');
-						end if;
-						csshift<='0';
---						curaddr<=curaddr+addr1;
-					when 7 =>
-						if((curaddr+addr3)=lastlow)then
-							COMMAND<=cmd_READ;
-							BA<=BADDR;
-							MADDR<="000" & CZADDR(9 downto 0);
-						else
-							COMMAND<=cmd_NOP;
-							BA<="00";
-							MADDR<=(others=>'0');
-						end if;
-						curaddr<=curaddr+addr1;
-						if((curaddr+addr4)=endaddr)then
-							csshift<='1';
-						end if;
-						de<='1';
-					when 8 =>
-						COMMAND<=cmd_PALL;
-						BA<="00";
-						MADDR<=(others=>'1');
-						curaddr<=curaddr+addr1;
-					when 10  =>
-						COMMAND<=cmd_NOP;
-						BA<="00";
-						de<='0';
-						MADDR<=(others=>'0');
-						st_next:='1';
-					when others =>
-						COMMAND<=cmd_NOP;
-						BA<="00";
-						MADDR<=(others=>'0');
-					end case;
-				when ST_WRITE =>
-					case clkstate is
-					when 0 =>
-						COMMAND<=cmd_BNKE;
-						BA<=BADDR;
-						MADDR<=RADDR;
-						curaddr<=bgnaddr;
-					when 1 =>
-						COMMAND<=cmd_NOP;
-						BA<="00";
-						MADDR<=(others=>'1');
-						de<='1';
-					when 2 =>
-						COMMAND<=cmd_NOP;
-						BA<="00";
-						MADDR<=(others=>'1');
-						curaddr<=curaddr+addr1;
-					when 3 =>
-						COMMAND<=cmd_WRITE;
-						BA<=BADDR;
-						MADDR<=not we & '0' & CBADDR(9 downto 0);
-						curaddr<=curaddr+addr1;
-						SDRAM_DQ<=wrdat;
-						csshift<='0';
-					when 4 =>
-						COMMAND<=cmd_NOP;
-						BA<=BADDR;
-						MADDR<=not we & "00000000000";
-						SDRAM_DQ<=wrdat;
-						if(curaddr>=endaddr or curaddr<bgnaddr)then
-							csshift<='1';
-							de<='0';
-						else
-							curaddr<=curaddr+addr1;
-						end if;
-					when 5 =>
-						SDRAM_DQ<=(others=>'Z');
-						COMMAND<=cmd_PALL;
-						BA<="00";
-						MADDR<=(others=>'1');
-					when 7 =>
-						COMMAND<=cmd_NOP;
-						BA<="00";
-						MADDR<=(others=>'0');
-						st_next:='1';
-					when others =>
-						COMMAND<=cmd_NOP;
-						BA<="00";
-						MADDR<=(others=>'0');
-					end case;
-				when others =>
-					st_next:='1';
-				end case;
-				if(csshift='1')then
-					clkstate<=clkstate+1;
-				end if;
-				if(st_next='1')then
-					if(STATE=ST_INITPALL)then
-						STATE<=ST_INITREF;
-						INITR_COUNT<=INITR_TIMES;
-					elsif(STATE=ST_INITREF)then
-						if(INITR_COUNT>0)then
-							INITR_COUNT<=INITR_COUNT-1;
-						else
-							STATE<=ST_INITMRS;
-						end if;
-					elsif(STATE=ST_INITMRS)then
-						STATE<=ST_REFRESH;
-						initdone<='1';
-					elsif(rd='1')then
-						STATE<=ST_READ;
-						curaddr<=(others=>'0');
-					elsif(wr='1')then
-						STATE<=ST_WRITE;
-					elsif(refrsh='1')then
-						STATE<=ST_REFRESH;
+						CLOCKWAIT<=cwaitcnt;
 					else
-						STATE<=ST_IDLE;
+						COMMAND<=cmd_CWAIT;
 					end if;
+					INITTIMER<=INITTIMER-1;
+				elsif(CLOCKWAIT>0)then
+					CLOCKWAIT<=CLOCKWAIT-1;
 					clkstate<=0;
+					STATE<=ST_INITPALL;
+				else
+					case STATE is
+					when ST_INITPALL =>
+						case clkstate is
+						when 0 =>
+							COMMAND<=cmd_PALL;
+							DQE<="11";
+							BA<="00";
+							MADDR<=(others=>'1');
+							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
+							clkstate<=clkstate+1;
+						when 3 =>
+							COMMAND<=cmd_NOP;
+							DQE<="00";
+							BA<="00";
+							MADDR<=(others=>'0');
+							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
+							STATE<=ST_INITREF;
+							INITR_COUNT<=INITR_TIMES;
+							clkstate<=0;
+						when others =>
+							COMMAND<=cmd_NOP;
+							DQE<="00";
+							BA<="00";
+							MADDR<=(others=>'0');
+							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
+							clkstate<=clkstate+1;
+						end case;
+					when ST_INITREF | ST_REFRESH =>
+						case clkstate is
+						when 0 =>
+							COMMAND<=cmd_REFRSH;
+							DQE<="00";
+							BA<="00";
+							MADDR<=(others=>'0');
+							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
+							clkstate<=clkstate+1;
+						when 9 =>
+							COMMAND<=cmd_NOP;
+							DQE<="00";
+							BA<="00";
+							MADDR<=(others=>'0');
+							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
+							if(STATE=ST_INITREF)then
+								if(INITR_COUNT>0)then
+									INITR_COUNT<=INITR_COUNT-1;
+								else
+									STATE<=ST_INITMRS;
+								end if;
+							else
+								STATE<=ST_IDLE;
+							end if;
+							clkstate<=0;
+						when others =>
+							COMMAND<=cmd_NOP;
+							DQE<="00";
+							BA<="00";
+							MADDR<=(others=>'0');
+							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
+							clkstate<=clkstate+1;
+						end case;
+					when ST_INITMRS =>
+						case clkstate is
+						when 0 =>
+							COMMAND<=cmd_MRS;
+							DQE<="00";
+							BA<="00";
+							MADDR<="0000000110111";		--CAS3, full page burst
+							clkstate<=clkstate+1;
+						when 2 =>
+							COMMAND<=cmd_NOP;
+							DQE<="00";
+							BA<="00";
+							MADDR<=(others=>'0');
+							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
+							STATE<=ST_REFRESH;
+							clkstate<=0;
+							initdone<='1';
+						when others =>
+							COMMAND<=cmd_NOP;
+							DQE<="00";
+							BA<="00";
+							MADDR<=(others=>'0');
+							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
+							clkstate<=clkstate+1;
+						end case;
+					when ST_READ =>
+						case clkstate is
+						when 0 =>
+							COMMAND<=cmd_BNKE;
+							DQE<="00";
+							BA<=BADDR;
+							MADDR<=RADDR;
+							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
+							clkstate<=clkstate+1;
+						when 3 =>
+							COMMAND<=cmd_READ;
+							DQE<="00";
+							BA<=BADDR;
+							MADDR<="00" & '0' & CBADDR(9 downto 0);
+							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
+							curaddr<=bgnaddr;
+							clkstate<=clkstate+1;
+						when 4 =>
+							tmpaddr:=curaddr(LAWIDTH-1 downto 0);
+							DQE<="00";
+							BA<=BADDR;
+							if((tmpaddr or blkmask)=lastlow)then
+								COMMAND<=cmd_READ;
+								MADDR<="00" & '0' & CZADDR(9 downto 0);
+								MDOE<='0';
+								--PMEMDAT<=(others=>'Z');
+							else
+								COMMAND<=cmd_NOP;
+								MADDR<=(others=>'0');
+								MDOE<='0';
+								--PMEMDAT<=(others=>'Z');
+							end if;
+							clkstate<=clkstate+1;
+						when 5 =>
+							DQE<="00";
+							BA<=BADDR;
+							tmpaddr:=curaddr(LAWIDTH-1 downto 0)+addr1;
+							if((tmpaddr or blkmask)=lastlow)then
+								COMMAND<=cmd_READ;
+								MADDR<="00" & '0' & CZADDR(9 downto 0);
+								MDOE<='0';
+								--PMEMDAT<=(others=>'Z');
+							else
+								COMMAND<=cmd_NOP;
+								MADDR<=(others=>'0');
+								MDOE<='0';
+								--PMEMDAT<=(others=>'Z');
+							end if;
+							clkstate<=clkstate+1;
+						when 6 =>
+							DQE<="00";
+							BA<=BADDR;
+							tmpaddr:=curaddr(LAWIDTH-1 downto 0)+addr2;
+							if((tmpaddr or blkmask)=lastlow)then
+								COMMAND<=cmd_READ;
+								MADDR<="00" & '0' & CZADDR(9 downto 0);
+								MDOE<='0';
+								--PMEMDAT<=(others=>'Z');
+							else
+								COMMAND<=cmd_NOP;
+								MADDR<=(others=>'0');
+								MDOE<='0';
+								--PMEMDAT<=(others=>'Z');
+							end if;
+							clkstate<=clkstate+1;
+						when 7 =>
+							DQE<="00";
+							BA<=BADDR;
+							tmpaddr:=curaddr(LAWIDTH-1 downto 0)+addr3;
+							if((tmpaddr or blkmask)=lastlow)then
+								COMMAND<=cmd_READ;
+								MADDR<="00" & '0' & CZADDR(9 downto 0);
+								MDOE<='0';
+								--PMEMDAT<=(others=>'Z');
+							else
+								COMMAND<=cmd_NOP;
+								MADDR<=(others=>'0');
+								MDOE<='0';
+								--PMEMDAT<=(others=>'Z');
+							end if;
+							curaddr<=curaddr+addr1;
+							if((tmpaddr or blkmask)=(endaddr or blkmask))then
+								clkstate<=clkstate+1;
+							elsif(abort='1')then
+								clkstate<=clkstate+1;
+							end if;
+							de<='1';
+						when 8 =>
+							COMMAND<=cmd_PALL;
+							DQE<="11";
+							BA<="00";
+							MADDR<=(others=>'1');
+							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
+							curaddr<=curaddr+addr1;
+							clkstate<=clkstate+1;
+						when 10  =>
+							COMMAND<=cmd_NOP;
+							DQE<="11";
+							BA<="00";
+							de<='0';
+							MADDR<=(others=>'0');
+							MADDR(12 downto 11)<="11";
+							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
+							STATE<=ST_IDLE;
+							clkstate<=0;
+						when others =>
+							COMMAND<=cmd_NOP;
+							DQE<="11";
+							BA<="00";
+							MADDR<=(others=>'0');
+							MADDR(12 downto 11)<="11";
+							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
+							clkstate<=clkstate+1;
+						end case;
+					when ST_WRITE =>
+						case clkstate is
+						when 0 =>
+							COMMAND<=cmd_BNKE;
+							DQE<="00";
+							BA<=BADDR;
+							MADDR<=RADDR;
+							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
+							curaddr<=bgnaddr;
+							clkstate<=clkstate+1;
+						when 1 =>
+							COMMAND<=cmd_NOP;
+							DQE<="11";
+							BA<="00";
+							MADDR<=(others=>'0');
+	--						de<='1';
+							MADDR(12 downto 11)<="11";
+							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
+							clkstate<=clkstate+1;
+						when 2 =>
+							COMMAND<=cmd_NOP;
+							DQE<="11";
+							BA<="00";
+							MADDR<=(others=>'0');
+							MADDR(12 downto 11)<="11";
+							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
+							curaddr<=curaddr+addr1;
+							clkstate<=clkstate+1;
+						when 3 =>
+							COMMAND<=cmd_WRITE;
+							DQE<=not we;
+							BA<=BADDR;
+							MADDR<=(not we) & '0' & CBADDR(9 downto 0);
+							curaddr<=curaddr+addr1;
+							MDOE<='1';
+							--PMEMDAT<=MDATA;
+							MDATA<=wrdat;
+							clkstate<=clkstate+1;
+						when 4 =>
+							COMMAND<=cmd_NOP;
+							DQE<=not we;
+							BA<=BADDR;
+							MADDR<=(others=>'0');
+							MADDR(12 downto 11)<=not we;
+							MDOE<='1';
+							--PMEMDAT<=MDATA;
+							MDATA<=wrdat;
+							if((curaddr-addr1)>=endaddr or (curaddr-addr1)<bgnaddr)then
+	--						if(curaddr/=endaddr or curaddr<bgnaddr)then
+								clkstate<=clkstate+1;
+	--							de<='0';
+							else
+								curaddr<=curaddr+addr1;
+							end if;
+						when 5 =>
+							COMMAND<=cmd_BST;
+							DQE<="11";
+							MADDR(12 downto 11)<="11";
+							MDATA<=x"ffff";
+							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
+							clkstate<=clkstate+1;
+						when 6 =>
+							COMMAND<=cmd_PALL;
+							DQE<="11";
+							BA<="00";
+							MADDR<=(others=>'1');
+							MADDR(12 downto 11)<="11";
+							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
+							clkstate<=clkstate+1;
+						when 8 =>
+							COMMAND<=cmd_NOP;
+							DQE<="11";
+							BA<="00";
+							MADDR<=(others=>'0');
+							MADDR(12 downto 11)<="11";
+							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
+							STATE<=ST_IDLE;
+							clkstate<=0;
+						when others =>
+							COMMAND<=cmd_NOP;
+							DQE<="11";
+							BA<="00";
+							MADDR<=(others=>'0');
+							MADDR(12 downto 11)<="11";
+							MDOE<='0';
+							--PMEMDAT<=(others=>'Z');
+							clkstate<=clkstate+1;
+						end case;
+					when others =>		--ST_IDLE
+						if(rd='1')then
+							STATE<=ST_READ;
+							curaddr<=(others=>'0');
+						elsif(wr='1')then
+							STATE<=ST_WRITE;
+						elsif(refrsh='1')then
+							STATE<=ST_REFRESH;
+						else
+							STATE<=ST_IDLE;
+						end if;
+						clkstate<=0;
+					end case;
 				end if;
 			end if;
 		end if;
 	end process;
-	
-	SDRAM_CKE	<='1';
-	SDRAM_nCS	<='0';
-	SDRAM_nRAS	<=COMMAND(2);
-	SDRAM_nCAS	<=COMMAND(1);
-	SDRAM_nWE	<=COMMAND(0);
-	SDRAM_DQMH	<=MADDR(12);
-	SDRAM_DQML	<=MADDR(11);
-	SDRAM_BA		<=BA;
-	SDRAM_A		<=MADDR;
+
+--	process(clk)begin
+--		if(clk' event and clk='0')then
+			PMEMCKE		<=COMMAND(4);
+			PMEMCS_N	<=COMMAND(3);
+			PMEMRAS_N	<=COMMAND(2);
+			PMEMCAS_N	<=COMMAND(1);
+			PMEMWE_N	<=COMMAND(0);
+			PMEMUDQ		<=DQE(1);
+			PMEMLDQ		<=DQE(0);
+			PMEMBA1		<=BA(1);
+			PMEMBA0		<=BA(0);
+			PMEMADR		<=MADDR;
+			PMEMDAT		<=(others=>'Z') when MDOE='0' else MDATA;
+--			if(MDOE='1')then
+--				--PMEMDAT<=MDATA;
+--			else
+--				--PMEMDAT<=(others=>'Z');
+--			end if;
+--		end if;
+--	end process;
 
 	process(clk)begin
-		if(clk' event and clk='1')then
-			rddat<=SDRAM_DQ;
+		if rising_edge(clk) then
+			if(ce = '1')then
+				rddat<=PMEMDAT;
+			end if;
 		end if;
 	end process;
-	
+
 	addr_wc<=curaddr;
 	process(clk)
 	variable addr_dly	:std_logic_vector(7 downto 0);
 	begin
-		if(clk' event and clk='1')then
---			addr_rc<=addr_dly;
---			addr_dly:=curaddr;
-			addr_rc<=curaddr;
+		if rising_edge(clk) then
+			if(ce = '1')then
+	--			addr_rc<=addr_dly;
+	--			addr_dly:=curaddr;
+				addr_rc<=curaddr;
+			end if;
 		end if;
 	end process;
-end rtl;			
-					
-						
-						
-			
-			
+end rtl;

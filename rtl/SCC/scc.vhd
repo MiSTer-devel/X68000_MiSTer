@@ -23,6 +23,7 @@ port(
 	mdatout	:out std_logic;
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end scc;
@@ -71,6 +72,7 @@ port(
 	regwr	:out std_logic;
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -89,8 +91,9 @@ port(
 	MCLKOUT:out std_logic;
 	MDATIN	:in std_logic;
 	MDATOUT:out std_logic;
-	
+
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -106,31 +109,35 @@ begin
 	datAwr<='1' when addrx=x"e98007" and wr='1' else '0';
 	datArd<='1' when addrx=x"e98007" and rd='1' else '0';
 	
-	regA :sccreg port map(wdat,cmdAwr,cmdArd,regAno,regAwr,clk,rstn);
-	regB :sccreg port map(wdat,cmdBwr,cmdBrd,regBno,regBwr,clk,rstn);
+	regA :sccreg port map(wdat,cmdAwr,cmdArd,regAno,regAwr,clk,ce,rstn);
+	regB :sccreg port map(wdat,cmdBwr,cmdBrd,regBno,regBwr,clk,ce,rstn);
 
 	process(clk,rstn)begin
-		if(rstn='0')then
-			iVectR<=(others=>'0');
-		elsif(clk' event and clk='1')then
-			if(regAno=x"2" and regAwr='1')then
-				iVectR<=wdat;
-			elsif(regBno=x"2" and regBwr='1')then
-				iVectR<=wdat;
+		if rising_edge(clk) then
+			if(rstn='0')then
+				iVectR<=(others=>'0');
+			elsif(ce = '1')then
+				if(regAno=x"2" and regAwr='1')then
+					iVectR<=wdat;
+				elsif(regBno=x"2" and regBwr='1')then
+					iVectR<=wdat;
+				end if;
 			end if;
 		end if;
 	end process;
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			iVectSel<='0';
-			inten<='0';
-			vectsel<='0';
-		elsif(clk' event and clk='1')then
-			if((regAno=x"9" and regAwr='1') or (regBno=x"9" and regBwr='1'))then
-				iVectSel<=wdat(4);
-				inten<=wdat(3);
-				vectsel<=wdat(0);
+		if rising_edge(clk) then
+			if(rstn='0')then
+				iVectSel<='0';
+				inten<='0';
+				vectsel<='0';
+			elsif(ce = '1')then
+				if((regAno=x"9" and regAwr='1') or (regBno=x"9" and regBwr='1'))then
+					iVectSel<=wdat(4);
+					inten<=wdat(3);
+					vectsel<=wdat(0);
+				end if;
 			end if;
 		end if;
 	end process;
@@ -145,47 +152,53 @@ begin
 					"0000" & iVectSta & '0';
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			m_lrts<='0';
-			m_req<='0';
-		elsif(clk' event and clk='1')then
-			m_req<='0';
-			if(regBno=x"5" and regBwr='1')then
-				m_lrts<=wdat(1);
-				if(wdat(1)='0' and m_lrts='1')then
-					m_req<='1';
+		if rising_edge(clk) then
+			if(rstn='0')then
+				m_lrts<='0';
+				m_req<='0';
+			elsif(ce = '1')then
+				m_req<='0';
+				if(regBno=x"5" and regBwr='1')then
+					m_lrts<=wdat(1);
+					if(wdat(1)='0' and m_lrts='1')then
+						m_req<='1';
+					end if;
 				end if;
 			end if;
 		end if;
 	end process;
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			m_int<='0';
-			iVectSta<=(others=>'0');
-		elsif(clk' event and clk='1')then
-			if(regBno=x"0" and regBwr='1' and wdat(5 downto 3)="111")then
+		if rising_edge(clk) then
+			if(rstn='0')then
 				m_int<='0';
-			elsif(iack='1')then
-				m_int<='0';
-			elsif(m_rxed='1')then
-				if(m_inten='1')then
-					m_int<='1';
+				iVectSta<=(others=>'0');
+			elsif(ce = '1')then
+				if(regBno=x"0" and regBwr='1' and wdat(5 downto 3)="111")then
+					m_int<='0';
+				elsif(iack='1')then
+					m_int<='0';
+				elsif(m_rxed='1')then
+					if(m_inten='1')then
+						m_int<='1';
+					end if;
+					iVectSta<="010";
 				end if;
-				iVectSta<="010";
 			end if;
 		end if;
 	end process;
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			m_inten<='0';
-		elsif(clk' event and clk='1')then
-			if(regBno=x"1" and regBwr='1')then
-				if(wdat(4 downto 3)="00")then
-					m_inten<='0';
-				else
-					m_inten<='1';
+		if rising_edge(clk) then
+			if(rstn='0')then
+				m_inten<='0';
+			elsif(ce = '1')then
+				if(regBno=x"1" and regBwr='1')then
+					if(wdat(4 downto 3)="00")then
+						m_inten<='0';
+					else
+						m_inten<='1';
+					end if;
 				end if;
 			end if;
 		end if;
@@ -194,23 +207,25 @@ begin
 	int<=inten and m_int;
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			rddatB<='0';
-			lrddatB<='0';
-			rxextB<='0';
-		elsif(clk' event and clk='1')then
-			if(regBno=x"8" and cmdBrd='1')then
-				rddatB<='1';
-			elsif(datBrd='1')then
-				rddatB<='1';
-			else
+		if rising_edge(clk) then
+			if(rstn='0')then
 				rddatB<='0';
-			end if;
-			
-			if(m_rxed='1')then
-				rxextB<='1';
-			elsif(rddatB='0' and lrddatB='1')then
+				lrddatB<='0';
 				rxextB<='0';
+			elsif(ce = '1')then
+				if(regBno=x"8" and cmdBrd='1')then
+					rddatB<='1';
+				elsif(datBrd='1')then
+					rddatB<='1';
+				else
+					rddatB<='0';
+				end if;
+				
+				if(m_rxed='1')then
+					rxextB<='1';
+				elsif(rddatB='0' and lrddatB='1')then
+					rxextB<='0';
+				end if;
 			end if;
 		end if;
 	end process;
@@ -252,6 +267,7 @@ begin
 		MDATOUT	=>mdatout,
 		
 		clk		=>clk,
+		ce      =>ce,
 		rstn	=>rstn
 	);
 	

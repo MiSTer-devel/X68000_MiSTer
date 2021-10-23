@@ -5,7 +5,8 @@ USE	IEEE.STD_LOGIC_UNSIGNED.ALL;
 entity MOUSECONV is
 generic(
 	CLKCYC	:integer	:=20000;
-	SFTCYC	:integer	:=400
+	SFTCYC	:integer	:=400;
+	RXINT	:integer	:=2			--msec
 );
 port(
 	REQ		:in std_logic;
@@ -16,8 +17,9 @@ port(
 	MCLKOUT:out std_logic;
 	MDATIN	:in std_logic;
 	MDATOUT:out std_logic;
-	
+
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end MOUSECONV;
@@ -39,15 +41,16 @@ port(
 	RESET	:in std_logic;
 	COL		:out std_logic;
 	PERR	:out std_logic;
-	TWAIT	:in std_logic;
-	
+	TWAIT	:in std_logic	:='0';
+
 	KBCLKIN	:in	std_logic;
 	KBCLKOUT :out std_logic;
 	KBDATIN	:in std_logic;
 	KBDATOUT :out std_logic;
-	
+
 	SFT		:in std_logic;
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -63,30 +66,36 @@ port(
 	SFT		:out std_logic;
 
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
 
 signal	SFT		:std_logic;
 
-type STATE_T is (
-	ST_IDLE,
-	ST_INIT,
-	ST_RESET,
-	ST_RESET_BAT,
-	ST_IDRD,
-	ST_SETDEF,
-	ST_SETDEF_ACK,
-	ST_SETREMOTE,
-	ST_SETREMOTE_ACK,
-	ST_REQDATA,
-	ST_REQDATA_ACK,
-	ST_RECVDAT1,
-	ST_RECVDAT2,
-	ST_RECVDAT3
+type PS2STATE_T is (
+	P2ST_IDLE,
+	P2ST_INIT,
+	P2ST_RESET,
+	P2ST_RESET_BAT,
+	P2ST_IDRD,
+	P2ST_SETDEF,
+	P2ST_SETDEF_ACK,
+	P2ST_DATAREP,
+	P2ST_DATAREP_ACK,
+	P2ST_RECVDAT2,
+	P2ST_RECVDAT3
 );
+signal	PS2STATE	:PS2STATE_T;
 
-signal	STATE	:STATE_T;
+type SCCSTATE_T is (
+	SCST_IDLE,
+	SCST_TX0,
+	SCST_TX1,
+	SCST_TX2
+);
+signal	SCCSTATE	:SCCSTATE_T;
+
 signal	M_TXDAT	:std_logic_vector(7 downto 0);
 signal	M_RXDAT	:std_logic_vector(7 downto 0);
 signal	M_WRn		:std_logic;
@@ -107,13 +116,20 @@ signal	RXDONE		:std_logic;
 signal	RXRDY		:std_logic;
 
 signal	TXEMPb		:std_logic;
-signal	msbX		:std_logic;
-signal	msbY		:std_logic;
-	
+
+signal	valX,valY	:std_logic_vector(9 downto 0);
+signal	msbX,msbY	:std_logic;
+signal	sw0,sw1		:std_logic;
+signal	TXDAT0		:std_logic_vector(7 downto 0);
+signal	TXDAT1		:std_logic_vector(7 downto 0);
+signal	TXDAT2		:std_logic_vector(7 downto 0);
+constant waitrlen	:integer	:=RXINT*CLKCYC;
+signal	waitrcount	:integer range 0 to waitrlen-1;
+
 begin
-	
-	MSFT	:sftclk generic map(CLKCYC,SFTCYC,1) port map("1",SFT,clk,rstn);
-	
+
+	MSFT	:sftclk generic map(CLKCYC,SFTCYC,1) port map("1",SFT,clk,ce,rstn);
+
 	MOUSE	:PS2IF port map(
 	DATIN	=>M_TXDAT,
 	DATOUT	=>M_RXDAT,
@@ -124,122 +140,200 @@ begin
 	COL		=>M_COL,
 	PERR	=>M_PERR,
 	TWAIT	=>'0',
-	
+
 	KBCLKIN	=>MCLKIN,
 	KBCLKOUT=>MCLKOUT,
 	KBDATIN	=>MDATIN,
 	KBDATOUT=>MDATOUT,
-	
+
 	SFT		=>SFT,
 	clk		=>clk,
+	ce      =>ce,
 	rstn	=>rstn
 	);
 
 	process(clk,rstn)
+	variable tmp	:std_logic_vector(9 downto 0);
 	begin
-		if(rstn='0')then
-			STATE<=ST_INIT;
-			M_WRn<='1';
-			M_RESET<='0';
-			WAITCNT<=0;
-			WAITSFT<=0;
-			M_TXDAT<=(others=>'0');
-			RXED<='0';
-			TXEMPb<='0';
-		elsif(clk' event and clk='1')then
-			M_WRn<='1';
-			RXED<='0';
-			if(WAITCNT>0)then
-				WAITCNT<=WAITCNT-1;
-			elsif(WAITSFT>0)then
-				if(SFT='1')then
-					WAITSFT<=WAITSFT-1;
+		if rising_edge(clk) then
+			if(rstn='0')then
+				PS2STATE<=P2ST_INIT;
+				M_WRn<='1';
+				--M_RESET<='0';
+				WAITCNT<=0;
+				WAITSFT<=0;
+				M_TXDAT<=(others=>'0');
+				TXEMPb<='0';
+				RXED<='0';
+				waitrcount<=0;
+				TXDAT0<=(others=>'0');
+				TXDAT1<=(others=>'0');
+				TXDAT2<=(others=>'0');
+			elsif(ce = '1')then
+				M_WRn<='1';
+				RXED<='0';
+				if(WAITCNT>0)then
+					WAITCNT<=WAITCNT-1;
+				elsif(WAITSFT>0)then
+					if(SFT='1')then
+						WAITSFT<=WAITSFT-1;
+					end if;
+				else
+					case PS2STATE is
+					when P2ST_INIT =>
+						if(M_BUSY='0')then
+							WAITSFT<=waitscount;
+							PS2STATE<=P2ST_RESET;
+						end if;
+					when P2ST_RESET =>
+						if(M_BUSY='0')then
+							M_TXDAT<=x"ff";						--reset
+							M_WRn<='0';
+							PS2STATE<=P2ST_RESET_BAT;
+						end if;
+					when P2ST_RESET_BAT =>
+						if(M_RXED='1' and M_RXDAT=x"aa")then	--ack
+							PS2STATE<=P2ST_IDRD;
+						end if;
+					when P2ST_IDRD =>
+						if(M_RXED='1')then						--Mouse ID
+							WAITSFT<=waitscount;
+							PS2STATE<=P2ST_SETDEF;
+						end if;
+					when P2ST_SETDEF =>
+						if(M_BUSY='0')then
+							M_TXDAT<=x"f6";						--Set default
+							M_WRn<='0';
+							PS2STATE<=P2ST_SETDEF_ACK;
+						end if;
+					when P2ST_SETDEF_ACK =>
+						if(M_RXED='1' and M_RXDAT=x"fa")then	--true
+							WAITSFT<=waitscount;
+							PS2STATE<=P2ST_DATAREP;
+						end if;
+					when P2ST_DATAREP =>
+						if(M_BUSY='0')then
+							M_TXDAT<=x"f4";
+							M_WRn<='0';
+							PS2STATE<=P2ST_DATAREP_ACK;
+						end if;
+					when P2ST_DATAREP_ACK =>
+						if(M_RXED='1' and M_RXDAT=x"fa")then
+	--						WAITSFT<=waitscount;
+							PS2STATE<=P2ST_IDLE;
+						end if;
+					when P2ST_IDLE =>
+						if(M_RXED='1')then
+							if(M_RXDAT(7)='1')then
+								if(M_RXDAT(5)='0')then
+									valY<="1011111111";
+								else
+									valY<="0100000000";
+								end if;
+							end if;
+							if(M_RXDAT(6)='1')then
+								if(M_RXDAT(4)='1')then
+									valX<="1011111111";
+								else
+									valX<="0100000000";
+								end if;
+							end if;
+							sw1<=M_RXDAT(1);
+							sw0<=M_RXDAT(0);
+							msbY<=M_RXDAT(5);
+							msbX<=M_RXDAT(4);
+							PS2STATE<=P2ST_RECVDAT2;
+						end if;
+					when P2ST_RECVDAT2 =>
+						if(M_RXED='1')then
+							tmp:=valX;
+							tmp:=tmp+(msbX & msbX & M_RXDAT);
+							case tmp(9 downto 8) is
+							when "01" =>
+								valX<="0100000000";
+							when "10" =>
+								valX<="1011111111";
+							when others =>
+								valX<=tmp;
+							end case;
+							PS2STATE<=P2ST_RECVDAT3;
+						end if;
+					when P2ST_RECVDAT3 =>
+						if(M_RXED='1')then
+							tmp:=valY;
+							tmp:=tmp-(msbY & msbY & M_RXDAT);
+							case tmp(9 downto 8) is
+							when "01" =>
+								valY<="0100000000";
+							when "10" =>
+								valY<="1011111111";
+							when others =>
+								valY<=tmp;
+							end case;
+							PS2STATE<=P2ST_IDLE;
+						end if;
+					when others =>
+						PS2STATE<=P2ST_IDLE;
+					end case;
 				end if;
-			else
-				case STATE is
-				when ST_INIT =>
-					if(M_BUSY='0')then
-						WAITSFT<=waitscount;
-						STATE<=ST_RESET;
-					end if;
-				when ST_RESET =>
-					if(M_BUSY='0')then
-						M_TXDAT<=x"ff";
-						M_WRn<='0';
-						STATE<=ST_RESET_BAT;
-					end if;
-				when ST_RESET_BAT =>
-					if(M_RXED='1' and M_RXDAT=x"aa")then
-						STATE<=ST_IDRD;
-					end if;
-				when ST_IDRD =>
-					if(M_RXED='1')then
-						WAITSFT<=waitscount;
-						STATE<=ST_SETDEF;
-					end if;
-				when ST_SETDEF =>
-					if(M_BUSY='0')then
-						M_TXDAT<=x"f6";
-						M_WRn<='0';
-						STATE<=ST_SETDEF_ACK;
-					end if;
-				when ST_SETDEF_ACK =>
-					if(M_RXED='1' and M_RXDAT=x"fa")then
-						WAITSFT<=waitscount;
-						STATE<=ST_SETREMOTE;
-					end if;
-				when ST_SETREMOTE =>
-					if(M_BUSY='0')then
-						M_TXDAT<=x"f0";
-						M_WRn<='0';
-						STATE<=ST_SETREMOTE_ACK;
-					end if;
-				when ST_SETREMOTE_ACK =>
-					if(M_RXED='1' and M_RXDAT=x"fa")then
-						WAITSFT<=waitscount;
-						STATE<=ST_IDLE;
-					end if;
-				when ST_IDLE =>
-					if(REQ='1')then
-						STATE<=ST_REQDATA;
-					end if;
-				when ST_REQDATA =>
-					if(M_BUSY='0')then
-						M_TXDAT<=x"eb";
-						M_WRn<='0';
-						STATE<=ST_REQDATA_ACK;
-					end if;
-				when ST_REQDATA_ACK =>
-					if(M_RXED='1' and M_RXDAT=x"fa")then
-						STATE<=ST_RECVDAT1;
-					end if;
-				when ST_RECVDAT1 =>
-					if(M_RXED='1')then
-						DATOUT(3 downto 0)<="00" & M_RXDAT(1 downto 0);
-						DATOUT(7)<=M_RXDAT(7) and (not M_RXDAT(5));
-						DATOUT(6)<=M_RXDAT(7) and M_RXDAT(5);
-						DATOUT(5)<=M_RXDAT(6) and M_RXDAT(4);
-						DATOUT(4)<=M_RXDAT(6) and (not M_RXDAT(4));
-						msbY<=M_RXDAT(5);
-						msbX<=M_RXDAT(4);
+
+				if(waitrcount>0)then
+					waitrcount<=waitrcount-1;
+				else
+					case SCCSTATE is
+					when SCST_IDLE =>
+						if(REQ='1')then
+							case valX(9 downto 8) is
+							when "01" =>
+								TXDAT0(6)<='0';
+								TXDAT0(4)<='1';
+							when "10" =>
+								TXDAT0(6)<='1';
+								TXDAT0(4)<='0';
+							when others =>
+								TXDAT0(6)<='0';
+								TXDAT0(4)<='0';
+							end case;
+
+							case valY(9 downto 8) is
+							when "01" =>
+								TXDAT0(7)<='0';
+								TXDAT0(5)<='1';
+							when "10" =>
+								TXDAT0(7)<='1';
+								TXDAT0(5)<='0';
+							when others =>
+								TXDAT0(7)<='0';
+								TXDAT0(5)<='0';
+							end case;
+
+							TXDAT0(3 downto 0)<="00" & sw1 & sw0;
+							TXDAT1<=valX(8 downto 1);
+							TXDAT2<=valY(8 downto 1);
+							valX<=(others=>'0');
+							valY<=(others=>'0');
+
+							waitrcount<=waitrlen-1;
+							SCCSTATE<=SCST_TX0;
+						end if;
+					when SCST_TX0 =>
+						DATOUT<=TXDAT0;
 						RXED<='1';
-						STATE<=ST_RECVDAT2;
-					end if;
-				when ST_RECVDAT2 =>
-					if(M_RXED='1')then
-						DATOUT<=msbX & M_RXDAT(7 downto 1);
+						waitrcount<=waitrlen-1;
+						SCCSTATE<=SCST_TX1;
+					when SCST_TX1 =>
+						DATOUT<=TXDAT1;
 						RXED<='1';
-						STATE<=ST_RECVDAT3;
-					end if;
-				when ST_RECVDAT3 =>
-					if(M_RXED='1')then
-						DATOUT<=(not (msbY & M_RXDAT(7 downto 1)))+x"01";
+						waitrcount<=waitrlen-1;
+						SCCSTATE<=SCST_TX2;
+					when SCST_TX2 =>
+						DATOUT<=TXDAT2;
 						RXED<='1';
-						STATE<=ST_IDLE;
-					end if;
-				when others =>
-					STATE<=ST_IDLE;
-				end case;
+						SCCSTATE<=SCST_IDLE;
+					when others =>
+						SCCSTATE<=SCST_IDLE;
+					end case;
+				end if;
 			end if;
 		end if;
 	end process;

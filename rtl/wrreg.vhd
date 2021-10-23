@@ -15,23 +15,26 @@ port(
 	wrote	:out std_logic;
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end wrreg;
 architecture rtl of wrreg is
 begin
 	process(clk,rstn)begin
-		if(rstn='0')then
-			do<=(others=>'0');
-		elsif(clk' event and clk='1')then
-			if(addr(23 downto 1)=address(23 downto 1))then
-				if(wr(1)='1')then
-					do(15 downto 8)<=wrdat(15 downto 8);
+		if rising_edge(clk) then
+			if(rstn='0')then
+				do<=(others=>'0');
+			elsif(ce = '1')then
+				if(addr(23 downto 1)=address(23 downto 1))then
+					if(wr(1)='1')then
+						do(15 downto 8)<=wrdat(15 downto 8);
+					end if;
+					if(wr(0)='1')then
+						do(7 downto 0)<=wrdat(7 downto 0);
+					end if;
+					wrote<=wr(0) or wr(1);
 				end if;
-				if(wr(0)='1')then
-					do(7 downto 0)<=wrdat(7 downto 0);
-				end if;
-				wrote<=wr(0) or wr(1);
 			end if;
 		end if;
 	end process;

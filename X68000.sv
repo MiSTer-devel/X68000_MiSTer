@@ -3,6 +3,7 @@
 //
 //  Port to MiSTer
 //  Copyright (C) 2017,2020 Alexey Melnikov
+//  Copyright (C) 2020 Puu
 //
 //  This program is free software; you can redistribute it and/or modify it
 //  under the terms of the GNU General Public License as published by the Free
@@ -39,8 +40,9 @@ module emu
 	output        CE_PIXEL,
 
 	//Video aspect ratio for HDMI. Most retro systems have ratio 4:3.
-	output  [7:0] VIDEO_ARX,
-	output  [7:0] VIDEO_ARY,
+	//if VIDEO_ARX[12] or VIDEO_ARY[12] is set then [11:0] contains scaled size instead of aspect ratio.
+	output [12:0] VIDEO_ARX,
+	output [12:0] VIDEO_ARY,
 
 	output  [7:0] VGA_R,
 	output  [7:0] VGA_G,
@@ -50,6 +52,40 @@ module emu
 	output        VGA_DE,    // = ~(VBlank | HBlank)
 	output        VGA_F1,
 	output [1:0]  VGA_SL,
+	output        VGA_SCALER, // Force VGA scaler
+
+	input  [11:0] HDMI_WIDTH,
+	input  [11:0] HDMI_HEIGHT,
+	output        HDMI_FREEZE,
+
+`ifdef MISTER_FB
+	// Use framebuffer in DDRAM (USE_FB=1 in qsf)
+	// FB_FORMAT:
+	//    [2:0] : 011=8bpp(palette) 100=16bpp 101=24bpp 110=32bpp
+	//    [3]   : 0=16bits 565 1=16bits 1555
+	//    [4]   : 0=RGB  1=BGR (for 16/24/32 modes)
+	//
+	// FB_STRIDE either 0 (rounded to 256 bytes) or multiple of pixel size (in bytes)
+	output        FB_EN,
+	output  [4:0] FB_FORMAT,
+	output [11:0] FB_WIDTH,
+	output [11:0] FB_HEIGHT,
+	output [31:0] FB_BASE,
+	output [13:0] FB_STRIDE,
+	input         FB_VBL,
+	input         FB_LL,
+	output        FB_FORCE_BLANK,
+
+`ifdef MISTER_FB_PALETTE
+	// Palette control for 8bit modes.
+	// Ignored for other video modes.
+	output        FB_PAL_CLK,
+	output  [7:0] FB_PAL_ADDR,
+	output [23:0] FB_PAL_DOUT,
+	input  [23:0] FB_PAL_DIN,
+	output        FB_PAL_WR,
+`endif
+`endif
 
 	output        LED_USER,  // 1 - ON, 0 - OFF.
 
@@ -64,9 +100,10 @@ module emu
 	// b[0]: osd button
 	output  [1:0] BUTTONS,
 
+	input         CLK_AUDIO, // 24.576 MHz
 	output [15:0] AUDIO_L,
 	output [15:0] AUDIO_R,
-	output        AUDIO_S, // 1 - signed audio samples, 0 - unsigned
+	output        AUDIO_S,   // 1 - signed audio samples, 0 - unsigned
 	output  [1:0] AUDIO_MIX, // 0 - no mix, 1 - 25%, 2 - 50%, 3 - 100% (mono)
 
 	//ADC
@@ -105,6 +142,20 @@ module emu
 	output        SDRAM_nRAS,
 	output        SDRAM_nWE,
 
+`ifdef MISTER_DUAL_SDRAM
+	//Secondary SDRAM
+	//Set all output SDRAM_* signals to Z ASAP if SDRAM2_EN is 0
+	input         SDRAM2_EN,
+	output        SDRAM2_CLK,
+	output [12:0] SDRAM2_A,
+	output  [1:0] SDRAM2_BA,
+	inout  [15:0] SDRAM2_DQ,
+	output        SDRAM2_nCS,
+	output        SDRAM2_nCAS,
+	output        SDRAM2_nRAS,
+	output        SDRAM2_nWE,
+`endif
+
 	input         UART_CTS,
 	output        UART_RTS,
 	input         UART_RXD,
@@ -123,49 +174,136 @@ module emu
 	input         OSD_STATUS
 );
 
+///////// Default values for ports not used in this core /////////
+
 assign ADC_BUS  = 'Z;
-assign USER_OUT  = '1;
+assign {UART_RTS, UART_DTR} = 0;
+assign {SD_SCK, SD_MOSI, SD_CS} = 'Z;
+assign {DDRAM_CLK, DDRAM_BURSTCNT, DDRAM_ADDR, DDRAM_DIN, DDRAM_BE, DDRAM_RD, DDRAM_WE} = '0;  
 
-assign AUDIO_MIX = 0;
-assign VGA_SL    = 0;
-assign VGA_F1    = 0;
-assign {UART_RTS, UART_TXD, UART_DTR} = 0;
-assign {DDRAM_CLK, DDRAM_BURSTCNT, DDRAM_ADDR, DDRAM_DIN, DDRAM_BE, DDRAM_RD, DDRAM_WE} = 0;
+assign VGA_F1 = 0;
+assign VGA_SCALER = 0;
 
-assign LED_USER  = ioctl_download & ~ldr_done;
-assign LED_DISK  = {1'b1, sd_act};
 assign LED_POWER = 0;
-assign BUTTONS   = 0;
+assign BUTTONS = 0;
+
+//////////////////////////////////////////////////////////////////
+wire hdd_active = sd_rd[2] || sd_wr[2];
+wire fdd_active = |sd_rd[1:0] || |sd_wr[1:0];
+assign LED_USER  = fdd_active;
+assign LED_DISK  = {1'b1, hdd_active};
  
-assign VIDEO_ARX = status[1] ? 8'd16 : 8'd4;
-assign VIDEO_ARY = status[1] ? 8'd9  : 8'd3; 
+wire [1:0] ar = status[5:4];
+
+assign AUDIO_MIX = status[3:2];
+
+// Status Bit Map:
+//              Upper                          Lower
+// 0         1         2         3          4         5         6
+// 01234567890123456789012345678901 23456789012345678901234567890123
+// 0123456789ABCDEFGHIJKLMNOPQRSTUV 0123456789ABCDEFGHIJKLMNOPQRSTUV
+// X XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX         XXX    X
+
+`define DEBUG_X68K
 
 `include "build_id.v" 
-parameter CONF_STR = {
-	"X68000;;",
+parameter CONF_STR1 = {
+	"X68000;UART115200,MIDI;",
 	"-;",
-	"O1,Aspect ratio,4:3,16:9;",
+	"S0,D88,FDD0;",
+	"S1,D88,FDD1;",
+	"S2,HDF,SASI Hard Disk;",
+	"S3,RAM,SRAM;",
 	"-;",
-	"R6,Reset;",
-	"J,Fire 1,Fire 2;",
+	"R9,Save FDD0 changes to SD;",
+	"RA,Save FDD1 changes to SD;",
+	"-;",
+	"RB,Eject FDD0;",
+	"RC,Eject FDD1;",
+	"-;",
+	"RD,Load SRAM from SD Card;",
+	"RE,Save SRAM to SD Card;",
+	"-;",
+`ifdef DEBUG_X68K
+	"oF,CPU Select,TG68,fx68k;",
+`endif
+	"P1,Audio & Video;",
+	"P1-;",
+	"P1O23,Stereo Mix,None,25%,50%,100%;",
+//	"d0P1OM,Vertical Crop,Disabled,216p(5x);",
+	"d0P1ONQ,Crop Offset,0,2,4,8,10,12,-12,-10,-8,-6,-4,-2;",
+	"P1ORS,Scale,Normal,V-Integer,Narrower HV-Integer,Wider HV-Integer;",
+	"P1-;",
+	"P1O45,Aspect ratio,Original,Full Screen,[ARC1],[ARC2];",
+//	"P1OFH,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
+	"h1P3,MT32-pi;",
+	"h1P3-;",
+	"h1P3OI,Use MT32-pi,Yes,No;",
+	"h1P3o9A,Show Info,No,Yes,LCD-On(non-FB),LCD-Auto(non-FB);",
+	"h1P3-;",
+	"h1P3-,Default Config:;",
+	"h1P3OJ,Synth,Munt,FluidSynth;",
+	"h1P3OKL,Munt ROM,MT-32 v1,MT-32 v2,CM-32L;",
+	"h1P3OTV,SoundFont,0,1,2,3,4,5,6,7;",
+	"h1P3-;",
+	"h1P3-,Current Config: "
+};
+
+localparam CONF_STR2 =
+{
+	";",
+	"h1P3-;",
+	"h1P3r8,Reset Hanging Notes;",
+	"-;",
+	"R7,NMI Button;",
+	"R8,Power Button;",
+	"R0,Reset and apply HDD;",
+	"-;",
+	"J,Fire 1,Fire 2; ",
+	"jn,Fire 1,Fire 2;",
+	"I,MT32-pi: "
+};
+
+localparam CONF_STR3 =
+{
+	";",
 	"V,v",`BUILD_DATE
 };
 
 /////////////////  CLOCKS  ////////////////////////
 
-wire clk_ram, clk_sys, clk_fdd, clk_vid;
+wire clk_ram, clk_sys, clk_vid, clk_fdd, clk_snd, clk_emu, clk_mpu;
 wire pll_locked;
 
 pll pll
 (
 	.refclk(CLK_50M),
 	.rst(0),
-	.outclk_0(clk_ram),
-	.outclk_1(clk_sys),
-	.outclk_2(clk_fdd),
-	.outclk_3(clk_vid),
+	.outclk_0(clk_ram), // 80mhz
+	.outclk_1(clk_sys), // 10mhz
+	.outclk_2(clk_vid), // 80mhz -- change to 69.55199
+	.outclk_3(clk_fdd), // 30mhz
+	.outclk_4(clk_snd), // 32mhz
+	.outclk_5(clk_emu), // 60mhz
+	.outclk_6(clk_mpu), // 20mhz
 	.locked(pll_locked)
 );
+
+// Video oscillators
+// 40.00000 - CPU/Main Oscillator
+// 69.55199 - Video clock
+// 38.86363 - Also attached to video circuits
+
+logic [9:0] ces;
+always_ff @(posedge clk_sys) begin
+	reg [3:0] snd_div;
+	reg [3:0] snd_div2;
+	snd_div <= (snd_div == 1) ? 4'd0 : snd_div + 1'd1;
+	snd_div2 <= (snd_div2 == 4) ? 4'd0 : snd_div2 + 1'd1;
+	
+	ces[0] <= &snd_div == 1;
+	ces[1] <= snd_div2 == 4;
+end
 
 altddio_out
 #(
@@ -194,7 +332,7 @@ sdramclk_ddr
 
 /////////////////  HPS  ///////////////////////////
 
-wire [31:0] status;
+wire [63:0] status;
 wire  [1:0] buttons;
 
 wire [15:0] joystick_0, joystick_1;
@@ -217,19 +355,56 @@ wire        ps2_mouse_data_out;
 wire        ps2_mouse_clk_in;
 wire        ps2_mouse_data_in;
 
-wire [10:0] ps2_key;
+wire  [31:0] sd_lba;
+wire   [3:0] sd_rd;
+wire   [3:0] sd_wr;
 
-hps_io #(.STRLEN($size(CONF_STR)>>3), .PS2DIV(600), .PS2WE(1)) hps_io
+wire  [3:0] sd_ack;
+wire  [8:0] sd_buff_addr;
+wire  [7:0] sd_buff_dout;
+wire  [7:0] sd_buff_din;
+wire        sd_buff_wr;
+wire [15:0] sd_req_type = 0;
+wire  [3:0] img_mounted;
+wire  [3:0] img_readonly;
+wire [63:0] img_size;
+
+wire [65:0] ps2_key;
+wire [64:0] sysrtc;
+wire forced_scandoubler;
+wire [21:0] gamma_bus;
+wire  [7:0] uart1_mode;
+wire [31:0] uart1_speed;
+
+hps_io #(.STRLEN(($size(CONF_STR1) + $size(mt32_curmode) + $size(CONF_STR2) + $size(mt32_curmode) + $size(CONF_STR3))>>3), .PS2DIV(600), .PS2WE(1), .VDNUM(4)) hps_io
 (
 	.clk_sys(clk_sys),
 	.HPS_BUS(HPS_BUS),
 
-	.conf_str(CONF_STR),
+	.conf_str({CONF_STR1, mt32_curmode, CONF_STR2, mt32_curmode, CONF_STR3}),
 
 	.buttons(buttons),
 	.status(status),
+	.status_menumask({mt32_newmode, mt32_available, en216p}),
+	.info_req(mt32_info_req),
+	.info(1),
+
+	.sd_lba(sd_lba),
+	.sd_rd(sd_rd),
+	.sd_wr(sd_wr),
+	.sd_ack(sd_ack),
+	.sd_buff_addr(sd_buff_addr),
+	.sd_buff_dout(sd_buff_dout),
+	.sd_buff_din(sd_buff_din),
+	.sd_buff_wr(sd_buff_wr),
+	.sd_req_type(sd_req_type),
+ 
+	.img_mounted(img_mounted),
+	.img_readonly(img_readonly),
+	.img_size(img_size),
 	
-	.TIMESTAMP(TIMESTAMP),
+	.forced_scandoubler(forced_scandoubler),
+	.gamma_bus(gamma_bus),
 
 	.ioctl_download(ioctl_download),
 	.ioctl_index(ioctl_index),
@@ -237,6 +412,11 @@ hps_io #(.STRLEN($size(CONF_STR)>>3), .PS2DIV(600), .PS2WE(1)) hps_io
 	.ioctl_addr(ioctl_addr),
 	.ioctl_dout(ioctl_dout),
 	.ioctl_wait(ldr_wr),
+	
+	// .uart_mode(uart1_mode),
+	// .uart_speed(uart1_speed),
+
+//	.new_vmode(status[4]), // Use for option to avoid 24khz
 
 	.ps2_kbd_clk_out(ps2_kbd_clk_out),
 	.ps2_kbd_data_out(ps2_kbd_data_out),
@@ -248,6 +428,8 @@ hps_io #(.STRLEN($size(CONF_STR)>>3), .PS2DIV(600), .PS2WE(1)) hps_io
 	.ps2_mouse_data_in(ps2_mouse_data_in),
 
 	.ps2_key(ps2_key),
+	
+	.RTC(sysrtc),
 
 	.joystick_0(joystick_0),
 	.joystick_1(joystick_1)
@@ -256,51 +438,112 @@ hps_io #(.STRLEN($size(CONF_STR)>>3), .PS2DIV(600), .PS2WE(1)) hps_io
 /////////////////  RESET  /////////////////////////
 
 reg reset_n = 0;
-always @(posedge clk_sys) begin
+reg reset;
+always @(posedge clk_sys) begin : rst_block
+	reg init_reset_n = 0;
+	reg old_rst = 0;
 	reg old_download;
 	
 	old_download <= ioctl_download;
 	if(~old_download & ioctl_download) reset_n <= 1;
+
+	reset <= buttons[1] | status[0] | RESET | ~init_reset_n;
+
+	old_rst <= status[0];
+	if(old_rst & ~status[0]) init_reset_n <= 1;
 end
 
-wire reset = buttons[1] | status[6];
-///////////////////////////////////////////////////
+////////////////////////////  MT32pi  ////////////////////////////////// 
+wire        mt32_reset    = status[40] | reset;
+wire        mt32_disable  = status[18];
+wire        mt32_mode_req = status[19];
+wire  [1:0] mt32_rom_req  = status[21:20];
+wire  [7:0] mt32_sf_req   = status[31:29];
+wire  [1:0] mt32_info     = status[42:41];
 
-reg  setup = 0;
+wire [15:0] mt32_i2s_r, mt32_i2s_l;
+wire  [7:0] mt32_mode, mt32_rom, mt32_sf;
+wire        mt32_lcd_en, mt32_lcd_pix, mt32_lcd_update;
+wire        midi_rx;
 
-wire pressed    = ps2_key[9];
-wire [7:0] code = ps2_key[7:0];
+wire mt32_newmode;
+wire mt32_available;
+//wire mt32_use  = mt32_available & ~mt32_disable;
+wire mt32_mute = mt32_available &  mt32_disable;
+
+wire [6:0] mt32_out;
+mt32pi mt32pi
+(
+	.*,
+	.reset(mt32_reset),
+	.midi_tx(UART_TXD | mt32_mute)
+);
+
+wire [87:0] mt32_curmode = {(mt32_mode == 'hA2)                  ? {"SoundFont ", {5'b00110, mt32_sf[2:0]}} :
+                            (mt32_mode == 'hA1 && mt32_rom == 0) ?  "   MT-32 v1" :
+                            (mt32_mode == 'hA1 && mt32_rom == 1) ?  "   MT-32 v2" :
+                            (mt32_mode == 'hA1 && mt32_rom == 2) ?  "     CM-32L" :
+                                                                    "    Unknown" };
+
+reg mt32_info_req;
 always @(posedge clk_sys) begin
-	reg [15:0] cnt;
-	reg old_state;
-	reg next_setup = 0;
-	old_state <= ps2_key[10];
-	
-	//make sure the last key is fully transferred over PS2
-	if(&cnt) setup <= next_setup;
-	if(!ps2_kbd_clk_out) cnt <= 0;
-	else if(~&cnt) cnt <= cnt + 1'd1;
+	reg old_mode;
 
-	if(old_state != ps2_key[10]) begin
-		casex(code)
-			'h78: if(pressed) next_setup <= ~setup; // F11
-		endcase
+	old_mode <= mt32_newmode;
+	mt32_info_req <= (old_mode ^ mt32_newmode) && (mt32_info == 1);
+end
+
+reg mt32_lcd_on;
+always @(posedge CLK_VIDEO) begin
+	int to;
+	reg old_update;
+
+	old_update <= mt32_lcd_update;
+	if(to) to <= to - 1;
+
+	if(mt32_info == 2) mt32_lcd_on <= 1;
+	else if(mt32_info != 3) mt32_lcd_on <= 0;
+	else begin
+		if(!to) mt32_lcd_on <= 0;
+		if(old_update ^ mt32_lcd_update) begin
+			mt32_lcd_on <= 1;
+			to <= 90000000 * 2;
+		end
 	end
 end
 
+wire mt32_lcd = mt32_lcd_on & mt32_lcd_en;
+
+//
+// Pin | USB Name |   |Signal
+// ----+----------+---+-------------
+// 0   | D+       | I |RX
+// 1   | D-       | O |TX
+// 2   | TX-      | O |RTS
+// 3   | GND_d    | I |CTS
+// 4   | RX+      | O |DTR
+// 5   | RX-      | I |DSR
+// 6   | TX+      | I |DCD
+//
+
 ///////////////////////////////////////////////////
+wire [15:0] aud_r, aud_l, pcm_r, pcm_l, ym_r, ym_l;
 
-wire [4:0] video_r, video_g, video_b;
-wire video_hs, video_vs;
+wire NMI = status[7];
+wire POWER = status[8];
+wire [1:0] fdsync = status[10:9];
+wire [1:0] fdeject = status[12:11];
+wire sramld	= status[13];
+wire sramst = status[14];
 
-assign VGA_R = {video_r, video_r[4:2]};
-assign VGA_G = {video_g, video_g[4:2]};
-assign VGA_B = {video_b, video_b[4:2]};
 assign CLK_VIDEO = clk_vid;
-
 assign AUDIO_S = 1;
 
 wire disk_led;
+
+wire [7:0] red, green, blue;
+wire HBlank, VBlank, HSync, VSync, ce_pix, vid_de;
+
 
 X68K_top X68K_top
 (
@@ -308,31 +551,26 @@ X68K_top X68K_top
 	.sysclk(clk_sys),
 	.vidclk(clk_vid),
 	.fdcclk(clk_fdd),
+	.sndclk(clk_snd),
+	.emuclk(clk_emu),
+	.mpuclk(clk_mpu),
 	.plllock(pll_locked),
+	.ces(ces),
+	.CPUS(status[47]),
 
-	.SDRAM_CKE(SDRAM_CKE),
-	.SDRAM_nCS(SDRAM_nCS),
-	.SDRAM_nRAS(SDRAM_nRAS),
-	.SDRAM_nCAS(SDRAM_nCAS),
-	.SDRAM_nWE(SDRAM_nWE),
-	.SDRAM_DQMH(SDRAM_DQMH),
-	.SDRAM_DQML(SDRAM_DQML),
-	.SDRAM_BA(SDRAM_BA),
-	.SDRAM_A(SDRAM_A),
-	.SDRAM_DQ(SDRAM_DQ),
+	.sysrtc(sysrtc),
 
-	.kb_clkin(ps2_kbd_clk_out),
-	.kb_clkout(ps2_kbd_clk_in),
-	.kb_datin(ps2_kbd_data_out),
-	.kb_datout(ps2_kbd_data_in),
-
-	.ms_clkin(ps2_mouse_clk_out),
-	.ms_clkout(ps2_mouse_clk_in),
-	.ms_datin(ps2_mouse_data_out),
-	.ms_datout(ps2_mouse_data_in),
-
-	.pJoyA(joyA),
-	.pJoyB(joyB),
+	.pMemCke(SDRAM_CKE),
+	.pMemCs_n(SDRAM_nCS),
+	.pMemRas_n(SDRAM_nRAS),
+	.pMemCas_n(SDRAM_nCAS),
+	.pMemWe_n(SDRAM_nWE),
+	.pMemUdq(SDRAM_DQMH),
+	.pMemLdq(SDRAM_DQML),
+	.pMemBa1(SDRAM_BA[1]),
+	.pMemBa0(SDRAM_BA[0]),
+	.pMemAdr(SDRAM_A),
+	.pMemDat(SDRAM_DQ),
 
 	.ldr_addr(ioctl_addr[19:0]),
 	.ldr_wdat(ioctl_dout),
@@ -341,34 +579,72 @@ X68K_top X68K_top
 	.ldr_ack(ldr_ack),
 	.ldr_done(ldr_done),
 
-	.sdc_miso(SD_MISO),
-	.sdc_mosi(SD_MOSI),
-	.sdc_sclk(SD_SCK),
-	.sdc_cs(SD_CS),
+	.pPs2Clkin(ps2_kbd_clk_out),
+	.pPs2Clkout(ps2_kbd_clk_in),
+	.pPs2Datin(ps2_kbd_data_out),
+	.pPs2Datout(ps2_kbd_data_in),
 
-	.pFd_INDEXn(1),
-	.pFd_TRK00n(1),
-	.pFd_WPTn(1),
-	.pFd_RDATAn(1),
-	.pFd_DSKCHG(1),
+	.pPmsClkin(ps2_mouse_clk_out),
+	.pPmsClkout(ps2_mouse_clk_in),
+	.pPmsDatin(ps2_mouse_data_out),
+	.pPmsDatout(ps2_mouse_data_in),
 
-	.LED(disk_led),
+	.mist_mounted(img_mounted),
+	.mist_readonly(img_readonly),
+	.mist_imgsize(img_size),
 
-	.setup(setup),
+	.mist_lba(sd_lba),
+	.mist_rd(sd_rd),
+	.mist_wr(sd_wr),
+	.mist_ack({sd_ack[3:2], |sd_ack[1:0], |sd_ack[1:0]}),
 
-	.VGA_R(video_r),
-	.VGA_G(video_g),
-	.VGA_B(video_b),
-	.VGA_HS(VGA_HS),
-	.VGA_VS(VGA_VS),
-	.VGA_DE(VGA_DE),
-	.VGA_CE(CE_PIXEL),
+	.mist_buffaddr(sd_buff_addr),
+	.mist_buffdout(sd_buff_dout),
+	.mist_buffdin(sd_buff_din),
+	.mist_buffwr(sd_buff_wr),
 
-	.sndL(AUDIO_L),
-	.sndR(AUDIO_R),
+	.pJoyA(joyA),
+	.pJoyB(joyB),
+	
+	// SD Card is unused
+	// .pSd_miso(SD_MISO),
+	// .pSd_mosi(SD_MOSI),
+	// .pSd_clk(SD_SCK),
+	// .pSd_cs(SD_CS),
 
-	.pswn(0),
-	.rstn(reset_n & ~reset)
+	.pFDSYNC(fdsync),
+	.pFDEJECT(fdeject),
+
+	.pLed(disk_led),
+	.pDip(4'b0000),
+	.pPsw({~NMI,~POWER}),
+	.pSramld(sramld),
+	.pSramst(sramst),
+
+	.pMidi_in(UART_RXD),
+	.pMidi_out(UART_TXD),
+
+	.pVideoR(red),
+	.pVideoG(green),
+	.pVideoB(blue),
+	.pVideoHS(HSync),
+	.pVideoVS(VSync),
+	.pVideoHB(HBlank),
+	.pVideoVB(VBlank),
+	.pVideoEN(vid_de),
+	.pVideoClk(ce_pix),
+
+	.pSndL(aud_r),
+	.pSndR(aud_l),
+	
+	.pSndYML(ym_l),
+	.pSndYMR(ym_r),
+	.pSndPCML(pcm_l),
+	.pSNDPCMR(pcm_r),
+
+	.rstn(reset_n & ~reset),
+	.dHMode(status[45:44]),
+	.dVMode(status[46])
 );
 
 wire ldr_ack;
@@ -386,24 +662,114 @@ always @(posedge clk_sys) begin
 	if(old_download & ~ioctl_download) ldr_done <= 1;
 end
 
+////////////////////////////  AUDIO  ////////////////////////////////////
+wire [17:0] mix_r, mix_l;
+reg [15:0] out_l, out_r;
 
-//////////////////   SD LED   ///////////////////
-reg sd_act;
+localparam [3:0] comp_f1 = 4;
+localparam [3:0] comp_a1 = 2;
+localparam       comp_x1 = ((32767 * (comp_f1 - 1)) / ((comp_f1 * comp_a1) - 1)) + 1; // +1 to make sure it won't overflow
+localparam       comp_b1 = comp_x1 * comp_a1;
 
-always @(posedge clk_sys) begin
-	reg old_mosi, old_miso;
-	integer timeout = 0;
+localparam [3:0] comp_f2 = 8;
+localparam [3:0] comp_a2 = 4;
+localparam       comp_x2 = ((32767 * (comp_f2 - 1)) / ((comp_f2 * comp_a2) - 1)) + 1; // +1 to make sure it won't overflow
+localparam       comp_b2 = comp_x2 * comp_a2;
 
-	old_mosi <= SD_MOSI;
-	old_miso <= SD_MISO;
-
-	sd_act <= 0;
-	if(timeout < 1000000) begin
-		timeout <= timeout + 1;
-		sd_act <= 1;
+function [15:0] compr; input [15:0] inp;
+	reg [15:0] v, v1, v2;
+	begin
+		v  = inp[15] ? (~inp) + 1'd1 : inp;
+		v1 = (v < comp_x1[15:0]) ? (v * comp_a1) : (((v - comp_x1[15:0])/comp_f1) + comp_b1[15:0]);
+		v2 = (v < comp_x2[15:0]) ? (v * comp_a2) : (((v - comp_x2[15:0])/comp_f2) + comp_b2[15:0]);
+		v  = status[21] ? v2 : v1;
+		compr = inp[15] ? ~(v-1'd1) : v;
 	end
+endfunction 
 
-	if((old_mosi ^ SD_MOSI) || (old_miso ^ SD_MISO)) timeout <= 0;
+reg [15:0] cmp_l, cmp_r;
+
+always @(posedge CLK_AUDIO) begin
+	reg signed [17:0] tmp_l, tmp_r;
+
+	out_l <= aud_l + mt32_i2s_l;
+	out_r <= aud_r + mt32_i2s_r;
+	
+	// tmp_l <= $signed(pcm_l[15:1]) + $signed(ym_l[15:1]) + $signed(mt32_i2s_l);
+	// tmp_r <= $signed(pcm_r[15:1]) + $signed(ym_r[15:1]) + $signed(mt32_i2s_r);
+		
+	// tmp_l <= aud_l + mt32_i2s_l;
+	// tmp_r <= aud_r + mt32_i2s_r;
+	
+
+	// tmp_l <= {pcm_l, {2{pcm_l[0]}}} + ym_l + (mt32_mute ? 17'd0 : {mt32_i2s_l[15],mt32_i2s_l});
+	// tmp_r <= {pcm_r, {2{pcm_r[0]}}} + ym_r + (mt32_mute ? 17'd0 : {mt32_i2s_r[15],mt32_i2s_r});
+
+	// // clamp the output
+	// out_l <= (^tmp_l[17:16]) ? {tmp_l[17], {15{tmp_l[16]}}} : tmp_l[17:2];
+	// out_r <= (^tmp_r[17:16]) ? {tmp_r[17], {15{tmp_r[16]}}} : tmp_r[17:2];
+
+	cmp_l <= compr(tmp_l);
+	cmp_r <= compr(tmp_r);
 end
+
+
+assign AUDIO_R = out_r;
+assign AUDIO_L = out_l;
+
+////////////////////////////  VIDEO  ////////////////////////////////////
+
+assign VGA_SL = sl[1:0];
+
+wire       vcrop_en = status[22];
+wire [3:0] vcopt    = status[26:23];
+reg  [4:0] voff;
+reg en216p = 0;
+
+always @(posedge CLK_VIDEO) begin
+	en216p <= ((HDMI_HEIGHT == 1080) && !forced_scandoubler && !scale);
+	voff <= (vcopt < 6) ? {vcopt,1'b0} : ({vcopt,1'b0} - 5'd24);
+end
+
+wire vga_de;
+video_freak video_freak
+(
+	.*,
+	.VGA_DE_IN(vga_de),
+	.ARX((!ar) ? 12'd4 : (ar - 1'd1)),
+	.ARY((!ar) ? 12'd3 : 12'd0),
+	.CROP_SIZE((en216p & vcrop_en) ? 10'd216 : 10'd0),
+	.CROP_OFF(voff),
+	.SCALE(status[28:27])
+);
+
+wire [2:0] scale = status[17:15];
+wire [2:0] sl = scale ? scale - 1'd1 : 3'd0;
+wire       scandoubler = (scale || forced_scandoubler);
+
+wire freeze = 0;
+wire freeze_sync;
+
+wire [7:0] r_mt, g_mt, b_mt;
+
+assign {r_mt, g_mt, b_mt} = mt32_lcd ? {{2{mt32_lcd_pix}},red[7:2], {2{mt32_lcd_pix}},green[7:2], {2{mt32_lcd_pix}},blue[7:2]} 
+	: {red,green,blue};
+
+video_mixer #(.LINE_LENGTH(800), .HALF_DEPTH(0), .GAMMA(1)) video_mixer
+(
+	.*,
+
+	.VGA_DE(vga_de),
+	.hq2x(scale==1),
+	.HSync(HSync),
+	.HBlank(HBlank),
+	.VSync(VSync),
+	.VBlank(VBlank),
+
+	.R(r_mt),
+	.G(g_mt),
+	.B(b_mt)
+);
+
 
 endmodule

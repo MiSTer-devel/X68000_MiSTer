@@ -13,6 +13,7 @@ port(
 	cout	:out std_logic;
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end clkdiv;
@@ -29,15 +30,17 @@ begin
 	dec(0)<='1';
 
 	process(clk,rstn)begin
-		if(rstn='0')then
-			log<='0';
-			count<=(others=>'0');
-		elsif(clk' event and clk='1')then
-			if(count=allzero)then
-				count<=div;
-				log<=not log;
-			else
-				count<=count-dec;
+		if rising_edge(clk) then
+			if(rstn='0')then
+				log<='0';
+				count<=(others=>'0');
+			elsif(ce = '1')then
+				if(count=allzero)then
+					count<=div;
+					log<=not log;
+				else
+					count<=count-dec;
+				end if;
 			end if;
 		end if;
 	end process;

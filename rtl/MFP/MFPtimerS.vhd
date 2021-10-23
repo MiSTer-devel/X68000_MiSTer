@@ -15,6 +15,7 @@ port(
 	INT		:out std_logic;
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end MFPtimerS;
@@ -41,6 +42,7 @@ port(
 	sft		:out std_logic;
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -56,15 +58,17 @@ begin
 		SCFREQ*  4/4000 when mode(2 downto 0)="001" else
 		0;
 
-	prescaler:sftgen generic map(MAXpres)port map(prescale,psclk,clk,rstn);
+	prescaler:sftgen generic map(MAXpres)port map(prescale,psclk,clk,ce,rstn);
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			lTI<='0';
-			sTI<='0';
-		elsif(clk' event and clk='1')then
-			sTI<=TI;
-			lTI<=sTI;
+		if rising_edge(clk) then
+			if(rstn='0')then
+				lTI<='0';
+				sTI<='0';
+			elsif(ce = '1')then
+				sTI<=TI;
+				lTI<=sTI;
+			end if;
 		end if;
 	end process;
 	redge<='1' when sTI='1' and lTI='0' else '0';
@@ -73,64 +77,68 @@ begin
 	sft<=psclk when mode(2 downto 0)/="000" else redge when mode(3)='1' else '0';
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			rvalue<=(others=>'0');
-		elsif(clk' event and clk='1')then
-			if(wr='1')then
-				rvalue<=wdat;
+		if rising_edge(clk) then
+			if(rstn='0')then
+				rvalue<=(others=>'0');
+			elsif(ce = '1')then
+				if(wr='1')then
+					rvalue<=wdat;
+				end if;
 			end if;
 		end if;
 	end process;
 	
 	pmode<='1'  when mode(3)='1' and mode(2 downto 0)/="000" else '0';
 	process(clk,rstn)begin
-		if(rstn='0')then
-			lpmode<='0';
-		elsif(clk' event and clk='1')then
-			lpmode<=pmode;
+		if rising_edge(clk) then
+			if(rstn='0')then
+				lpmode<='0';
+			elsif(ce = '1')then
+				lpmode<=pmode;
+			end if;
 		end if;
 	end process;
 	pmbgn<='1' when pmode='1' and lpmode='0' else '0';
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			counter<=(others=>'0');
-			state<='0';
-			INT<='0';
-		elsif(clk' event and clk='1')then
-			INT<='0';
-			if(pmbgn='1')then
-				counter<=rvalue;
-				state<='0';
-			end if;
-			if(wr='1')then
-				counter<=wdat;
-			elsif(mode="0000")then
+		if rising_edge(clk) then
+			if(rstn='0')then
 				counter<=(others=>'0');
-			else
-				if(pmode='1')then
-					if(state='0')then
-						if(redge='1')then
-							state<='1';
-							counter<=rvalue;
-						end if;
-					else
-						if(fedge='1')then
-							state<='0';
-							INT<='1';
+				state<='0';
+				INT<='0';
+			elsif(ce = '1')then
+				INT<='0';
+				if(pmbgn='1')then
+					counter<=rvalue;
+					state<='0';
+				end if;
+				if(wr='1')then
+					counter<=wdat;
+				elsif(mode/="0000")then
+					if(pmode='1')then
+						if(state='0')then
+							if(redge='1')then
+								state<='1';
+								counter<=rvalue;
+							end if;
+						else
+							if(fedge='1')then
+								state<='0';
+								INT<='1';
+							end if;
 						end if;
 					end if;
-				end if;
-				if(sft='1')then
-					if(pmode='1' and state='0')then
-					else
-						if(counter=x"01")then
-							INT<='1';
-							counter<=counter-x"01";
-						elsif(counter=x"00")then
-							counter<=rvalue;
+					if(sft='1')then
+						if(pmode='1' and state='0')then
 						else
-							counter<=counter-x"01";
+							if(counter=x"01")then
+								INT<='1';
+	--							counter<=counter-x"01";
+	--						elsif(counter=x"00")then
+								counter<=rvalue;
+							else
+								counter<=counter-x"01";
+							end if;
 						end if;
 					end if;
 				end if;

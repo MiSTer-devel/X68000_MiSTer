@@ -36,7 +36,9 @@ port(
 	HRES	:out std_logic_vector(1 downto 0);
 	
 	sclk	:in std_logic;
+	sys_ce  :in std_logic := '1';
 	vclk	:in std_logic;
+	vid_ce  :in std_logic := '1';
 	rstn	:in std_logic
 );
 end sprregs;
@@ -117,6 +119,7 @@ port(
 	reg		:out std_logic_vector(15 downto 0);
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -130,14 +133,14 @@ begin
 	reg2_wr<=b_wr when reg2_cs='1' else "00";
 	reg3_wr<=b_wr when reg3_cs='1' else "00";
 	
-	reg0h	:sprreg port map(addr(9 downto 3),sprno,sclk,vclk,wrdat(15 downto 8),(others=>'0'),reg0_wr(1),'0',reg0rd(15 downto 8),reg0dat(15 downto 8));
-	reg0l	:sprreg port map(addr(9 downto 3),sprno,sclk,vclk,wrdat( 7 downto 0),(others=>'0'),reg0_wr(0),'0',reg0rd( 7 downto 0),reg0dat( 7 downto 0));
-	reg1h	:sprreg port map(addr(9 downto 3),sprno,sclk,vclk,wrdat(15 downto 8),(others=>'0'),reg1_wr(1),'0',reg1rd(15 downto 8),reg1dat(15 downto 8));
-	reg1l	:sprreg port map(addr(9 downto 3),sprno,sclk,vclk,wrdat( 7 downto 0),(others=>'0'),reg1_wr(0),'0',reg1rd( 7 downto 0),reg1dat( 7 downto 0));
-	reg2h	:sprreg port map(addr(9 downto 3),sprno,sclk,vclk,wrdat(15 downto 8),(others=>'0'),reg2_wr(1),'0',reg2rd(15 downto 8),reg2dat(15 downto 8));
-	reg2l	:sprreg port map(addr(9 downto 3),sprno,sclk,vclk,wrdat( 7 downto 0),(others=>'0'),reg2_wr(0),'0',reg2rd( 7 downto 0),reg2dat( 7 downto 0));
-	reg3h	:sprreg port map(addr(9 downto 3),sprno,sclk,vclk,wrdat(15 downto 8),(others=>'0'),reg3_wr(1),'0',reg3rd(15 downto 8),reg3dat(15 downto 8));
-	reg3l	:sprreg port map(addr(9 downto 3),sprno,sclk,vclk,wrdat( 7 downto 0),(others=>'0'),reg3_wr(0),'0',reg3rd( 7 downto 0),reg3dat( 7 downto 0));
+	reg0h	:sprreg port map(addr(9 downto 3),sprno,sclk,vclk,wrdat(15 downto 8),(others=>'0'),reg0_wr(1) and sys_ce,'0',reg0rd(15 downto 8),reg0dat(15 downto 8));
+	reg0l	:sprreg port map(addr(9 downto 3),sprno,sclk,vclk,wrdat( 7 downto 0),(others=>'0'),reg0_wr(0) and sys_ce,'0',reg0rd( 7 downto 0),reg0dat( 7 downto 0));
+	reg1h	:sprreg port map(addr(9 downto 3),sprno,sclk,vclk,wrdat(15 downto 8),(others=>'0'),reg1_wr(1) and sys_ce,'0',reg1rd(15 downto 8),reg1dat(15 downto 8));
+	reg1l	:sprreg port map(addr(9 downto 3),sprno,sclk,vclk,wrdat( 7 downto 0),(others=>'0'),reg1_wr(0) and sys_ce,'0',reg1rd( 7 downto 0),reg1dat( 7 downto 0));
+	reg2h	:sprreg port map(addr(9 downto 3),sprno,sclk,vclk,wrdat(15 downto 8),(others=>'0'),reg2_wr(1) and sys_ce,'0',reg2rd(15 downto 8),reg2dat(15 downto 8));
+	reg2l	:sprreg port map(addr(9 downto 3),sprno,sclk,vclk,wrdat( 7 downto 0),(others=>'0'),reg2_wr(0) and sys_ce,'0',reg2rd( 7 downto 0),reg2dat( 7 downto 0));
+	reg3h	:sprreg port map(addr(9 downto 3),sprno,sclk,vclk,wrdat(15 downto 8),(others=>'0'),reg3_wr(1) and sys_ce,'0',reg3rd(15 downto 8),reg3dat(15 downto 8));
+	reg3l	:sprreg port map(addr(9 downto 3),sprno,sclk,vclk,wrdat( 7 downto 0),(others=>'0'),reg3_wr(0) and sys_ce,'0',reg3rd( 7 downto 0),reg3dat( 7 downto 0));
 
 	rddat<=	reg0rd when reg0_cs='1' else
 			reg1rd when reg1_cs='1' else
@@ -168,15 +171,15 @@ begin
 	PATNO<=	reg2dat(7 downto 0);
 	PRI<=	reg3dat(1 downto 0);
 	
-	reg00	:ramreg generic map(x"eb0800") port map(addr,reg00rdat,wrdat,b_rd,b_wr,reg00doe,reg00dat,sclk,rstn);
-	reg02	:ramreg generic map(x"eb0802") port map(addr,reg02rdat,wrdat,b_rd,b_wr,reg02doe,reg02dat,sclk,rstn);
-	reg04	:ramreg generic map(x"eb0804") port map(addr,reg04rdat,wrdat,b_rd,b_wr,reg04doe,reg04dat,sclk,rstn);
-	reg06	:ramreg generic map(x"eb0806") port map(addr,reg06rdat,wrdat,b_rd,b_wr,reg06doe,reg06dat,sclk,rstn);
-	reg08	:ramreg generic map(x"eb0808") port map(addr,reg08rdat,wrdat,b_rd,b_wr,reg08doe,reg08dat,sclk,rstn);
-	reg0a	:ramreg generic map(x"eb080a") port map(addr,reg0ardat,wrdat,b_rd,b_wr,reg0adoe,reg0adat,sclk,rstn);
-	reg0c	:ramreg generic map(x"eb080c") port map(addr,reg0crdat,wrdat,b_rd,b_wr,reg0cdoe,reg0cdat,sclk,rstn);
-	reg0e	:ramreg generic map(x"eb080e") port map(addr,reg0erdat,wrdat,b_rd,b_wr,reg0edoe,reg0edat,sclk,rstn);
-	reg10	:ramreg generic map(x"eb0810") port map(addr,reg10rdat,wrdat,b_rd,b_wr,reg10doe,reg10dat,sclk,rstn);
+	reg00	:ramreg generic map(x"eb0800") port map(addr,reg00rdat,wrdat,b_rd,b_wr,reg00doe,reg00dat,sclk,sys_ce,rstn);
+	reg02	:ramreg generic map(x"eb0802") port map(addr,reg02rdat,wrdat,b_rd,b_wr,reg02doe,reg02dat,sclk,sys_ce,rstn);
+	reg04	:ramreg generic map(x"eb0804") port map(addr,reg04rdat,wrdat,b_rd,b_wr,reg04doe,reg04dat,sclk,sys_ce,rstn);
+	reg06	:ramreg generic map(x"eb0806") port map(addr,reg06rdat,wrdat,b_rd,b_wr,reg06doe,reg06dat,sclk,sys_ce,rstn);
+	reg08	:ramreg generic map(x"eb0808") port map(addr,reg08rdat,wrdat,b_rd,b_wr,reg08doe,reg08dat,sclk,sys_ce,rstn);
+	reg0a	:ramreg generic map(x"eb080a") port map(addr,reg0ardat,wrdat,b_rd,b_wr,reg0adoe,reg0adat,sclk,sys_ce,rstn);
+	reg0c	:ramreg generic map(x"eb080c") port map(addr,reg0crdat,wrdat,b_rd,b_wr,reg0cdoe,reg0cdat,sclk,sys_ce,rstn);
+	reg0e	:ramreg generic map(x"eb080e") port map(addr,reg0erdat,wrdat,b_rd,b_wr,reg0edoe,reg0edat,sclk,sys_ce,rstn);
+	reg10	:ramreg generic map(x"eb0810") port map(addr,reg10rdat,wrdat,b_rd,b_wr,reg10doe,reg10dat,sclk,sys_ce,rstn);
 
 	BG0Xpos<=	reg00dat(9 downto 0);
 	BG0Ypos<=	reg02dat(9 downto 0);

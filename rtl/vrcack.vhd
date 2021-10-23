@@ -17,6 +17,7 @@ port(
 	ack		:out std_logic;
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end vrcack;
@@ -35,39 +36,43 @@ begin
 	hdiff<='0' when rdaddr(awidth-1 downto cwidth)=raddrh else '1';
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			curaddr<=(others=>'0');
-		elsif(clk' event and clk='1')then
-			if(hdiff='1')then
+		if rising_edge(clk) then
+			if(rstn='0')then
 				curaddr<=(others=>'0');
-			elsif(de='1')then
-				curaddr<=rcaddr;
+			elsif(ce = '1')then
+				if(hdiff='1')then
+					curaddr<=(others=>'0');
+				elsif(de='1')then
+					curaddr<=rcaddr;
+				end if;
 			end if;
 		end if;
 	end process;
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			STATE<=st_IDLE;
-			ack<='0';
-			hdiffl<='1';
-		elsif(clk' event and clk='1')then
-			if(hdiff='1')then
-				state<=st_IDLE;
-			elsif(hdiff='0' and hdiffl='1')then
-				state<=st_DWAIT;
-			end if;
-			if(STATE=st_DWAIT)then
-				if(de='1')then
-					STATE<=st_READ;
-				end if;
-			end if;
-			if(STATE=st_READ and rdaddr(cwidth-1 downto 0)<=curaddr and rd='1')then
-				ack<='1';
-			else
+		if rising_edge(clk) then
+			if(rstn='0')then
+				STATE<=st_IDLE;
 				ack<='0';
+				hdiffl<='1';
+			elsif(ce = '1')then
+				if(hdiff='1')then
+					state<=st_IDLE;
+				elsif(hdiff='0' and hdiffl='1')then
+					state<=st_DWAIT;
+				end if;
+				if(STATE=st_DWAIT)then
+					if(de='1')then
+						STATE<=st_READ;
+					end if;
+				end if;
+				if(STATE=st_READ and rdaddr(cwidth-1 downto 0)<=curaddr and rd='1')then
+					ack<='1';
+				else
+					ack<='0';
+				end if;
+				hdiffl<=hdiff;
 			end if;
-			hdiffl<=hdiff;
 		end if;
 	end process;
 end rtl;

@@ -13,6 +13,7 @@ entity UNCHCHATA is
 		DST		:out std_logic;
 		
 		clk		:in std_logic;
+		ce      :in std_logic := '1';
 		rstn	:in std_logic
 	);
 end UNCHCHATA;
@@ -22,25 +23,27 @@ signal	TIMER	:integer range 0 to MASKTIME*SYS_CLK;
 signal	LAST	:std_logic;
 begin
 	process(clk,rstn)begin
-		if(rstn='0')then
-			TIMER<=(MASKTIME*SYS_CLK);
-			LAST<='0';
-		elsif(clk='1' and clk' event)then
-			if(LAST='0' and SRC='1')then
-				if(TIMER=0)then
-					DST<='1';
+		if rising_edge(clk) then
+			if(rstn='0')then
+				TIMER<=(MASKTIME*SYS_CLK);
+				LAST<='0';
+			elsif(ce = '1')then
+				if(LAST='0' and SRC='1')then
+					if(TIMER=0)then
+						DST<='1';
+					else
+						DST<='0';
+					end if;
 				else
 					DST<='0';
 				end if;
-			else
-				DST<='0';
-			end if;
-			if(TIMER/=0)then
-				TIMER<=TIMER-1;
-			end if;
-			LAST<=SRC;
-			if(SRC='1')then
-				TIMER<=(MASKTIME*SYS_CLK);
+				if(TIMER/=0)then
+					TIMER<=TIMER-1;
+				end if;
+				LAST<=SRC;
+				if(SRC='1')then
+					TIMER<=(MASKTIME*SYS_CLK);
+				end if;
 			end if;
 		end if;
 	end process;

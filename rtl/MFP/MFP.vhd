@@ -70,6 +70,7 @@ port(
 	IVack	:in std_logic_vector(7 downto 0);
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end MFP;

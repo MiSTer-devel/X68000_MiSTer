@@ -69,6 +69,7 @@ port(
 	IVack	:in std_logic_vector(7 downto 0);
 	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end MFPint;
@@ -91,147 +92,95 @@ begin
 	e_lnn<=e_lnA7 & e_lnA6 & e_lnA5 & e_lnA4 & e_lnA3 & e_lnA2 & e_lnA1 & e_lnA0 & e_lnB7 & e_lnB6 & e_lnB5 & e_lnB4 & e_lnB3 & e_lnB2 & e_lnB1 & e_lnB0;
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			IER<=(others=>'0');
-		elsif(clk' event and clk='1')then
-			if(IERAWR='1')then
-				IER(15 downto 8)<=wdat;
-			end if;
-			if(IERBWR='1')then
-				IER(7 downto 0)<=wdat;
-			end if;
-		end if;
-	end process;
-	
-	process(clk,rstn)begin
-		if(rstn='0')then
-			IPR<=(others=>'0');
-		elsif(clk' event and clk='1')then
-			for i in 0 to 15 loop
-				if(IER(i)='0')then
-					IPR(i)<='0';
-				elsif(INTn(i)='1')then
-					IPR(i)<='1';
-				elsif(e_lnn(i)='0' and INTn(i)='0')then
-					IPR(i)<='0';
+		if rising_edge(clk) then
+			if(rstn='0')then
+				IER<=(others=>'0');
+			elsif(ce = '1')then
+				if(IERAWR='1')then
+					IER(15 downto 8)<=wdat;
 				end if;
-			end loop;
-			if(IACK='1')then
-				case IVACK(3 downto 0) is
-				when x"0" =>
-					IPR(0)<='0';
-				when x"1" =>
-					IPR(1)<='0';
-				when x"2" =>
-					IPR(2)<='0';
-				when x"3" =>
-					IPR(3)<='0';
-				when x"4" =>
-					IPR(4)<='0';
-				when x"5" =>
-					IPR(5)<='0';
-				when x"6" =>
-					IPR(6)<='0';
-				when x"7" =>
-					IPR(7)<='0';
-				when x"8" =>
-					IPR(8)<='0';
-				when x"9" =>
-					IPR(9)<='0';
-				when x"a" =>
-					IPR(10)<='0';
-				when x"b" =>
-					IPR(11)<='0';
-				when x"c" =>
-					IPR(12)<='0';
-				when x"d" =>
-					IPR(13)<='0';
-				when x"e" =>
-					IPR(14)<='0';
-				when x"f" =>
-					IPR(15)<='0';
-				when others =>
-				end case;
-			elsif(IPRAWR='1')then
-				IPR(15 downto 8)<=IPR(15 downto 8) and wdat;
-			elsif(IPRBWR='1')then
-				IPR(7 downto 0)<=IPR(7 downto 0) and wdat;
+				if(IERBWR='1')then
+					IER(7 downto 0)<=wdat;
+				end if;
 			end if;
 		end if;
 	end process;
 	
-	process(clk,rstn)begin
-		if(rstn='0')then
-			ISR<=(others=>'0');
-		elsif(clk' event and clk='1')then
-			if(AEOI='1')then
+	process(clk,rstn)
+	variable iivack	:integer range 0 to 15;
+	begin
+		if rising_edge(clk) then
+			if(rstn='0')then
+				IPR<=(others=>'0');
+			elsif(ce = '1')then
+				for i in 0 to 15 loop
+					if(IER(i)='0')then
+						IPR(i)<='0';
+					elsif(INTn(i)='1')then
+						IPR(i)<='1';
+					elsif(e_lnn(i)='0' and INTn(i)='0')then
+						IPR(i)<='0';
+					end if;
+				end loop;
+				if(IACK='1')then
+					iivack:=conv_integer(IVACK(3 downto 0));
+					IPR(iivack)<='0';
+				elsif(IPRAWR='1')then
+					IPR(15 downto 8)<=IPR(15 downto 8) and wdat;
+				elsif(IPRBWR='1')then
+					IPR(7 downto 0)<=IPR(7 downto 0) and wdat;
+				end if;
+			end if;
+		end if;
+	end process;
+	
+	process(clk,rstn)
+	variable iivack	:integer range 0 to 15;
+	begin
+		if rising_edge(clk) then
+			if(rstn='0')then
 				ISR<=(others=>'0');
-			elsif(IACK='1')then
-				ISR<=(others=>'0');
-				case IVACK(3 downto 0) is
-				when x"0" =>
-					ISR(0)<='1';
-				when x"1" =>
-					ISR(1)<='1';
-				when x"2" =>
-					ISR(2)<='1';
-				when x"3" =>
-					ISR(3)<='1';
-				when x"4" =>
-					ISR(4)<='1';
-				when x"5" =>
-					ISR(5)<='1';
-				when x"6" =>
-					ISR(6)<='1';
-				when x"7" =>
-					ISR(7)<='1';
-				when x"8" =>
-					ISR(8)<='1';
-				when x"9" =>
-					ISR(9)<='1';
-				when x"a" =>
-					ISR(10)<='1';
-				when x"b" =>
-					ISR(11)<='1';
-				when x"c" =>
-					ISR(12)<='1';
-				when x"d" =>
-					ISR(13)<='1';
-				when x"e" =>
-					ISR(14)<='1';
-				when x"f" =>
-					ISR(15)<='1';
-				when others =>
-				end case;
-			elsif(ISRAWR='1')then
-				ISR(15 downto 8)<=ISR(15 downto 8) and wdat;
-			elsif(ISRBWR='1')then
-				ISR(7 downto 0)<=ISR(7 downto 0) and wdat;
+			elsif(ce = '1')then
+				if(AEOI='1')then
+					ISR<=(others=>'0');
+				elsif(IACK='1')then
+					ISR<=(others=>'0');
+					iivack:=conv_integer(IVACK(3 downto 0));
+					ISR(iivack)<='1';
+				elsif(ISRAWR='1')then
+					ISR(15 downto 8)<=ISR(15 downto 8) and wdat;
+				elsif(ISRBWR='1')then
+					ISR(7 downto 0)<=ISR(7 downto 0) and wdat;
+				end if;
 			end if;
 		end if;
 	end process;
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			IMR<=(others=>'0');
-		elsif(clk' event and clk='1')then
-			if(IMRAWR='1')then
-				IMR(15 downto 8)<=wdat;
-			end if;
-			if(IMRBWR='1')then
-				IMR(7 downto 0)<=wdat;
+		if rising_edge(clk) then
+			if(rstn='0')then
+				IMR<=(others=>'0');
+			elsif(ce = '1')then
+				if(IMRAWR='1')then
+					IMR(15 downto 8)<=wdat;
+				end if;
+				if(IMRBWR='1')then
+					IMR(7 downto 0)<=wdat;
+				end if;
 			end if;
 		end if;
 	end process;
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			VECT<=(others=>'0');
-			AEOI<='1';
-		elsif(clk' event and clk='1')then
-			if(VRWR='1')then
-				VECT<=wdat(7 downto 4);
-				AEOI<=not wdat(3);
+		if rising_edge(clk) then
+			if(rstn='0')then
+				VECT<=(others=>'0');
+				AEOI<='1';
+			elsif(ce = '1')then
+				if(VRWR='1')then
+					VECT<=wdat(7 downto 4);
+					AEOI<=not wdat(3);
+				end if;
 			end if;
 		end if;
 	end process;
@@ -249,13 +198,15 @@ begin
 	end process;
 	
 	process(clk,rstn)begin
-		if(rstn='0')then
-			INTxl<=(others=>'0');
-			INT<='0';
-		elsif(clk' event and clk='1')then
-			INT<=INTb;
-			if(INTb='1')then
-				INTxl<=INTx;
+		if rising_edge(clk) then
+			if(rstn='0')then
+				INTxl<=(others=>'0');
+				INT<='0';
+			elsif(ce = '1')then
+				INT<=INTb;
+				if(INTb='1')then
+					INTxl<=INTx;
+				end if;
 			end if;
 		end if;
 	end process;

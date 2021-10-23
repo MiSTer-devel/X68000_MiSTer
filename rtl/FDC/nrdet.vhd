@@ -9,11 +9,12 @@ generic(
 port(
 	start	:in std_logic;
 	RDY		:in std_logic;
-	
+
 	NOTRDY	:out std_logic;
-	
+
 	mssft	:in std_logic;
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end NRDET;
@@ -26,30 +27,31 @@ signal state :state_t;
 signal wcount :integer range 0 to TOms-1;
 begin
 	process(clk,rstn)begin
-		if(rstn='0')then
-			state<=st_IDLE;
-			NOTRDY<='0';
-			wcount<=0;
-		elsif(clk' event and clk='1')then
-			NOTRDY<='0';
-			if(start='1')then
-				state<=st_WAIT;
-				wcount<=TOms-1;
-			elsif(state=st_WAIT)then
-				if(RDY='1')then
-					state<=st_IDLE;
-					wcount<=0;
-				elsif(mssft='1')then
-					if(wcount>0)then
-						wcount<=wcount-1;
-					else
-						NOTRDY<='1';
+		if rising_edge(clk) then
+			if(rstn='0')then
+				state<=st_IDLE;
+				NOTRDY<='0';
+				wcount<=0;
+			elsif(ce = '1')then
+				NOTRDY<='0';
+				if(start='1')then
+					state<=st_WAIT;
+					wcount<=TOms-1;
+				elsif(state=st_WAIT)then
+					if(RDY='1')then
 						state<=st_IDLE;
+						wcount<=0;
+					elsif(mssft='1')then
+						if(wcount>0)then
+							wcount<=wcount-1;
+						else
+							NOTRDY<='1';
+							state<=st_IDLE;
+						end if;
 					end if;
 				end if;
 			end if;
 		end if;
 	end process;
 end rtl;
-						
-				
+

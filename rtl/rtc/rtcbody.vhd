@@ -52,6 +52,7 @@ port(
 	fast	:in std_logic;
 
  	sclk	:in std_logic;
+ 	sys_ce  :in std_logic := '1';
 	rstn	:in std_logic
 );
 end rtcbody;
@@ -86,24 +87,26 @@ signal	SFTYERH	:std_logic;
 signal	LEAP	:std_logic;
 begin
 	process(sclk,rstn)begin
-		if(rstn='0')then
-			seccount<=clkfreq-1;
-			SFT1s<='0';
-			OUT1Hz<='0';
-		elsif(sclk' event and sclk='1')then
-			SFT1s<='0';
-			if(SECZERO='1')then
+		if rising_edge(sclk) then
+			if(rstn='0')then
 				seccount<=clkfreq-1;
-			elsif(seccount>0)then
-				seccount<=seccount-1;
-			else
-				seccount<=clkfreq-1;
-				SFT1s<='1';
-			end if;
-			if(seccount>(clkfreq/2))then
-				OUT1Hz<='1';
-			else
+				SFT1s<='0';
 				OUT1Hz<='0';
+			elsif(sys_ce = '1')then
+				SFT1s<='0';
+				if(SECZERO='1')then
+					seccount<=clkfreq-1;
+				elsif(seccount>0)then
+					seccount<=seccount-1;
+				else
+					seccount<=clkfreq-1;
+					SFT1s<='1';
+				end if;
+				if(seccount>(clkfreq/2))then
+					OUT1Hz<='1';
+				else
+					OUT1Hz<='0';
+				end if;
 			end if;
 		end if;
 	end process;
@@ -111,16 +114,18 @@ begin
 	SFTSECL<=SFT1s when fast='0' else '1';
 	
 	process(sclk,rstn)begin
-		if(rstn='0')then
-			SECL<=(others=>'0');
-		elsif(sclk' event and sclk='1')then
-			if(SECLWR='1')then
-				SECL<=SECLIN;
-			elsif(SFTSECL='1')then
-				if(SECL<x"9")then
-					SECL<=SECL+x"1";
-				else
-					SECL<=(others=>'0');
+		if rising_edge(sclk) then
+			if(rstn='0')then
+				SECL<=(others=>'0');
+			elsif(sys_ce = '1')then
+				if(SECLWR='1')then
+					SECL<=SECLIN;
+				elsif(SFTSECL='1')then
+					if(SECL<x"9")then
+						SECL<=SECL+x"1";
+					else
+						SECL<=(others=>'0');
+					end if;
 				end if;
 			end if;
 		end if;
@@ -129,16 +134,18 @@ begin
 	SFTSECH<=SFTSECL when SECL=x"9" else '0';
 	
 	process(sclk,rstn)begin
-		if(rstn='0')then
-			SECH<=(others=>'0');
-		elsif(sclk' event and sclk='1')then
-			if(SECHWR='1')then
-				SECH<=SECHIN;
-			elsif(SFTSECH='1')then
-				if(SECH<"101")then
-					SECH<=SECH+"001";
-				else
-					SECH<=(others=>'0');
+		if rising_edge(sclk) then
+			if(rstn='0')then
+				SECH<=(others=>'0');
+			elsif(sys_ce = '1')then
+				if(SECHWR='1')then
+					SECH<=SECHIN;
+				elsif(SFTSECH='1')then
+					if(SECH<"101")then
+						SECH<=SECH+"001";
+					else
+						SECH<=(others=>'0');
+					end if;
 				end if;
 			end if;
 		end if;
@@ -147,16 +154,18 @@ begin
 	SFTMINL<=SFTSECH when SECH="101" else '0';
 	
 	process(sclk,rstn)begin
-		if(rstn='0')then
-			MINL<=(others=>'0');
-		elsif(sclk' event and sclk='1')then
-			if(MINLWR='1')then
-				MINL<=MINLIN;
-			elsif(SFTMINL='1')then
-				if(MINL<x"9")then
-					MINL<=MINL+x"1";
-				else
-					MINL<=(others=>'0');
+		if rising_edge(sclk) then
+			if(rstn='0')then
+				MINL<=(others=>'0');
+			elsif(sys_ce = '1')then
+				if(MINLWR='1')then
+					MINL<=MINLIN;
+				elsif(SFTMINL='1')then
+					if(MINL<x"9")then
+						MINL<=MINL+x"1";
+					else
+						MINL<=(others=>'0');
+					end if;
 				end if;
 			end if;
 		end if;
@@ -165,16 +174,18 @@ begin
 	SFTMINH<=SFTMINL when MINL=x"9" else '0';
 
 	process(sclk,rstn)begin
-		if(rstn='0')then
-			MINH<=(others=>'0');
-		elsif(sclk' event and sclk='1')then
-			if(MINHWR='1')then
-				MINH<=MINHIN;
-			elsif(SFTMINH='1')then
-				if(MINH<"101")then
-					MINH<=MINH+"001";
-				else
-					MINH<=(others=>'0');
+		if rising_edge(sclk) then
+			if(rstn='0')then
+				MINH<=(others=>'0');
+			elsif(sys_ce = '1')then
+				if(MINHWR='1')then
+					MINH<=MINHIN;
+				elsif(SFTMINH='1')then
+					if(MINH<"101")then
+						MINH<=MINH+"001";
+					else
+						MINH<=(others=>'0');
+					end if;
 				end if;
 			end if;
 		end if;
@@ -183,18 +194,20 @@ begin
 	SFTHORL<=SFTMINH when MINH="101" else '0';
 
 	process(sclk,rstn)begin
-		if(rstn='0')then
-			HORL<=(others=>'0');
-		elsif(sclk' event and sclk='1')then
-			if(HORLWR='1')then
-				HORL<=HORLIN;
-			elsif(SFTHORL='1')then
-				if(HORL=x"9")then
-					HORL<=(others=>'0');
-				elsif(HORH="10" and HORL=x"3")then
-					HORL<=(others=>'0');
-				else
-					HORL<=HORL+x"1";
+		if rising_edge(sclk) then
+			if(rstn='0')then
+				HORL<=(others=>'0');
+			elsif(sys_ce = '1')then
+				if(HORLWR='1')then
+					HORL<=HORLIN;
+				elsif(SFTHORL='1')then
+					if(HORL=x"9")then
+						HORL<=(others=>'0');
+					elsif(HORH="10" and HORL=x"3")then
+						HORL<=(others=>'0');
+					else
+						HORL<=HORL+x"1";
+					end if;
 				end if;
 			end if;
 		end if;
@@ -203,16 +216,18 @@ begin
 	SFTHORH<=SFTHORL when (HORL=x"9" or (HORH="10" and HORL=x"3")) else '0';
 
 	process(sclk,rstn)begin
-		if(rstn='0')then
-			HORH<=(others=>'0');
-		elsif(sclk' event and sclk='1')then
-			if(HORHWR='1')then
-				HORH<=HORHIN;
-			elsif(SFTHORH='1')then
-				if(HORH<"10")then
-					HORH<=HORH+"01";
-				else
-					HORH<=(others=>'0');
+		if rising_edge(sclk) then
+			if(rstn='0')then
+				HORH<=(others=>'0');
+			elsif(sys_ce = '1')then
+				if(HORHWR='1')then
+					HORH<=HORHIN;
+				elsif(SFTHORH='1')then
+					if(HORH<"10")then
+						HORH<=HORH+"01";
+					else
+						HORH<=(others=>'0');
+					end if;
 				end if;
 			end if;
 		end if;
@@ -221,16 +236,18 @@ begin
 	SFTDAYL<=SFTHORH when HORH="10" else '0';
 
 	process(sclk,rstn)begin
-		if(rstn='0')then
-			WDAY<=(others=>'0');
-		elsif(sclk' event and sclk='1')then
-			if(WDAYWR='1')then
-				WDAY<=WDAYIN;
-			elsif(SFTDAYL='1')then
-				if(WDAY<"110")then
-					WDAY<=WDAY+"001";
-				else
-					WDAY<=(others=>'0');
+		if rising_edge(sclk) then
+			if(rstn='0')then
+				WDAY<=(others=>'0');
+			elsif(sys_ce = '1')then
+				if(WDAYWR='1')then
+					WDAY<=WDAYIN;
+				elsif(SFTDAYL='1')then
+					if(WDAY<"110")then
+						WDAY<=WDAY+"001";
+					else
+						WDAY<=(others=>'0');
+					end if;
 				end if;
 			end if;
 		end if;
@@ -238,26 +255,28 @@ begin
 	WDAYOUT<=WDAY;
 
 	process(sclk,rstn)begin
-		if(rstn='0')then
-			DAYL<=x"1";
-		elsif(sclk' event and sclk='1')then
-			if(DAYLWR='1')then
-				DAYL<=DAYLIN;
-			elsif(SFTDAYL='1')then
-				if(DAYL=x"9")then
-					if(MON=x"2")then
+		if rising_edge(sclk) then
+			if(rstn='0')then
+				DAYL<=x"1";
+			elsif(sys_ce = '1')then
+				if(DAYLWR='1')then
+					DAYL<=DAYLIN;
+				elsif(SFTDAYL='1')then
+					if(DAYL=x"9")then
+						if(MON=x"2")then
+							DAYL<=x"1";
+						else
+							DAYL<=x"0";
+						end if;
+					elsif(MON=x"2" and DAYH="010" and DAYL=x"8" and LEAP='0')then
+						DAYL<=x"1";
+					elsif((MON=x"4" or MON=x"6" or MON=x"9" or MON=x"b") and DAYH="011" and DAYL=x"0")then
+						DAYL<=x"1";
+					elsif((MON=x"1" or MON=x"3" or MON=x"5" or MON=x"7" or MON=x"8" or MON=x"a" or MON=x"c") and DAYH="011" and DAYL=x"1")then
 						DAYL<=x"1";
 					else
-						DAYL<=x"0";
+						DAYL<=DAYL+x"1";
 					end if;
-				elsif(MON=x"2" and DAYH="010" and DAYL=x"8" and LEAP='0')then
-					DAYL<=x"1";
-				elsif((MON=x"4" or MON=x"6" or MON=x"9" or MON=x"b") and DAYH="011" and DAYL=x"0")then
-					DAYL<=x"1";
-				elsif((MON=x"1" or MON=x"3" or MON=x"5" or MON=x"7" or MON=x"8" or MON=x"a" or MON=x"c") and DAYH="011" and DAYL=x"1")then
-					DAYL<=x"1";
-				else
-					DAYL<=DAYL+x"1";
 				end if;
 			end if;
 		end if;
@@ -269,22 +288,24 @@ begin
 							((MON=x"1" or MON=x"3" or MON=x"5" or MON=x"7" or MON=x"8" or MON=x"a" or MON=x"c") and DAYH="011" and DAYL=x"1")) else '0';
 	
 	process(sclk,rstn)begin
-		if(rstn='0')then
-			DAYH<=(others=>'0');
-		elsif(sclk' event and sclk='1')then
-			if(DAYHWR='1')then
-				DAYH<=DAYHIN;
-			elsif(SFTDAYH='1')then
-				if(DAYH="00" or DAYH="01")then
-					DAYH<=DAYH+"01";
-				elsif(MON/=x"2" and DAYH="10")then
-					DAYH<=DAYH+"01";
-				elsif(MON=x"2" and DAYH="10")then
-					DAYH<=(others=>'0');
-				elsif(DAYH="11")then
-					DAYH<=(others=>'0');
-				else
-					DAYH<=DAYH+"01";
+		if rising_edge(sclk) then
+			if(rstn='0')then
+				DAYH<=(others=>'0');
+			elsif(sys_ce = '1')then
+				if(DAYHWR='1')then
+					DAYH<=DAYHIN;
+				elsif(SFTDAYH='1')then
+					if(DAYH="00" or DAYH="01")then
+						DAYH<=DAYH+"01";
+					elsif(MON/=x"2" and DAYH="10")then
+						DAYH<=DAYH+"01";
+					elsif(MON=x"2" and DAYH="10")then
+						DAYH<=(others=>'0');
+					elsif(DAYH="11")then
+						DAYH<=(others=>'0');
+					else
+						DAYH<=DAYH+"01";
+					end if;
 				end if;
 			end if;
 		end if;
@@ -293,16 +314,18 @@ begin
 	SFTMON<=SFTDAYH when ((MON=x"2" and DAYH="10") or DAYH="11") else '0';
 	
 	process(sclk,rstn)begin
-		if(rstn='0')then
-			MON<=x"1";
-		elsif(sclk' event and sclk='1')then
-			if(MONWR='1')then
-				MON<=MONIN;
-			elsif(SFTMON='1')then
-				if(MON<x"c")then
-					MON<=MON+x"1";
-				else
-					MON<=x"1";
+		if rising_edge(sclk) then
+			if(rstn='0')then
+				MON<=x"1";
+			elsif(sys_ce = '1')then
+				if(MONWR='1')then
+					MON<=MONIN;
+				elsif(SFTMON='1')then
+					if(MON<x"c")then
+						MON<=MON+x"1";
+					else
+						MON<=x"1";
+					end if;
 				end if;
 			end if;
 		end if;
@@ -311,16 +334,18 @@ begin
 	SFTYERL<=SFTMON when MON=x"c" else '0';
 	
 	process(sclk,rstn)begin
-		if(rstn='0')then
-			YERL<=(others=>'0');
-		elsif(sclk' event and sclk='1')then
-			if(YERLWR='1')then
-				YERL<=YERLIN;
-			elsif(SFTYERL='1')then
-				if(YERL<x"9")then
-					YERL<=YERL+x"1";
-				else
-					YERL<=(others=>'0');
+		if rising_edge(sclk) then
+			if(rstn='0')then
+				YERL<=(others=>'0');
+			elsif(sys_ce = '1')then
+				if(YERLWR='1')then
+					YERL<=YERLIN;
+				elsif(SFTYERL='1')then
+					if(YERL<x"9")then
+						YERL<=YERL+x"1";
+					else
+						YERL<=(others=>'0');
+					end if;
 				end if;
 			end if;
 		end if;
@@ -329,16 +354,18 @@ begin
 	SFTYERH<=SFTYERL when YERL=x"9" else '0';
 	
 	process(sclk,rstn)begin
-		if(rstn='0')then
-			YERH<=(others=>'0');
-		elsif(sclk' event and sclk='1')then
-			if(YERHWR='1')then
-				YERH<=YERHIN;
-			elsif(SFTYERH='1')then
-				if(YERH<x"9")then
-					YERH<=YERH+x"1";
-				else
-					YERH<=(others=>'0');
+		if rising_edge(sclk) then
+			if(rstn='0')then
+				YERH<=(others=>'0');
+			elsif(sys_ce = '1')then
+				if(YERHWR='1')then
+					YERH<=YERHIN;
+				elsif(SFTYERH='1')then
+					if(YERH<x"9")then
+						YERH<=YERH+x"1";
+					else
+						YERH<=(others=>'0');
+					end if;
 				end if;
 			end if;
 		end if;

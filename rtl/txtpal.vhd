@@ -16,7 +16,9 @@ port(
 	palout	:out std_logic_vector(15 downto 0);
 	
 	sclk	:in std_logic;
+	sys_ce  :in std_logic := '1';
 	vclk	:in std_logic;
+	vid_ce  :in std_logic := '1';
 	rstn	:in std_logic
 );
 end txtpal;
@@ -58,6 +60,6 @@ begin
 	hwr<=cs and wr(1);
 	lwr<=cs and wr(0);
 	datoe<=cs and rd;
-	ramh	:txtpramh port map(addr,palno,sclk,vclk,wdat(15 downto 8),(others=>'0'),hwr,'0',rdat(15 downto 8),palout(15 downto 8));
-	raml	:txtpraml port map(addr,palno,sclk,vclk,wdat( 7 downto 0),(others=>'0'),lwr,'0',rdat( 7 downto 0),palout( 7 downto 0));
+	ramh	:txtpramh port map(addr,palno,sclk,vclk,wdat(15 downto 8),(others=>'0'),hwr and sys_ce,'0',rdat(15 downto 8),palout(15 downto 8));
+	raml	:txtpraml port map(addr,palno,sclk,vclk,wdat( 7 downto 0),(others=>'0'),lwr and sys_ce,'0',rdat( 7 downto 0),palout( 7 downto 0));
 end rtl;
