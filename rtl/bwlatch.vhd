@@ -9,14 +9,13 @@ generic(
 );
 port(
 	addr	:in std_logic_vector(awidth-1 downto 0);
+	ce      :in std_logic := '1';
 	wr		:in std_logic;
 	din		:in std_logic_vector(dwidth-1 downto 0);
 	
 	myaddr	:in std_logic_vector(awidth-1 downto 0);
 	pout	:out std_logic_vector(dwidth-1 downto 0);
-	
 	clk		:in std_logic;
-	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end bwlatch;

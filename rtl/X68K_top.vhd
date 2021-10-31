@@ -682,6 +682,8 @@ signal	contc_doe	:std_logic;
 signal	dwait		:std_logic;
 signal	dsprbgen	:std_logic_vector(1 downto 0);
 
+signal  ce          :std_logic := '1';
+
 component TG68
 	port(
 		clk           : in std_logic;
@@ -1450,14 +1452,13 @@ generic(
 );
 port(
 	addr	:in std_logic_vector(awidth-1 downto 0);
+	ce      :in std_logic := '1';
 	wr		:in std_logic;
 	din		:in std_logic_vector(dwidth-1 downto 0);
 	
 	myaddr	:in std_logic_vector(awidth-1 downto 0);
 	pout	:out std_logic_vector(dwidth-1 downto 0);
-	
 	clk		:in std_logic;
-	ce      :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -2290,8 +2291,7 @@ generic(
 port(
 	D	:in std_logic;
 	Q	:out std_logic;
-	
-	sft	:in std_logic;
+
 	clk	:in std_logic;
 	ce  :in std_logic := '1';
 	rstn :in std_logic
@@ -2384,7 +2384,7 @@ begin
 	-- pllrst<=not pwr_rstn;
 --	pMemClk<=not ramclk;
 
-	sr	:sftclk    generic map(100000000,1,1) port map("1",srst,sysclk,rstn);
+	sr	:sftclk    generic map(100000000,1,1) port map("1",srst,sysclk,ce,rstn);
 
 	mem_rstn<=	plllock;
 
@@ -3796,7 +3796,7 @@ begin
 	mixL	:addsat generic map(16) port map(opm_sndL(15) & opm_sndL(15 downto 1),pcm_sndL,mix_sndL,open,open);
 	mixR	:addsat generic map(16) port map(opm_sndR(15) & opm_sndR(15 downto 1),pcm_sndR,mix_sndR,open,open);
 
-	dacs	:sftclk generic map(ACFREQ,DACFREQ,1) port map("1",dacsft,sndclk,srstn);
+	dacs	:sftclk generic map(ACFREQ,DACFREQ,1) port map("1",dacsft,sndclk,'1',srstn);
 	
 	pSndPCML <= opm_sndL;
 	pSndPCMR <= opm_sndR;
@@ -3936,14 +3936,14 @@ begin
 		clk		=>sysclk,
 		rstn	=>srstn
 	);
-	SELf	:digifilter generic map(2,'0') port map(SASI_SEL,SASI_SELf,emuclk,srstn);
-	BSYf	:digifilter generic map(2,'0') port map(SASI_BSY,SASI_BSYf,sysclk,srstn);
-	REQf	:digifilter generic map(2,'0') port map(SASI_REQ,SASI_REQf,sysclk,srstn);
-	ACKf	:digifilter generic map(2,'0') port map(SASI_ACK,SASI_ACKf,emuclk,srstn);
-	IOf		:digifilter generic map(2,'0') port map(SASI_IO,SASI_IOf,sysclk,srstn);
-	CDf		:digifilter generic map(2,'0') port map(SASI_CD,SASI_CDf,sysclk,srstn);
-	MSGf	:digifilter generic map(2,'0') port map(SASI_MSG,SASI_MSGf,sysclk,srstn);
-	RSTf	:digifilter generic map(2,'0') port map(SASI_RST,SASI_RSTf,emuclk,srstn);
+	SELf	:digifilter generic map(2,'0') port map(SASI_SEL,SASI_SELf,emuclk,ce,srstn);
+	BSYf	:digifilter generic map(2,'0') port map(SASI_BSY,SASI_BSYf,sysclk,ce,srstn);
+	REQf	:digifilter generic map(2,'0') port map(SASI_REQ,SASI_REQf,sysclk,ce,srstn);
+	ACKf	:digifilter generic map(2,'0') port map(SASI_ACK,SASI_ACKf,emuclk,ce,srstn);
+	IOf		:digifilter generic map(2,'0') port map(SASI_IO,SASI_IOf,sysclk,ce,srstn);
+	CDf		:digifilter generic map(2,'0') port map(SASI_CD,SASI_CDf,sysclk,ce,srstn);
+	MSGf	:digifilter generic map(2,'0') port map(SASI_MSG,SASI_MSGf,sysclk,ce,srstn);
+	RSTf	:digifilter generic map(2,'0') port map(SASI_RST,SASI_RSTf,emuclk,ce,srstn);
 	
 	DISKE	:diskemu generic map(FCFREQ,SCFREQ,10) port map(
 
