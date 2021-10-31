@@ -183,6 +183,7 @@ assign {DDRAM_CLK, DDRAM_BURSTCNT, DDRAM_ADDR, DDRAM_DIN, DDRAM_BE, DDRAM_RD, DD
 
 assign VGA_F1 = 0;
 assign VGA_SCALER = 0;
+assign HDMI_FREEZE = 0;
 
 assign LED_POWER = 0;
 assign BUTTONS = 0;
@@ -207,7 +208,7 @@ assign AUDIO_MIX = status[3:2];
 `define DEBUG_X68K
 
 `include "build_id.v" 
-parameter CONF_STR1 = {
+parameter CONF_STR = {
 	"X68000;UART115200,MIDI;",
 	"-;",
 	"S0,D88,FDD0;",
@@ -246,13 +247,6 @@ parameter CONF_STR1 = {
 	"h1P3OKL,Munt ROM,MT-32 v1,MT-32 v2,CM-32L;",
 	"h1P3OTV,SoundFont,0,1,2,3,4,5,6,7;",
 	"h1P3-;",
-	"h1P3-,Current Config: "
-};
-
-localparam CONF_STR2 =
-{
-	";",
-	"h1P3-;",
 	"h1P3r8,Reset Hanging Notes;",
 	"-;",
 	"R7,NMI Button;",
@@ -261,12 +255,19 @@ localparam CONF_STR2 =
 	"-;",
 	"J,Fire 1,Fire 2; ",
 	"jn,Fire 1,Fire 2;",
-	"I,MT32-pi: "
-};
-
-localparam CONF_STR3 =
-{
-	";",
+	"I,",
+	"MT32-pi: SoundFont #0,",
+	"MT32-pi: SoundFont #1,",
+	"MT32-pi: SoundFont #2,",
+	"MT32-pi: SoundFont #3,",
+	"MT32-pi: SoundFont #4,",
+	"MT32-pi: SoundFont #5,",
+	"MT32-pi: SoundFont #6,",
+	"MT32-pi: SoundFont #7,",
+	"MT32-pi: MT-32 v1,",
+	"MT32-pi: MT-32 v2,",
+	"MT32-pi: CM-32L,",
+	"MT32-pi: Unknown mode;",
 	"V,v",`BUILD_DATE
 };
 
@@ -364,7 +365,6 @@ wire  [8:0] sd_buff_addr;
 wire  [7:0] sd_buff_dout;
 wire  [7:0] sd_buff_din;
 wire        sd_buff_wr;
-wire [15:0] sd_req_type = 0;
 wire  [3:0] img_mounted;
 wire  [3:0] img_readonly;
 wire [63:0] img_size;
@@ -376,28 +376,25 @@ wire [21:0] gamma_bus;
 wire  [7:0] uart1_mode;
 wire [31:0] uart1_speed;
 
-hps_io #(.STRLEN(($size(CONF_STR1) + $size(mt32_curmode) + $size(CONF_STR2) + $size(mt32_curmode) + $size(CONF_STR3))>>3), .PS2DIV(600), .PS2WE(1), .VDNUM(4)) hps_io
+hps_io #(.CONF_STR(CONF_STR), .PS2DIV(600), .PS2WE(1), .VDNUM(4)) hps_io
 (
 	.clk_sys(clk_sys),
 	.HPS_BUS(HPS_BUS),
-
-	.conf_str({CONF_STR1, mt32_curmode, CONF_STR2, mt32_curmode, CONF_STR3}),
 
 	.buttons(buttons),
 	.status(status),
 	.status_menumask({mt32_newmode, mt32_available, en216p}),
 	.info_req(mt32_info_req),
-	.info(1),
+	.info(mt32_info_disp),
 
-	.sd_lba(sd_lba),
+	.sd_lba('{sd_lba,sd_lba,sd_lba,sd_lba}),
 	.sd_rd(sd_rd),
 	.sd_wr(sd_wr),
 	.sd_ack(sd_ack),
 	.sd_buff_addr(sd_buff_addr),
 	.sd_buff_dout(sd_buff_dout),
-	.sd_buff_din(sd_buff_din),
+	.sd_buff_din('{sd_buff_din,sd_buff_din,sd_buff_din,sd_buff_din}),
 	.sd_buff_wr(sd_buff_wr),
-	.sd_req_type(sd_req_type),
  
 	.img_mounted(img_mounted),
 	.img_readonly(img_readonly),
@@ -471,7 +468,6 @@ wire mt32_available;
 //wire mt32_use  = mt32_available & ~mt32_disable;
 wire mt32_mute = mt32_available &  mt32_disable;
 
-wire [6:0] mt32_out;
 mt32pi mt32pi
 (
 	.*,
@@ -479,18 +475,18 @@ mt32pi mt32pi
 	.midi_tx(UART_TXD | mt32_mute)
 );
 
-wire [87:0] mt32_curmode = {(mt32_mode == 'hA2)                  ? {"SoundFont ", {5'b00110, mt32_sf[2:0]}} :
-                            (mt32_mode == 'hA1 && mt32_rom == 0) ?  "   MT-32 v1" :
-                            (mt32_mode == 'hA1 && mt32_rom == 1) ?  "   MT-32 v2" :
-                            (mt32_mode == 'hA1 && mt32_rom == 2) ?  "     CM-32L" :
-                                                                    "    Unknown" };
-
 reg mt32_info_req;
+reg [3:0] mt32_info_disp;
 always @(posedge clk_sys) begin
 	reg old_mode;
 
 	old_mode <= mt32_newmode;
 	mt32_info_req <= (old_mode ^ mt32_newmode) && (mt32_info == 1);
+	
+	mt32_info_disp <= (mt32_mode == 'hA2) ? (4'd1 + mt32_sf[2:0]) :
+                     (mt32_mode == 'hA1 && mt32_rom == 0) ?  4'd9 :
+                     (mt32_mode == 'hA1 && mt32_rom == 1) ?  4'd10 :
+                     (mt32_mode == 'hA1 && mt32_rom == 2) ?  4'd11 : 4'd12;
 end
 
 reg mt32_lcd_on;
@@ -513,18 +509,6 @@ always @(posedge CLK_VIDEO) begin
 end
 
 wire mt32_lcd = mt32_lcd_on & mt32_lcd_en;
-
-//
-// Pin | USB Name |   |Signal
-// ----+----------+---+-------------
-// 0   | D+       | I |RX
-// 1   | D-       | O |TX
-// 2   | TX-      | O |RTS
-// 3   | GND_d    | I |CTS
-// 4   | RX+      | O |DTR
-// 5   | RX-      | I |DSR
-// 6   | TX+      | I |DCD
-//
 
 ///////////////////////////////////////////////////
 wire [15:0] aud_r, aud_l, pcm_r, pcm_l, ym_r, ym_l;
@@ -747,9 +731,6 @@ wire [2:0] scale = status[17:15];
 wire [2:0] sl = scale ? scale - 1'd1 : 3'd0;
 wire       scandoubler = (scale || forced_scandoubler);
 
-wire freeze = 0;
-wire freeze_sync;
-
 wire [7:0] r_mt, g_mt, b_mt;
 
 assign {r_mt, g_mt, b_mt} = mt32_lcd ? {{2{mt32_lcd_pix}},red[7:2], {2{mt32_lcd_pix}},green[7:2], {2{mt32_lcd_pix}},blue[7:2]} 
@@ -765,6 +746,7 @@ video_mixer #(.LINE_LENGTH(800), .HALF_DEPTH(0), .GAMMA(1)) video_mixer
 	.HBlank(HBlank),
 	.VSync(VSync),
 	.VBlank(VBlank),
+	.freeze_sync(),
 
 	.R(r_mt),
 	.G(g_mt),

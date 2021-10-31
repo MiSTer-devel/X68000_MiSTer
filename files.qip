@@ -1,4 +1,4 @@
-set_global_assignment -name QIP_FILE rtl/pll.qip
+
 set_global_assignment -name VHDL_FILE rtl/CPU/TG68.vhd
 set_global_assignment -name VHDL_FILE rtl/CPU/TG68_fast.vhd
 set_global_assignment -name QIP_FILE rtl/CPU/FX68K/fx68k.qip
