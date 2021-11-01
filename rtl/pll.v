@@ -132,7 +132,7 @@ endmodule
 // Retrieval info: 	<generic name="gui_actual_phase_shift5" value="0" />
 // Retrieval info: 	<generic name="gui_duty_cycle5" value="50" />
 // Retrieval info: 	<generic name="gui_cascade_counter6" value="false" />
-// Retrieval info: 	<generic name="gui_output_clock_frequency6" value="20.0" />
+// Retrieval info: 	<generic name="gui_output_clock_frequency6" value="40.0" />
 // Retrieval info: 	<generic name="gui_divide_factor_c6" value="1" />
 // Retrieval info: 	<generic name="gui_actual_output_clock_frequency6" value="0 MHz" />
 // Retrieval info: 	<generic name="gui_ps_units6" value="ps" />

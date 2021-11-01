@@ -8,8 +8,8 @@ entity X68K_top is
 generic(
 	RCFREQ		:integer	:=80;			--SDRAM clock MHz
 	SCFREQ		:integer	:=10000;		--kHz
-	FCFREQ		:integer	:=30000;		--FDC clock
-	ACFREQ		:integer	:=32000;		--Audio clock
+	FCFREQ		:integer	:=40000;		--FDC clock
+	ACFREQ		:integer	:=40000;		--Audio clock
 	DACFREQ		:integer	:=16000;		--Audio DAC freq
 	DEBUG			:std_logic_vector(7 downto 0)	:="00110010"	--nop,SPRBGONOFF,OPMCH_ONOFF,PAUSE_ONOFF,GRP_ONOFF,SCR_ONOFF,ADPCM_ONOFF,CYCLERESET
 );
@@ -21,6 +21,17 @@ port(
 	sndclk	:in std_logic;
 	emuclk	:in std_logic;
 	mpuclk  :in std_logic;
+
+	ram_ce  :in std_logic;
+	sys_ce  :in std_logic;
+	vid_ce  :in std_logic;
+	fd_ce   :in std_logic;
+	snd_ce  :in std_logic;
+	emu_ce  :in std_logic;
+	mpu_ce  :in std_logic;
+	
+	cm_out  :out std_logic;
+
 	plllock	:in std_logic;
 	ces     :in std_logic_vector(9 downto 0);
 	CPUS    :in std_logic;
@@ -168,7 +179,7 @@ signal	mpu_ldsn			:std_logic;
 signal	mpu_rwn			:std_logic;
 signal  mpu_clke        :std_logic;
 signal  mpu_fc      :std_logic_vector(2 downto 0);
-signal  mpu_ce      :std_logic;
+--signal  mpu_ce      :std_logic;
 signal  mpu_vpan    :std_logic;
 
 -- for memorymap
@@ -1145,6 +1156,7 @@ port(
 	dclk		:out std_logic;
 
 	gclk		:in std_logic;
+	vid_ce      :in std_logic;
 	rstn		:in std_logic
 );
 end component;
@@ -2384,7 +2396,7 @@ begin
 	-- pllrst<=not pwr_rstn;
 --	pMemClk<=not ramclk;
 
-	sr	:sftclk    generic map(100000000,1,1) port map("1",srst,sysclk,ce,rstn);
+	sr	:sftclk    generic map(100000000,1,1) port map("1",srst,sysclk,sys_ce,rstn);
 
 	mem_rstn<=	plllock;
 
@@ -2404,16 +2416,18 @@ begin
 		pint	=>pwrsw,
 		
 		sclk	=>sysclk,
+		sys_ce  =>sys_ce,
 		srstn	=>srstn,
 		pclk	=>sysclk,
+		mpu_ce  =>sys_ce,
 		prstn	=>rstn
 	);
 	
-	process(mpuclk)begin
-		if(mpuclk' event and mpuclk='1')then
-			mpu_ce <= not mpu_ce;
-		end if;
-	end process;
+	-- process(mpuclk)begin
+	-- 	if(mpuclk' event and mpuclk='1')then
+	-- 		mpu_ce <= not mpu_ce;
+	-- 	end if;
+	-- end process;
 	
 	mpu_addr(31 downto 24) <= "00000000";
 
@@ -2441,7 +2455,7 @@ begin
 	-- 	OE            =>mpu_oe
 	-- );
 	
-	mpu_clke<=(not dma_bconte);
+	mpu_clke<=(not dma_bconte) and sys_ce;
 	MPU	:TG68 port map(
 	    clk           =>sysclk,
 	    reset         =>srstn,
@@ -2513,6 +2527,7 @@ begin
         dtack	=>mpu_dtack,
 		
 		clk		=>sysclk,
+		ce      =>sys_ce,
 		rstn	=>srstn
 	);
 	
@@ -2569,6 +2584,7 @@ begin
 		iack	=>IACK3,
 		
 		clk		=>sysclk,
+		ce      =>sys_ce,
 		rstn	=>srstn
 	);
 
@@ -2609,8 +2625,8 @@ begin
 	b_uds<=not b_udsn;
 	
 	iowait<=iowait_rcpy or iowait_sasi or iowait_opm;
-	process(sysclk)begin
-		if(sysclk' event and sysclk='1')then
+	process(sysclk, sys_ce)begin
+		if(sysclk' event and sysclk='1' and sys_ce = '1') then
 			dwait<=pDip(3);
 		end if;
 	end process;
@@ -2665,6 +2681,7 @@ begin
 		
 		min			=>mmap_min,
 		sclk		=>sysclk,
+		sys_ce      =>sys_ce,
 		rstn		=>srstn
 );
 	b_rdn<=not b_rd;
@@ -2794,13 +2811,17 @@ begin
 
 		initdone	=>ram_inidone,
 		sclk		=>sysclk,
+		sys_ce      =>sys_ce,
 		vclk		=>vidclk,
+		vid_ce      =>vid_ce,
 		fclk		=>fdcclk,
+		fd_ce       =>fd_ce,
 		rclk		=>ramclk,
+		ram_ce      =>ram_ce,
 		rstn		=>mem_rstn
 	);
 	
-	nvwpl	:bwlatch generic map(24,8) port map(abus(23 downto 0),b_lds,b_wr(0),dbus(7 downto 0),x"e8e00d",nvwp,sysclk,srstn);
+	nvwpl	:bwlatch generic map(24,8) port map(abus(23 downto 0),b_lds and sys_ce,b_wr(0),dbus(7 downto 0),x"e8e00d",nvwp,sysclk,srstn);
 	nv_ce<='1' when abus(23 downto 14)="1110110100" else '0';
 
 	-- CRTC	:CRTCX68TXT generic map(4) port map(
@@ -2912,6 +2933,7 @@ begin
 		dclk		=>dclk,
 		
 		gclk		=>vidclk,
+		vid_ce      =>vid_ce,
 		rstn		=>vid_rstn
 	);
 
@@ -2927,6 +2949,7 @@ begin
 		contrast=>contval,
 
 		sclk	=>sysclk,
+		sys_ce  =>sys_ce,
 		srstn	=>vid_rstn
 	);
 	contvalm<=	contval;
@@ -2957,7 +2980,7 @@ begin
 		clock		=>vidclk,
 		data_a		=>LBUFWD,
 		data_b		=>(others=>'0'),
-		wren_a		=>LBUFWR0,
+		wren_a		=>LBUFWR0 and vid_ce,
 		wren_b		=>'0',
 		q_a			=>LBUFRD0,
 		q_b			=>LVIDRD0
@@ -2968,7 +2991,7 @@ begin
 		clock		=>vidclk,
 		data_a		=>LBUFWD,
 		data_b		=>(others=>'0'),
-		wren_a		=>LBUFWR1,
+		wren_a		=>LBUFWR1 and vid_ce,
 		wren_b		=>'0',
 		q_a			=>LBUFRD1,
 		q_b			=>LVIDRD1
@@ -3044,6 +3067,7 @@ begin
 		YS			=>vr_YS,
 		
 		clk		=>sysclk,
+		ce      =>sys_ce,
 		rstn	=>srstn
 	);
 
@@ -3180,7 +3204,9 @@ begin
 		gclrbusy=>vr_fcbusy,
 		
 		vidclk	=>vidclk,
+		vid_ce  =>vid_ce,
 		sysclk	=>sysclk,
+		sys_ce  =>sys_ce,
 		rstn	=>vid_rstn
 	);
 	
@@ -3204,6 +3230,7 @@ begin
 		ack		=>ram_cpya,
 		
 		clk		=>sysclk,
+		ce      =>sys_ce,
 		rstn		=>srstn
 	);
 	
@@ -3250,6 +3277,7 @@ begin
 		debugsel	=>dsprbgen,
 		
 		clk		=>vidclk,
+		ce      =>vid_ce,
 		rstn	=>srstn
 	);
 
@@ -3286,7 +3314,9 @@ begin
 		HRES	=>spreg_HRES,
 		
 		sclk	=>sysclk,
+		sys_ce  =>sys_ce,
 		vclk	=>vidclk,
+		vid_ce  =>vid_ce,
 		rstn	=>srstn
 	);
 	
@@ -3310,7 +3340,9 @@ begin
 		bg_PAT	=>bg_PAT,
 		
 		sclk	=>sysclk,
+		sys_ce  =>sys_ce,
 		vclk	=>vidclk,
+		vid_ce  =>vid_ce,
 		rstn	=>srstn
 	);
 
@@ -3329,14 +3361,16 @@ begin
 		palout	=>tpal_pdat,
 		
 		sclk	=>sysclk,
+		sys_ce  =>sys_ce,
 		vclk	=>vidclk,
+		vid_ce  =>vid_ce,
 		rstn	=>srstn
 	);
 	
-	process(sysclk,rstn)begin
+	process(sysclk,rstn,sys_ce)begin
 		if(rstn='0')then
 			tpal0_pdat<=(others=>'0');
-		elsif(sysclk' event and sysclk='1')then
+		elsif(sysclk' event and sysclk='1' and sys_ce = '1')then
 			if(tpal_cs='1' and abus(8 downto 1)="00000000")then
 				if(b_wr(1)='1')then
 					tpal0_pdat(15 downto 8)<=dbus(15 downto 8);
@@ -3361,7 +3395,9 @@ begin
 		palout	=>spal_pdat,
 		
 		sclk	=>sysclk,
+		sys_ce  =>sys_ce,
 		vclk	=>vidclk,
+		vid_ce  =>vid_ce,
 		rstn	=>srstn
 	);
 	
@@ -3385,7 +3421,9 @@ begin
 		palout	=>gpal_pdat,
 		
 		sclk	=>sysclk,
+		sys_ce  =>sys_ce,
 		vclk	=>vidclk,
+		vid_ce  =>vid_ce,
 		rstn	=>srstn
 	);
 
@@ -3410,6 +3448,7 @@ begin
 		hmssft		=>FD_hmssft,
 		
 		clk			=>fdcclk,
+		ce          =>fd_ce,
 		rstn		=>rstn
 	);
 	
@@ -3464,7 +3503,9 @@ begin
 		ismode	=>'0',
 		
 		sclk		=>sysclk,
+		sys_ce      =>sys_ce,
 		fclk		=>fdcclk,
+		fd_ce       =>fd_ce,
 		rstn	=>srstn
 	);
 
@@ -3515,6 +3556,7 @@ begin
 		prn_int		=>'0',
 		
 		clk			=>sysclk,
+		ce          =>sys_ce,
 		rstn		=>srstn
 	);
 	SASI_IACK<='0';
@@ -3544,6 +3586,7 @@ begin
 		PCLoe	=>ppi_pcloe,
 		
 		clk		=>sysclk,
+		ce      =>sys_ce,
 		rstn	=>srstn
 	);
 
@@ -3557,10 +3600,10 @@ begin
 	pcm_enL<=not ppi_pclo(0);
 	pcm_enR<=not ppi_pclo(1);
 	
-	process(vidclk,srstn)begin
+	process(vidclk,srstn,vid_ce)begin
 		if(srstn='0')then
 			VID_HRTCd<='0';
-		elsif(vidclk' event and vidclk='1')then
+		elsif(vidclk' event and vidclk='1' and vid_ce = '1')then
 			VID_HRTCd<=VID_HRTC;
 		end if;
 	end process;
@@ -3641,6 +3684,7 @@ begin
 		IVack	=>mfp_ivack,
 			
 		clk		=>sysclk,
+		ce      =>sys_ce,
 		rstn	=>srstn
 	);
 	
@@ -3663,6 +3707,7 @@ begin
 		mdatout	=>ms_datout,
 		
 		clk		=>sysclk,
+		ce      =>sys_ce,
 		rstn	=>srstn
 	);
 
@@ -3728,14 +3773,17 @@ begin
 	pcm_ce<='1' when abus(23 downto 2)="1110100100100000000000" else '0';
 	pcm_wr<=b_wr(0) when pcm_ce='1' else '0';
 	pcm_doe<=b_rd when pcm_ce='1' else '0';
+	
+	cm_out <= pcm_clkmode;
 		
-	pcmc	:pcmclk port map(
-		clkmode	=>pcm_clkmode,
-		pcmsft	=>pcm_sft,
+	-- pcmc	:pcmclk port map(
+	-- 	clkmode	=>pcm_clkmode,
+	-- 	pcmsft	=>pcm_sft,
 		
-		clk		=>sndclk,
-		rstn		=>srstn
-	);
+	-- 	clk		=>sndclk,
+	-- 	ce      =>snd_ce,
+	-- 	rstn		=>srstn
+	-- );
 	
 	pcm	:e6258 port map(
 		addr		=>abus(1),
@@ -3745,21 +3793,23 @@ begin
 		drq		=>pcm_drq,
 		
 		clkdiv	=>pcm_clkdiv,
-		sft		=>pcm_sft,
+		sft		=>snd_ce,
 		
 		sndout	=>pcm_snd,
 		
 		sysclk	=>sysclk,
+		sys_ce  =>sys_ce,
 		sndclk	=>sndclk,
+		snd_ce  =>'1',
 		rstn		=>srstn
 	);
 	
-	process(sndclk) begin
+	process(sndclk, snd_ce) begin
 		if rising_edge(sndclk) then
 			if (srstn = '0') then
 				pcm_sndL <= (others=>'0');
 				pcm_sndR <= (others=>'0');
-			else
+			elsif (snd_ce = '1') then
 				if (pcm_enL='1') then
 					pcm_sndL<=(pcm_snd(11) & pcm_snd & "000");
 				elsif (pcm_enR='1') then
@@ -3769,11 +3819,11 @@ begin
 		end if;
 	end process;
 
-	process(sndclk,srstn)
+	process(sndclk,srstn,snd_ce)
 	begin
 		if(srstn='0')then
 			opm_wstate<=0;
-		elsif(sndclk' event and sndclk='1')then
+		elsif(sndclk' event and sndclk='1' and snd_ce = '1')then
 			case opm_wstate is
 			when 0 =>
 				if(opm_cen='0' and (b_wrn(0)='0' or b_rdn='0'))then
@@ -3796,7 +3846,7 @@ begin
 	mixL	:addsat generic map(16) port map(opm_sndL(15) & opm_sndL(15 downto 1),pcm_sndL,mix_sndL,open,open);
 	mixR	:addsat generic map(16) port map(opm_sndR(15) & opm_sndR(15 downto 1),pcm_sndR,mix_sndR,open,open);
 
-	dacs	:sftclk generic map(ACFREQ,DACFREQ,1) port map("1",dacsft,sndclk,'1',srstn);
+	--dacs	:sftclk generic map(ACFREQ,DACFREQ,1) port map("1",dacsft,sndclk,snd_ce,srstn);
 	
 	pSndPCML <= opm_sndL;
 	pSndPCMR <= opm_sndR;
@@ -3833,13 +3883,13 @@ begin
 	pPs2Datout<=kb_datout;
 	pPmsClkout<=ms_clkout;
 	pPmsDatout<=ms_datout;
-	process(sysclk,srstn)begin
+	process(sysclk,srstn,sys_ce)begin
 		if(srstn='0')then
 			kb_clkin<='1';
 			kb_datin<='1';
 			ms_clkin<='1';
 			ms_datin<='1';
-		elsif(sysclk' event and sysclk='1')then
+		elsif(sysclk' event and sysclk='1' and sys_ce = '1')then
 			kb_clkin<=pPs2Clkin;
 			kb_datin<=pPs2Datin;
 			ms_clkin<=pPmsClkin;
@@ -3863,6 +3913,7 @@ begin
 		RTCIN		=>sysrtc,
 
 		clk		=>sysclk,
+		ce      =>sys_ce,
 		rstn		=>'1'
 	);
 
@@ -3902,6 +3953,7 @@ begin
 		GPOE	=>open,
 		
 		clk	=>sysclk,
+		ce  =>sys_ce,
 		rstn	=>srstn
 	);
 
@@ -3934,16 +3986,26 @@ begin
 		RST		=>SASI_RST,
 		
 		clk		=>sysclk,
+		ce      =>sys_ce,
 		rstn	=>srstn
 	);
-	SELf	:digifilter generic map(2,'0') port map(SASI_SEL,SASI_SELf,emuclk,ce,srstn);
-	BSYf	:digifilter generic map(2,'0') port map(SASI_BSY,SASI_BSYf,sysclk,ce,srstn);
-	REQf	:digifilter generic map(2,'0') port map(SASI_REQ,SASI_REQf,sysclk,ce,srstn);
-	ACKf	:digifilter generic map(2,'0') port map(SASI_ACK,SASI_ACKf,emuclk,ce,srstn);
-	IOf		:digifilter generic map(2,'0') port map(SASI_IO,SASI_IOf,sysclk,ce,srstn);
-	CDf		:digifilter generic map(2,'0') port map(SASI_CD,SASI_CDf,sysclk,ce,srstn);
-	MSGf	:digifilter generic map(2,'0') port map(SASI_MSG,SASI_MSGf,sysclk,ce,srstn);
-	RSTf	:digifilter generic map(2,'0') port map(SASI_RST,SASI_RSTf,emuclk,ce,srstn);
+	-- SELf	:digifilter generic map(2,'0') port map(SASI_SEL,SASI_SELf,emuclk,emu_ce,srstn);
+	-- BSYf	:digifilter generic map(2,'0') port map(SASI_BSY,SASI_BSYf,sysclk,sys_ce,srstn);
+	-- REQf	:digifilter generic map(2,'0') port map(SASI_REQ,SASI_REQf,sysclk,sys_ce,srstn);
+	-- ACKf	:digifilter generic map(2,'0') port map(SASI_ACK,SASI_ACKf,emuclk,emu_ce,srstn);
+	-- IOf		:digifilter generic map(2,'0') port map(SASI_IO,SASI_IOf,sysclk,sys_ce,srstn);
+	-- CDf		:digifilter generic map(2,'0') port map(SASI_CD,SASI_CDf,sysclk,sys_ce,srstn);
+	-- MSGf	:digifilter generic map(2,'0') port map(SASI_MSG,SASI_MSGf,sysclk,sys_ce,srstn);
+	-- RSTf	:digifilter generic map(2,'0') port map(SASI_RST,SASI_RSTf,emuclk,emu_ce,srstn);
+	
+	SASI_SELf <= SASI_SEL;
+	SASI_BSYf <= SASI_BSY;
+	SASI_REQf <= SASI_REQ;
+	SASI_ACKf <= SASI_ACK;
+	SASI_IOf <= SASI_IO;
+	SASI_CDf <= SASI_CD;
+	SASI_MSGf <= SASI_MSG;
+	SASI_RSTf <= SASI_RST;
 	
 	DISKE	:diskemu generic map(FCFREQ,SCFREQ,10) port map(
 
@@ -4028,8 +4090,11 @@ begin
 		initdone	=>dem_initdone,
 		busy		=>pLed,
 		fclk		=>fdcclk,
+		fd_ce       =>fd_ce,
 		sclk		=>sysclk,
+		sys_ce      =>sys_ce,
 		rclk		=>ramclk,
+		ram_ce      =>ram_ce,
 		rstn		=>dem_rstn
 );
 	

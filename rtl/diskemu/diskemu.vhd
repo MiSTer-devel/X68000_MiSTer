@@ -523,6 +523,7 @@ begin
 		done	=>fddone,
 
 		clk		=>sclk,
+		ce      =>sys_ce,
 		rstn	=>rstn
 	);
 
@@ -741,8 +742,8 @@ begin
 		clock				=>sclk,
 		data_a			=>mist_buffdout,
 		data_b			=>img_wrdat,
-		wren_a			=>fdsectwr,
-		wren_b			=>sbufwr,
+		wren_a			=>fdsectwr and sys_ce,
+		wren_b			=>sbufwr and sys_ce,
 		q_a				=>sbuf_odat,
 		q_b				=>img_rddat
 	);
