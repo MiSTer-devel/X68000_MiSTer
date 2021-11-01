@@ -3,6 +3,7 @@
 module mister_sync
 (
 	input               gclk,
+	input               vid_ce,
 	input               rstn,
 	input  [15:0]       LRAMDAT,
 	input  [7:0]        TRAM_DAT,
@@ -58,7 +59,7 @@ module mister_sync
 	logic       HCOMPl;
 	logic       VCOMPl;
 	logic       Idat;
-	logic       vid_ce;
+	logic       vid_ce_old;
 	logic [4:0] Rdat;
 	logic [4:0] Gdat;
 	logic [4:0] Bdat;
@@ -140,7 +141,7 @@ module mister_sync
 		.VIR        (VRTC),
 		.HIR        (HRTC),
 		.clk        (gclk),
-		.ce         (vid_ce),
+		.ce         (vid_ce_old),
 		.rstn       (rstn)
 	);
 	
@@ -160,7 +161,7 @@ module mister_sync
 
 	wire [7:0] HUWIDTH = htotal;
 	
-	assign dclk = vid_ce;
+	assign dclk = vid_ce_old;
 
 	assign HUVCOUNT = (HUCOUNT >= hvbgn) && (HUCOUNT < hvend) ? HUCOUNT-hvbgn : HUVIS;
 	assign LRAMADR[2:0] = dotpu_cnt;
@@ -182,7 +183,7 @@ module mister_sync
 
 	logic [1:0] freq_cnt;
 	
-	assign vid_ce = freq_ce;
+	assign vid_ce_old = freq_ce;
 
 	always @(posedge gclk) begin
 		HCOMPl<=HCOMPw;

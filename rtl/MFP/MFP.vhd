@@ -203,6 +203,7 @@ port(
 	GPIPR0	:out std_logic;
 
 	clk		:in std_logic;
+	ce      :in std_logic;
 	rstn	:in std_logic
 );
 end component;
@@ -248,6 +249,7 @@ port(
 	TDO		:out std_logic;
 
 	clk		:in std_logic;
+	ce      :in std_logic;
 	rstn	:in std_logic
 );
 end component;
@@ -318,6 +320,7 @@ port(
 	IVack	:in std_logic_vector(7 downto 0);
 	
 	clk		:in std_logic;
+	ce      :in std_logic;
 	rstn	:in std_logic
 );
 end component;
@@ -359,6 +362,7 @@ port(
 	LED		:out std_logic_vector(6 downto 0);
 	
 	clk		:in std_logic;
+	ce      :in std_logic;
 	rstn	:in std_logic
 );
 end component;
@@ -470,6 +474,7 @@ begin
 		GPIPR0	=>INTB0,
 
 		clk		=>clk,
+		ce      =>ce,
 		rstn	=>rstn
 	);
 	
@@ -510,6 +515,7 @@ begin
 		TDO		=>TDO,
 
 		clk		=>clk,
+		ce      =>ce,
 		rstn	=>rstn
 	);
 	
@@ -545,6 +551,7 @@ begin
 		LED		=>KBLED,
 		
 		clk		=>clk,
+		ce      =>ce,
 		rstn	=>rstn
 	);
 
@@ -612,6 +619,7 @@ begin
 		IVACK	=>IVack,
 			
 		clk		=>clk,
+		ce      =>ce,
 		rstn	=>rstn
 	);
 

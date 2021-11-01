@@ -509,30 +509,32 @@ begin
 			lt_addr<=(others=>'0');
 			sfec_addrh<=(others=>'0');
 			lfec_addrh<=(others=>'0');
-		elsif(rclk' event and rclk='1')then
-			lb_rd<=b_rd;
-			lb_wr<=b_wr;
-			lb_rmw<=b_rmw;
-			lb_addr<=b_addr;
-			lt_addr<=fde_addr(awidth-1 downto 8);
-			lfec_addrh<=fec_addrh;
-			if(lb_addr=b_addr)then
-				sb_addr<=lb_addr;
-			end if;
-			if(lb_rd=b_rd)then
-				sb_rd<=lb_rd;
-			end if;
-			if(lb_wr=b_wr)then
-				sb_wr<=lb_wr;
-			end if;
-			if(lb_rmw=b_rmw)then
-				sb_rmw<=lb_rmw;
-			end if;
-			if(lt_addr=fde_addr(awidth-1 downto 8))then
-				st_addr<=lt_addr;
-			end if;
-			if(lfec_addrh=fec_addrh)then
-				sfec_addrh<=lfec_addrh;
+		elsif rising_edge(rclk) then
+			if (ram_ce = '1') then
+				lb_rd<=b_rd;
+				lb_wr<=b_wr;
+				lb_rmw<=b_rmw;
+				lb_addr<=b_addr;
+				lt_addr<=fde_addr(awidth-1 downto 8);
+				lfec_addrh<=fec_addrh;
+				if(lb_addr=b_addr)then
+					sb_addr<=lb_addr;
+				end if;
+				if(lb_rd=b_rd)then
+					sb_rd<=lb_rd;
+				end if;
+				if(lb_wr=b_wr)then
+					sb_wr<=lb_wr;
+				end if;
+				if(lb_rmw=b_rmw)then
+					sb_rmw<=lb_rmw;
+				end if;
+				if(lt_addr=fde_addr(awidth-1 downto 8))then
+					st_addr<=lt_addr;
+				end if;
+				if(lfec_addrh=fec_addrh)then
+					sfec_addrh<=lfec_addrh;
+				end if;
 			end if;
 		end if;
 	end process;
@@ -574,17 +576,19 @@ begin
 			addr1l:=(others=>'0');
 			addr0s:=(others=>'0');
 			addr1s:=(others=>'0');
-		elsif(fclk' event and fclk='1')then
-			addr0s:=fde_addr0;
-			addr1s:=fde_addr1;
-			if(addr0s=addr0l)then
-				fde_addr0s<=addr0l;
+		elsif rising_edge(fclk) then
+				if (fd_ce = '1') then
+				addr0s:=fde_addr0;
+				addr1s:=fde_addr1;
+				if(addr0s=addr0l)then
+					fde_addr0s<=addr0l;
+				end if;
+				if(addr1s=addr1l)then
+					fde_addr1s<=addr1l;
+				end if;
+				addr0l:=addr0s;
+				addr1l:=addr1s;
 			end if;
-			if(addr1s=addr1l)then
-				fde_addr1s<=addr1l;
-			end if;
-			addr0l:=addr0s;
-			addr1l:=addr1s;
 		end if;
 	end process;
 			
@@ -653,187 +657,232 @@ begin
 			aborted<='0';
 			swren<='0';
 			lwren<='0';
-		elsif(rclk' event and rclk='1')then
-			brcache_clr<=(others=>'0');
-			bwcache_clr0<='0';
-			bwcache_clr1<='0';
-			ramrd<='0';
-			ramwr<='0';
-			ramrefrsh<='0';
-			ramabort<='0';
-			bcackx<='0';
-			wminmaxclr<='0';
-			wminmaxall<='0';
-			bcget<='0';
-			swren<=wren;
-			lwren<=swren;
-			lsb_cpy<=sb_cpy;
-			sb_cpy<=b_cpy;
-			if(fde_wr0='1')then
-				f0_wrote:='1';
-			elsif(fde_wr1='1')then
-				f1_wrote:='1';
-			end if;
-			if(lfec_rd="011")then
-				fec_rdq<='1';
-				fec_busy<='1';
-			end if;
-			if(lfec_wr="011")then
-				fec_wrq<='1';
-				fec_busy<='1';
-			end if;
-			if(lsb_cpy='1' and sb_cpy='0')then
-				bcpend<='1';
-			end if;
-			lfec_rd:=lfec_rd(1 downto 0) & fec_rd;
-			lfec_wr:=lfec_wr(1 downto 0) & fec_wr;
-			case RAM_STATE is
-			when ST_IDLE =>
-				if(refcount=0)then
-					ramrefrsh<='1';
-					refcount<=refint-1;
-					RAM_STATE<=ST_REFRSH;
-					lastvid<='0';
-				elsif(g00_addr(awidth-1 downto 7)/=g00addrh and g00_rd='1' and lastvid='0' and rambusy='0')then
-					g00addrh<=g00_addr(awidth-1 downto 7);
-					ramaddrh<=g00_addr(awidth-1 downto 8);
-					RAM_STATE<=ST_G00READ;
-					rambgnaddr<=g00_addr(7) & "0000000";
-					ramendaddr<=not g00_addr(7) & "0000000";
-					ramrd<='1';
-					lastvid<='1';
-				elsif(g01_addr(awidth-1 downto 7)/=g01addrh and g01_rd='1' and lastvid='0' and rambusy='0')then
-					g01addrh<=g01_addr(awidth-1 downto 7);
-					ramaddrh<=g01_addr(awidth-1 downto 8);
-					RAM_STATE<=ST_G01READ;
-					rambgnaddr<=g01_addr(7) & "0000000";
-					ramendaddr<=not g01_addr(7) & "0000000";
-					ramrd<='1';
-					lastvid<='1';
-				elsif(g02_addr(awidth-1 downto 7)/=g02addrh and g02_rd='1' and lastvid='0' and rambusy='0')then
-					g02addrh<=g02_addr(awidth-1 downto 7);
-					ramaddrh<=g02_addr(awidth-1 downto 8);
-					RAM_STATE<=ST_G02READ;
-					rambgnaddr<=g02_addr(7) & "0000000";
-					ramendaddr<=not g02_addr(7) & "0000000";
-					ramrd<='1';
-					lastvid<='1';
-				elsif(g03_addr(awidth-1 downto 7)/=g03addrh and g03_rd='1' and lastvid='0' and rambusy='0')then
-					g03addrh<=g03_addr(awidth-1 downto 7);
-					ramaddrh<=g03_addr(awidth-1 downto 8);
-					RAM_STATE<=ST_G03READ;
-					rambgnaddr<=g03_addr(7) & "0000000";
-					ramendaddr<=not g03_addr(7) & "0000000";
-					ramrd<='1';
-					lastvid<='1';
-				elsif(t0_addr(awidth-3 downto 6)/=t0addrh and t0_rd='1' and lastvid='0' and rambusy='0')then
-					t0addrh<=t0_addr(awidth-3 downto 6);
-					ramaddrh<=t0_addr(awidth-3downto 6);
-					RAM_STATE<=ST_T0READ;
-					rambgnaddr<=(others=>'0');
-					ramendaddr<=(others=>'0');
-					ramrd<='1';
-					lastvid<='1';
-				elsif(g10_addr(awidth-1 downto 7)/=g10addrh and g10_rd='1' and lastvid='0' and rambusy='0')then
-					g10addrh<=g10_addr(awidth-1 downto 7);
-					ramaddrh<=g10_addr(awidth-1 downto 8);
-					RAM_STATE<=ST_G10READ;
-					rambgnaddr<=g10_addr(7) & "0000000";
-					ramendaddr<=not g10_addr(7) & "0000000";
-					ramrd<='1';
-					lastvid<='1';
-				elsif(g11_addr(awidth-1 downto 7)/=g11addrh and g11_rd='1' and lastvid='0' and rambusy='0')then
-					g11addrh<=g11_addr(awidth-1 downto 7);
-					ramaddrh<=g11_addr(awidth-1 downto 8);
-					RAM_STATE<=ST_G11READ;
-					rambgnaddr<=g11_addr(7) & "0000000";
-					ramendaddr<=not g11_addr(7) & "0000000";
-					ramrd<='1';
-					lastvid<='1';
-				elsif(g12_addr(awidth-1 downto 7)/=g12addrh and g12_rd='1' and lastvid='0' and rambusy='0')then
-					g12addrh<=g12_addr(awidth-1 downto 7);
-					ramaddrh<=g12_addr(awidth-1 downto 8);
-					RAM_STATE<=ST_G12READ;
-					rambgnaddr<=g12_addr(7) & "0000000";
-					ramendaddr<=not g12_addr(7) & "0000000";
-					ramrd<='1';
-					lastvid<='1';
-				elsif(g13_addr(awidth-1 downto 7)/=g13addrh and g13_rd='1' and lastvid='0' and rambusy='0')then
-					g13addrh<=g13_addr(awidth-1 downto 7);
-					ramaddrh<=g13_addr(awidth-1 downto 8);
-					RAM_STATE<=ST_G13READ;
-					rambgnaddr<=g13_addr(7) & "0000000";
-					ramendaddr<=not g13_addr(7) & "0000000";
-					ramrd<='1';
-					lastvid<='1';
-				elsif(t1_addr(awidth-3 downto 6)/=t1addrh and t1_rd='1' and lastvid='0' and rambusy='0')then
-					t1addrh<=t1_addr(awidth-3 downto 6);
-					ramaddrh<=t1_addr(awidth-3downto 6);
-					RAM_STATE<=ST_T1READ;
-					rambgnaddr<=(others=>'0');
-					ramendaddr<=(others=>'0');
-					ramrd<='1';
-					lastvid<='1';
-				elsif(g0_caddr/=g0caddrh and g0_clear='1' and lastvid='0' and rambusy='0')then
-					g0caddrh<=g0_caddr;
-					ramaddrh<=g0_caddr(awidth-1 downto 8);
-					RAM_STATE<=ST_G0CLR;
-					rambgnaddr<=g0_caddr(7) & "0000000";
-					ramendaddr<=g0_caddr(7) & "1111111";
-					ramwr<='1';
-					lastvid<='1';
-				elsif(g1_caddr/=g1caddrh and g1_clear='1' and lastvid='0' and rambusy='0')then
-					g1caddrh<=g1_caddr;
-					ramaddrh<=g1_caddr(awidth-1 downto 8);
-					RAM_STATE<=ST_G1CLR;
-					rambgnaddr<=g1_caddr(7) & "0000000";
-					ramendaddr<=g1_caddr(7) & "1111111";
-					ramwr<='1';
-					lastvid<='1';
-				elsif(g2_caddr/=g2caddrh and g2_clear='1' and lastvid='0' and rambusy='0')then
-					g2caddrh<=g2_caddr;
-					ramaddrh<=g2_caddr(awidth-1 downto 8);
-					RAM_STATE<=ST_G2CLR;
-					rambgnaddr<=g2_caddr(7) & "0000000";
-					ramendaddr<=g2_caddr(7) & "1111111";
-					ramwr<='1';
-					lastvid<='1';
-				elsif(g3_caddr/=g3caddrh and g3_clear='1' and lastvid='0' and rambusy='0')then
-					g3caddrh<=g3_caddr;
-					ramaddrh<=g3_caddr(awidth-1 downto 8);
-					RAM_STATE<=ST_G3CLR;
-					rambgnaddr<=g3_caddr(7) & "0000000";
-					ramendaddr<=g3_caddr(7) & "1111111";
-					ramwr<='1';
-					lastvid<='1';
-				elsif(st_addr/=fde_caddr and rambusy='0')then
-					ramaddrh<=fde_caddr;
-					rambgnaddr<=(others=>'0');
-					ramendaddr<=(others=>'1');
-					if(fde_sel='0')then
-						if(f0_wrote='1')then
-							ramwr<='1';
-						end if;
-						f0_wrote:='0';
-					else
-						if(f1_wrote='1')then
-							ramwr<='1';
-						end if;
-						f1_wrote:='0';
-					end if;
-					RAM_STATE<=ST_FDEWRITE;
-				elsif(bcpend='1' and rambusy='0' and bwcache_busy='0')then
-					if(cpbusy='0')then
-						if(bwcache_sel='0')then
-							bwaddr1<=(others=>'1');		--ROM area
---							bwaddr1<=b_cdaddr;
---							bwcache_clr1<='1';
+		elsif rising_edge(rclk) then
+			if (ram_ce = '1') then
+				brcache_clr<=(others=>'0');
+				bwcache_clr0<='0';
+				bwcache_clr1<='0';
+				ramrd<='0';
+				ramwr<='0';
+				ramrefrsh<='0';
+				ramabort<='0';
+				bcackx<='0';
+				wminmaxclr<='0';
+				wminmaxall<='0';
+				bcget<='0';
+				swren<=wren;
+				lwren<=swren;
+				lsb_cpy<=sb_cpy;
+				sb_cpy<=b_cpy;
+				if(fde_wr0='1')then
+					f0_wrote:='1';
+				elsif(fde_wr1='1')then
+					f1_wrote:='1';
+				end if;
+				if(lfec_rd="011")then
+					fec_rdq<='1';
+					fec_busy<='1';
+				end if;
+				if(lfec_wr="011")then
+					fec_wrq<='1';
+					fec_busy<='1';
+				end if;
+				if(lsb_cpy='1' and sb_cpy='0')then
+					bcpend<='1';
+				end if;
+				lfec_rd:=lfec_rd(1 downto 0) & fec_rd;
+				lfec_wr:=lfec_wr(1 downto 0) & fec_wr;
+				case RAM_STATE is
+				when ST_IDLE =>
+					if(refcount=0)then
+						ramrefrsh<='1';
+						refcount<=refint-1;
+						RAM_STATE<=ST_REFRSH;
+						lastvid<='0';
+					elsif(g00_addr(awidth-1 downto 7)/=g00addrh and g00_rd='1' and lastvid='0' and rambusy='0')then
+						g00addrh<=g00_addr(awidth-1 downto 7);
+						ramaddrh<=g00_addr(awidth-1 downto 8);
+						RAM_STATE<=ST_G00READ;
+						rambgnaddr<=g00_addr(7) & "0000000";
+						ramendaddr<=not g00_addr(7) & "0000000";
+						ramrd<='1';
+						lastvid<='1';
+					elsif(g01_addr(awidth-1 downto 7)/=g01addrh and g01_rd='1' and lastvid='0' and rambusy='0')then
+						g01addrh<=g01_addr(awidth-1 downto 7);
+						ramaddrh<=g01_addr(awidth-1 downto 8);
+						RAM_STATE<=ST_G01READ;
+						rambgnaddr<=g01_addr(7) & "0000000";
+						ramendaddr<=not g01_addr(7) & "0000000";
+						ramrd<='1';
+						lastvid<='1';
+					elsif(g02_addr(awidth-1 downto 7)/=g02addrh and g02_rd='1' and lastvid='0' and rambusy='0')then
+						g02addrh<=g02_addr(awidth-1 downto 7);
+						ramaddrh<=g02_addr(awidth-1 downto 8);
+						RAM_STATE<=ST_G02READ;
+						rambgnaddr<=g02_addr(7) & "0000000";
+						ramendaddr<=not g02_addr(7) & "0000000";
+						ramrd<='1';
+						lastvid<='1';
+					elsif(g03_addr(awidth-1 downto 7)/=g03addrh and g03_rd='1' and lastvid='0' and rambusy='0')then
+						g03addrh<=g03_addr(awidth-1 downto 7);
+						ramaddrh<=g03_addr(awidth-1 downto 8);
+						RAM_STATE<=ST_G03READ;
+						rambgnaddr<=g03_addr(7) & "0000000";
+						ramendaddr<=not g03_addr(7) & "0000000";
+						ramrd<='1';
+						lastvid<='1';
+					elsif(t0_addr(awidth-3 downto 6)/=t0addrh and t0_rd='1' and lastvid='0' and rambusy='0')then
+						t0addrh<=t0_addr(awidth-3 downto 6);
+						ramaddrh<=t0_addr(awidth-3downto 6);
+						RAM_STATE<=ST_T0READ;
+						rambgnaddr<=(others=>'0');
+						ramendaddr<=(others=>'0');
+						ramrd<='1';
+						lastvid<='1';
+					elsif(g10_addr(awidth-1 downto 7)/=g10addrh and g10_rd='1' and lastvid='0' and rambusy='0')then
+						g10addrh<=g10_addr(awidth-1 downto 7);
+						ramaddrh<=g10_addr(awidth-1 downto 8);
+						RAM_STATE<=ST_G10READ;
+						rambgnaddr<=g10_addr(7) & "0000000";
+						ramendaddr<=not g10_addr(7) & "0000000";
+						ramrd<='1';
+						lastvid<='1';
+					elsif(g11_addr(awidth-1 downto 7)/=g11addrh and g11_rd='1' and lastvid='0' and rambusy='0')then
+						g11addrh<=g11_addr(awidth-1 downto 7);
+						ramaddrh<=g11_addr(awidth-1 downto 8);
+						RAM_STATE<=ST_G11READ;
+						rambgnaddr<=g11_addr(7) & "0000000";
+						ramendaddr<=not g11_addr(7) & "0000000";
+						ramrd<='1';
+						lastvid<='1';
+					elsif(g12_addr(awidth-1 downto 7)/=g12addrh and g12_rd='1' and lastvid='0' and rambusy='0')then
+						g12addrh<=g12_addr(awidth-1 downto 7);
+						ramaddrh<=g12_addr(awidth-1 downto 8);
+						RAM_STATE<=ST_G12READ;
+						rambgnaddr<=g12_addr(7) & "0000000";
+						ramendaddr<=not g12_addr(7) & "0000000";
+						ramrd<='1';
+						lastvid<='1';
+					elsif(g13_addr(awidth-1 downto 7)/=g13addrh and g13_rd='1' and lastvid='0' and rambusy='0')then
+						g13addrh<=g13_addr(awidth-1 downto 7);
+						ramaddrh<=g13_addr(awidth-1 downto 8);
+						RAM_STATE<=ST_G13READ;
+						rambgnaddr<=g13_addr(7) & "0000000";
+						ramendaddr<=not g13_addr(7) & "0000000";
+						ramrd<='1';
+						lastvid<='1';
+					elsif(t1_addr(awidth-3 downto 6)/=t1addrh and t1_rd='1' and lastvid='0' and rambusy='0')then
+						t1addrh<=t1_addr(awidth-3 downto 6);
+						ramaddrh<=t1_addr(awidth-3downto 6);
+						RAM_STATE<=ST_T1READ;
+						rambgnaddr<=(others=>'0');
+						ramendaddr<=(others=>'0');
+						ramrd<='1';
+						lastvid<='1';
+					elsif(g0_caddr/=g0caddrh and g0_clear='1' and lastvid='0' and rambusy='0')then
+						g0caddrh<=g0_caddr;
+						ramaddrh<=g0_caddr(awidth-1 downto 8);
+						RAM_STATE<=ST_G0CLR;
+						rambgnaddr<=g0_caddr(7) & "0000000";
+						ramendaddr<=g0_caddr(7) & "1111111";
+						ramwr<='1';
+						lastvid<='1';
+					elsif(g1_caddr/=g1caddrh and g1_clear='1' and lastvid='0' and rambusy='0')then
+						g1caddrh<=g1_caddr;
+						ramaddrh<=g1_caddr(awidth-1 downto 8);
+						RAM_STATE<=ST_G1CLR;
+						rambgnaddr<=g1_caddr(7) & "0000000";
+						ramendaddr<=g1_caddr(7) & "1111111";
+						ramwr<='1';
+						lastvid<='1';
+					elsif(g2_caddr/=g2caddrh and g2_clear='1' and lastvid='0' and rambusy='0')then
+						g2caddrh<=g2_caddr;
+						ramaddrh<=g2_caddr(awidth-1 downto 8);
+						RAM_STATE<=ST_G2CLR;
+						rambgnaddr<=g2_caddr(7) & "0000000";
+						ramendaddr<=g2_caddr(7) & "1111111";
+						ramwr<='1';
+						lastvid<='1';
+					elsif(g3_caddr/=g3caddrh and g3_clear='1' and lastvid='0' and rambusy='0')then
+						g3caddrh<=g3_caddr;
+						ramaddrh<=g3_caddr(awidth-1 downto 8);
+						RAM_STATE<=ST_G3CLR;
+						rambgnaddr<=g3_caddr(7) & "0000000";
+						ramendaddr<=g3_caddr(7) & "1111111";
+						ramwr<='1';
+						lastvid<='1';
+					elsif(st_addr/=fde_caddr and rambusy='0')then
+						ramaddrh<=fde_caddr;
+						rambgnaddr<=(others=>'0');
+						ramendaddr<=(others=>'1');
+						if(fde_sel='0')then
+							if(f0_wrote='1')then
+								ramwr<='1';
+							end if;
+							f0_wrote:='0';
 						else
-							bwaddr0<=(others=>'1');		--ROM area
---							bwaddr0<=b_cdaddr;
---							bwcache_clr0<='1';
+							if(f1_wrote='1')then
+								ramwr<='1';
+							end if;
+							f1_wrote:='0';
 						end if;
+						RAM_STATE<=ST_FDEWRITE;
+					elsif(bcpend='1' and rambusy='0' and bwcache_busy='0')then
+						if(cpbusy='0')then
+							if(bwcache_sel='0')then
+								bwaddr1<=(others=>'1');		--ROM area
+	--							bwaddr1<=b_cdaddr;
+	--							bwcache_clr1<='1';
+							else
+								bwaddr0<=(others=>'1');		--ROM area
+	--							bwaddr0<=b_cdaddr;
+	--							bwcache_clr0<='1';
+							end if;
+							ramaddrh<=bwaddr_sel(awidth-brsize-1 downto 8-brsize);
+							rambgnaddr(brsize-1 downto 0)<=waddrmin;
+							ramendaddr(brsize-1 downto 0)<=waddrmax;
+							if(brsize<8)then
+								rambgnaddr(7 downto brsize)<=bwaddr_sel(7-brsize downto 0);
+								ramendaddr(7 downto brsize)<=bwaddr_sel(7-brsize downto 0);
+							end if;
+							bwcache_sel<=not bwcache_sel;
+							ramwr<='1';
+							lastvid<='0';
+							RAM_STATE<=ST_BWRITE;
+	--						wminmaxclr<='1';
+							cpbusy<='1';
+						else
+							bcmask<=b_cplane;
+							if(bwcache_sel='0')then
+								bwaddr0<=b_cdaddr;
+								bwcache_clr0<='1';
+							else
+								bwaddr1<=b_cdaddr;
+								bwcache_clr1<='1';
+							end if;
+							ramaddrh<=b_csaddr(awidth-brsize-1 downto 8-brsize);
+							rambgnaddr(brsize-1 downto 0)<=(others=>'0');
+							ramendaddr(brsize-1 downto 0)<=(others=>'0');
+							if(brsize<8)then
+								rambgnaddr(7 downto brsize)<=b_csaddr(7-brsize downto 0);
+								ramendaddr(7 downto brsize)<=(b_csaddr(7-brsize downto 0)+1);
+							end if;
+							RAM_STATE<=ST_BCREAD;
+							wminmaxall<='1';
+							ramrd<='1';
+							lastvid<='0';
+							bcpend<='0';
+							cpbusy<='0';
+						end if;
+					elsif(sb_addr(awidth-1 downto brsize)/=bwaddr_sel and (sb_wr/="00" or sb_rmw/="00") and rambusy='0' and bwcache_busy='0')then
 						ramaddrh<=bwaddr_sel(awidth-brsize-1 downto 8-brsize);
+						if(bwcache_sel='0')then
+							bwaddr1<=sb_addr(awidth-1 downto brsize);
+							bwcache_clr1<='1';
+						else
+							bwaddr0<=sb_addr(awidth-1 downto brsize);
+							bwcache_clr0<='1';
+						end if;
 						rambgnaddr(brsize-1 downto 0)<=waddrmin;
 						ramendaddr(brsize-1 downto 0)<=waddrmax;
 						if(brsize<8)then
@@ -841,150 +890,107 @@ begin
 							ramendaddr(7 downto brsize)<=bwaddr_sel(7-brsize downto 0);
 						end if;
 						bwcache_sel<=not bwcache_sel;
+						wminmaxclr<='1';
 						ramwr<='1';
 						lastvid<='0';
 						RAM_STATE<=ST_BWRITE;
---						wminmaxclr<='1';
-						cpbusy<='1';
-					else
-						bcmask<=b_cplane;
-						if(bwcache_sel='0')then
-							bwaddr0<=b_cdaddr;
-							bwcache_clr0<='1';
+					elsif(braddrnone='1' and (sb_rd='1' or sb_rmw/="00") and rambusy='0' and brcache_busy='0')then
+						ramaddrh<=sb_addr(awidth-1 downto 8);
+						rambgnaddr<=sb_addr(7 downto 0);
+						ramendaddr<=sb_addr(7 downto 0);
+						if(aborted='1')then
+							aborted<='0';
+							braddr(brcache_sel)<='0' & b_addr(awidth-1 downto brsize);
 						else
-							bwaddr1<=b_cdaddr;
-							bwcache_clr1<='1';
+							brcache_sel<=bcnext;
+							braddr(bcnext)<='0' & b_addr(awidth-1 downto brsize);
+							brcache_clr(bcnext)<='1';
+							bcget<='1';
 						end if;
-						ramaddrh<=b_csaddr(awidth-brsize-1 downto 8-brsize);
-						rambgnaddr(brsize-1 downto 0)<=(others=>'0');
-						ramendaddr(brsize-1 downto 0)<=(others=>'0');
-						if(brsize<8)then
-							rambgnaddr(7 downto brsize)<=b_csaddr(7-brsize downto 0);
-							ramendaddr(7 downto brsize)<=(b_csaddr(7-brsize downto 0)+1);
-						end if;
-						RAM_STATE<=ST_BCREAD;
-						wminmaxall<='1';
 						ramrd<='1';
 						lastvid<='0';
-						bcpend<='0';
-						cpbusy<='0';
-					end if;
-				elsif(sb_addr(awidth-1 downto brsize)/=bwaddr_sel and (sb_wr/="00" or sb_rmw/="00") and rambusy='0' and bwcache_busy='0')then
-					ramaddrh<=bwaddr_sel(awidth-brsize-1 downto 8-brsize);
-					if(bwcache_sel='0')then
-						bwaddr1<=sb_addr(awidth-1 downto brsize);
-						bwcache_clr1<='1';
+						RAM_STATE<=ST_BREAD;
+					elsif(fec_rdq='1' and rambusy='0')then
+						fec_rdq<='0';
+						ramaddrh<=sfec_addrh;
+						rambgnaddr<=(others=>'0');
+						ramendaddr<=(others=>'0');
+						ramrd<='1';
+						RAM_STATE<=ST_FECREAD;
+					elsif(fec_wrq='1' and rambusy='0')then
+						fec_wrq<='0';
+						ramaddrh<=sfec_addrh;
+						rambgnaddr<=(others=>'0');
+						ramendaddr<=(others=>'1');
+						ramwr<='1';
+						RAM_STATE<=ST_FECWRITE;
 					else
-						bwaddr0<=sb_addr(awidth-1 downto brsize);
-						bwcache_clr0<='1';
+						ramrefrsh<='1';
+						if(refcount<refcnt-1)then
+							refcount<=refcount+1;
+						end if;
+						lastvid<='0';
+						RAM_STATE<=ST_REFRSH;
 					end if;
-					rambgnaddr(brsize-1 downto 0)<=waddrmin;
-					ramendaddr(brsize-1 downto 0)<=waddrmax;
-					if(brsize<8)then
-						rambgnaddr(7 downto brsize)<=bwaddr_sel(7-brsize downto 0);
-						ramendaddr(7 downto brsize)<=bwaddr_sel(7-brsize downto 0);
+				when ST_G00READ | ST_G01READ | ST_G02READ | ST_G03READ | ST_T0READ | ST_G10READ | ST_G11READ | ST_G12READ | ST_G13READ | ST_T1READ | 
+						ST_G0CLR | ST_G1CLR | ST_G2CLR | ST_G3CLR | ST_FDEREAD | ST_FECREAD | ST_FECWRITE | ST_REFRSH =>
+					if(rambusy='0')then
+						if(RAM_STATE/=ST_REFRSH)then
+							refcount<=refcount-1;
+						end if;
+						RAM_STATE<=ST_IDLE;
+						if(RAM_STATE=ST_FECREAD or RAM_STATE=ST_FECWRITE)then
+							fec_busy<='0';
+						end if;
+						if(RAM_STATE=ST_FDEREAD)then
+							fde_sel<=not fde_sel;
+						end if;
 					end if;
-					bwcache_sel<=not bwcache_sel;
-					wminmaxclr<='1';
-					ramwr<='1';
-					lastvid<='0';
-					RAM_STATE<=ST_BWRITE;
-				elsif(braddrnone='1' and (sb_rd='1' or sb_rmw/="00") and rambusy='0' and brcache_busy='0')then
-					ramaddrh<=sb_addr(awidth-1 downto 8);
-					rambgnaddr<=sb_addr(7 downto 0);
-					ramendaddr<=sb_addr(7 downto 0);
-					if(aborted='1')then
-						aborted<='0';
-						braddr(brcache_sel)<='0' & b_addr(awidth-1 downto brsize);
-					else
-						brcache_sel<=bcnext;
-						braddr(bcnext)<='0' & b_addr(awidth-1 downto brsize);
-						brcache_clr(bcnext)<='1';
-						bcget<='1';
-					end if;
-					ramrd<='1';
-					lastvid<='0';
-					RAM_STATE<=ST_BREAD;
-				elsif(fec_rdq='1' and rambusy='0')then
-					fec_rdq<='0';
-					ramaddrh<=sfec_addrh;
-					rambgnaddr<=(others=>'0');
-					ramendaddr<=(others=>'0');
-					ramrd<='1';
-					RAM_STATE<=ST_FECREAD;
-				elsif(fec_wrq='1' and rambusy='0')then
-					fec_wrq<='0';
-					ramaddrh<=sfec_addrh;
-					rambgnaddr<=(others=>'0');
-					ramendaddr<=(others=>'1');
-					ramwr<='1';
-					RAM_STATE<=ST_FECWRITE;
-				else
-					ramrefrsh<='1';
-					if(refcount<refcnt-1)then
-						refcount<=refcount+1;
-					end if;
-					lastvid<='0';
-					RAM_STATE<=ST_REFRSH;
-				end if;
-			when ST_G00READ | ST_G01READ | ST_G02READ | ST_G03READ | ST_T0READ | ST_G10READ | ST_G11READ | ST_G12READ | ST_G13READ | ST_T1READ | 
-					ST_G0CLR | ST_G1CLR | ST_G2CLR | ST_G3CLR | ST_FDEREAD | ST_FECREAD | ST_FECWRITE | ST_REFRSH =>
-				if(rambusy='0')then
-					if(RAM_STATE/=ST_REFRSH)then
+				when ST_BREAD =>
+					if(rambusy='0')then
 						refcount<=refcount-1;
+						RAM_STATE<=ST_IDLE;
+					elsif(braddrnone='1' and (sb_rd='1' or sb_rmw/="00") and brcache_busy='0')then
+						brcache_clr(brcache_sel)<='1';
+						braddr(brcache_sel)<=(others=>'1');
+						ramabort<='1';
+						aborted<='1';
 					end if;
+				when st_FDEWRITE =>
+					if(rambusy='0')then
+						nxtaddr:=st_addr+1;
+						if(nxtaddr(5 downto 0)>fde_tlen(13 downto 8))then
+							nxtaddr(5 downto 0):=(others=>'0');
+						end if;
+						if(nxtaddr=fde_daddr)then
+							nxtaddr:=st_addr;
+						end if;
+						if(fde_sel='0')then
+							fde_addr0<=nxtaddr;
+						else
+							fde_addr1<=nxtaddr;
+						end if;
+						ramaddrh<=nxtaddr;
+						rambgnaddr<=(others=>'0');
+						ramendaddr<=(others=>'0');
+						RAM_STATE<=ST_FDEREAD;
+						ramrd<='1';
+					end if;
+				when ST_BWRITE =>
+					if(rambusy='0')then
+						refcount<=refcount-1;
+						RAM_STATE<=ST_IDLE;
+					end if;
+				when ST_BCREAD =>
+					if(rambusy='0')then
+						refcount<=refcount-1;
+						bcackx<='1';
+						RAM_STATE<=ST_IDLE;
+					end if;
+				when others =>
 					RAM_STATE<=ST_IDLE;
-					if(RAM_STATE=ST_FECREAD or RAM_STATE=ST_FECWRITE)then
-						fec_busy<='0';
-					end if;
-					if(RAM_STATE=ST_FDEREAD)then
-						fde_sel<=not fde_sel;
-					end if;
-				end if;
-			when ST_BREAD =>
-				if(rambusy='0')then
-					refcount<=refcount-1;
-					RAM_STATE<=ST_IDLE;
-				elsif(braddrnone='1' and (sb_rd='1' or sb_rmw/="00") and brcache_busy='0')then
-					brcache_clr(brcache_sel)<='1';
-					braddr(brcache_sel)<=(others=>'1');
-					ramabort<='1';
-					aborted<='1';
-				end if;
-			when st_FDEWRITE =>
-				if(rambusy='0')then
-					nxtaddr:=st_addr+1;
-					if(nxtaddr(5 downto 0)>fde_tlen(13 downto 8))then
-						nxtaddr(5 downto 0):=(others=>'0');
-					end if;
-					if(nxtaddr=fde_daddr)then
-						nxtaddr:=st_addr;
-					end if;
-					if(fde_sel='0')then
-						fde_addr0<=nxtaddr;
-					else
-						fde_addr1<=nxtaddr;
-					end if;
-					ramaddrh<=nxtaddr;
-					rambgnaddr<=(others=>'0');
-					ramendaddr<=(others=>'0');
-					RAM_STATE<=ST_FDEREAD;
-					ramrd<='1';
-				end if;
-			when ST_BWRITE =>
-				if(rambusy='0')then
-					refcount<=refcount-1;
-					RAM_STATE<=ST_IDLE;
-				end if;
-			when ST_BCREAD =>
-				if(rambusy='0')then
-					refcount<=refcount-1;
-					bcackx<='1';
-					RAM_STATE<=ST_IDLE;
-				end if;
-			when others =>
-				RAM_STATE<=ST_IDLE;
-			end case;
+				end case;
+			end if;
 		end if;
 	end process;
 	
@@ -1064,9 +1070,11 @@ begin
 		if(rstn='0')then
 			b_ack<='0';
 --			b_cack<='0';
-		elsif(sclk' event and sclk='1')then
-			b_ack<=backx;
---			b_cack<=bcackx;
+		elsif rising_edge(sclk) then
+			if (sys_ce = '1') then
+				b_ack<=backx;
+	--			b_cack<=bcackx;
+			end if;
 		end if;
 	end process;
 	
@@ -1076,9 +1084,11 @@ begin
 		if(rstn='0')then
 			sbwack<='0';
 			sbrmwack<='0';
-		elsif(sclk' event and sclk='1')then
-			sbwack<=bwack;
-			sbrmwack<=brmwack;
+		elsif rising_edge(sclk) then
+			if (sys_ce = '1') then
+				sbwack<=bwack;
+				sbrmwack<=brmwack;
+			end if;
 		end if;
 	end process;
 	
@@ -1088,26 +1098,28 @@ begin
 		if(rstn='0')then
 			waddrmin<=(others=>'1');
 			waddrmax<=(others=>'0');
-		elsif(rclk' event and rclk='1')then
-			vmin:=waddrmin;
-			vmax:=waddrmax;
-			if(wminmaxclr='1')then
-				vmin:=(others=>'1');
-				vmax:=(others=>'0');
-			elsif(wminmaxall='1')then
-				vmin:=(others=>'0');
-				vmax:=(others=>'1');
-			end if;
-			if((sbwack='1' and b_wr/="00") or (sbrmwack='1' and b_rmw/="00"))then
-				if(vmin>b_addr(brsize-1 downto 0))then
-					vmin:=b_addr(brsize-1 downto 0);
+		elsif rising_edge(rclk) then
+			if (ram_ce = '1') then
+				vmin:=waddrmin;
+				vmax:=waddrmax;
+				if(wminmaxclr='1')then
+					vmin:=(others=>'1');
+					vmax:=(others=>'0');
+				elsif(wminmaxall='1')then
+					vmin:=(others=>'0');
+					vmax:=(others=>'1');
 				end if;
-				if(vmax<b_addr(brsize-1 downto 0))then
-					vmax:=b_addr(brsize-1 downto 0);
+				if((sbwack='1' and b_wr/="00") or (sbrmwack='1' and b_rmw/="00"))then
+					if(vmin>b_addr(brsize-1 downto 0))then
+						vmin:=b_addr(brsize-1 downto 0);
+					end if;
+					if(vmax<b_addr(brsize-1 downto 0))then
+						vmax:=b_addr(brsize-1 downto 0);
+					end if;
 				end if;
+				waddrmin<=vmin;
+				waddrmax<=vmax;
 			end if;
-			waddrmin<=vmin;
-			waddrmax<=vmax;
 		end if;
 	end process;
 	
@@ -1182,31 +1194,33 @@ begin
 	begin
 		if(rstn='0')then
 			rmw_state<=rmw_IDLE;
-		elsif(sclk' event and sclk='1')then
-			case rmw_state is
-			when rmw_IDLE =>
-				tmp:='0';
-				for i in 0 to brblocks-1 loop
-					if(braddr(i)=('0' & b_addr(awidth-1 downto brsize)) and brcache_ext(i)='1')then
-						tmp:='1';
+		elsif rising_edge(sclk) then
+			if (sys_ce = '1') then
+				case rmw_state is
+				when rmw_IDLE =>
+					tmp:='0';
+					for i in 0 to brblocks-1 loop
+						if(braddr(i)=('0' & b_addr(awidth-1 downto brsize)) and brcache_ext(i)='1')then
+							tmp:='1';
+						end if;
+					end loop;
+					if(tmp='1' and b_rmw/="00")then
+						rmw_state<=rmw_READ;
 					end if;
-				end loop;
-				if(tmp='1' and b_rmw/="00")then
-					rmw_state<=rmw_READ;
-				end if;
-			when rmw_READ =>
-				rmw_rdat<=b_rdatb;
-				rmw_state<=rmw_MOD;
-			when rmw_MOD =>
-				if(b_addr(awidth-1 downto brsize)=bwaddr_sel)then
-					rmw_state<=rmw_WRITE;
-				end if;
-			when rmw_WRITE =>
-				if(b_rmw="00")then
-					rmw_state<=rmw_IDLE;
-				end if;
-			when others =>
-			end case;
+				when rmw_READ =>
+					rmw_rdat<=b_rdatb;
+					rmw_state<=rmw_MOD;
+				when rmw_MOD =>
+					if(b_addr(awidth-1 downto brsize)=bwaddr_sel)then
+						rmw_state<=rmw_WRITE;
+					end if;
+				when rmw_WRITE =>
+					if(b_rmw="00")then
+						rmw_state<=rmw_IDLE;
+					end if;
+				when others =>
+				end case;
+			end if;
 		end if;
 	end process;
 	

@@ -70,6 +70,7 @@ port(
 	
 	SFT		:in std_logic;
 	clk		:in std_logic;
+	ce      :in std_logic;
 	rstn	:in std_logic
 );
 end component;
@@ -213,6 +214,7 @@ begin
 	
 	SFT		=>SFT,
 	clk		=>clk,
+	ce      =>ce,
 	rstn	=>rstn
 	);
 

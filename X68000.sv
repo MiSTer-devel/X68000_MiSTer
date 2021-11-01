@@ -273,7 +273,7 @@ parameter CONF_STR = {
 
 /////////////////  CLOCKS  ////////////////////////
 
-wire clk_ram, clk_sys, clk_vid, clk_fdd, clk_snd, clk_emu, clk_mpu;
+wire clk_ram, clk_sys, clk_vid, clk_fdd, clk_snd, clk_emu, clk_40m;
 wire pll_locked;
 
 pll pll
@@ -286,25 +286,17 @@ pll pll
 	.outclk_3(clk_fdd), // 30mhz
 	.outclk_4(clk_snd), // 32mhz
 	.outclk_5(clk_emu), // 60mhz
-	.outclk_6(clk_mpu), // 20mhz
+	.outclk_6(clk_40m), // 20mhz
 	.locked(pll_locked)
 );
+
+//assign clk_sys = clk_40m;
 
 // Video oscillators
 // 40.00000 - CPU/Main Oscillator
 // 69.55199 - Video clock
 // 38.86363 - Also attached to video circuits
 
-logic [9:0] ces;
-always_ff @(posedge clk_sys) begin
-	reg [3:0] snd_div;
-	reg [3:0] snd_div2;
-	snd_div <= (snd_div == 1) ? 4'd0 : snd_div + 1'd1;
-	snd_div2 <= (snd_div2 == 4) ? 4'd0 : snd_div2 + 1'd1;
-	
-	ces[0] <= &snd_div == 1;
-	ces[1] <= snd_div2 == 4;
-end
 
 altddio_out
 #(
@@ -477,7 +469,7 @@ mt32pi mt32pi
 
 reg mt32_info_req;
 reg [3:0] mt32_info_disp;
-always @(posedge clk_sys) begin
+always @(posedge clk_40m) begin
 	reg old_mode;
 
 	old_mode <= mt32_newmode;
@@ -528,21 +520,66 @@ wire disk_led;
 wire [7:0] red, green, blue;
 wire HBlank, VBlank, HSync, VSync, ce_pix, vid_de;
 
+reg [4:0] div_jt;
+reg [1:0] div_sys;
+reg [3:0] div_snd;
+reg [3:0] div_snd2;
+reg div_mpu;
+
+wire snd_clockmode;
+wire ram_ce = 1;
+wire sys_ce = &div_sys;
+wire vid_ce = 1;
+wire fd_ce = 1;
+wire snd_ce = snd_clockmode ? (div_snd2 == 9) : (div_snd == 4);
+wire emu_ce = 1;
+wire mpu_ce = ~div_mpu;
+
+logic [9:0] ces;
+
+assign ces[2] = &div_sys;
+assign ces[0] = div_snd2 == 9;
+assign ces[1] = div_jt == 19;
+
+always @(posedge clk_40m) begin
+	div_mpu <= ~div_mpu;
+	div_sys <= div_sys + 1'd1;
+	div_snd <= div_snd + 1'd1;
+	div_snd2 <= div_snd2 + 1'd1;
+	div_jt <= div_jt + 1'd1;
+	if (div_snd2 == 9)
+		div_snd <= 0;
+	if (div_snd == 4)
+		div_snd <= 0;
+	if (div_jt == 19)
+		div_jt <= 0;
+end
 
 X68K_top X68K_top
 (
-	.ramclk(clk_ram),
-	.sysclk(clk_sys),
-	.vidclk(clk_vid),
-	.fdcclk(clk_fdd),
-	.sndclk(clk_snd),
-	.emuclk(clk_emu),
-	.mpuclk(clk_mpu),
-	.plllock(pll_locked),
-	.ces(ces),
-	.CPUS(status[47]),
+	.ramclk     (clk_ram),
+	.sysclk     (clk_40m),
+	.vidclk     (clk_vid),
+	.fdcclk     (clk_40m),
+	.sndclk     (clk_40m),
+	.emuclk     (clk_emu),
+	.mpuclk     (clk_40m),
+	
+	.ram_ce     (ram_ce),
+	.sys_ce     (sys_ce),
+	.vid_ce     (vid_ce),
+	.fd_ce      (fd_ce),
+	.snd_ce     (snd_ce),
+	.emu_ce     (emu_ce),
+	.mpu_ce     (mpu_ce),
+	
+	.cm_out     (snd_clockmode),
 
-	.sysrtc(sysrtc),
+	.plllock    (pll_locked),
+	.ces        (ces),
+	.CPUS       (status[47]),
+
+	.sysrtc     (sysrtc),
 
 	.pMemCke(SDRAM_CKE),
 	.pMemCs_n(SDRAM_nCS),

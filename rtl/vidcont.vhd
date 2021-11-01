@@ -328,22 +328,20 @@ begin
 
 	process(vidclk)begin
 		if rising_edge(vidclk) then
-			if(vid_ce = '1')then
-				if (vid_ce = '1') then
-					hadly2<=hadly1;
-					hadly1<=haddr;
-					thodly1<=thaddr_offset(3 downto 0);
-					g0hodly1<=g0haddr_offset(3 downto 0);
-					g1hodly1<=g1haddr_offset(3 downto 0);
-					g2hodly1<=g2haddr_offset(3 downto 0);
-					g3hodly1<=g3haddr_offset(3 downto 0);
-					datseld<=datsel;
-					lhviden<=hviden;
-					exbitd<=exbit;
-					sprite_ind<=sprite_in;
-					t_ddatd<=t_ddat;
-					g_ddatend<=g_ddaten;
-				end if;
+			if (vid_ce = '1') then
+				hadly2<=hadly1;
+				hadly1<=haddr;
+				thodly1<=thaddr_offset(3 downto 0);
+				g0hodly1<=g0haddr_offset(3 downto 0);
+				g1hodly1<=g1haddr_offset(3 downto 0);
+				g2hodly1<=g2haddr_offset(3 downto 0);
+				g3hodly1<=g3haddr_offset(3 downto 0);
+				datseld<=datsel;
+				lhviden<=hviden;
+				exbitd<=exbit;
+				sprite_ind<=sprite_in;
+				t_ddatd<=t_ddat;
+				g_ddatend<=g_ddaten;
 			end if;
 		end if;
 	end process;
@@ -745,35 +743,33 @@ begin
 	variable vaddrx	:std_logic_vector(9 downto 0);
 	begin
 		if rising_edge(sysclk) then
-			if(sys_ce = '1')then
-				if(rstn='0')then
-					vaddrx:=(others=>'0');
-					lvaddr0:=(others=>'0');
-					lvaddr1:=(others=>'0');
-					vaddrm<=(others=>'0');
-					vaddrs<=(others=>'0');
-					intfil<='0';
-				elsif(sys_ce='1')then
-					if(lvaddr0=lvaddr1)then
-						vaddrs<=lvaddr0;
-					end if;
-					lvaddr1:=lvaddr0;
-					lvaddr0:=vaddr;
-					vaddrx:=vaddrs+xvvbgn;
-					if(vaddrx>=xvtotal)then
-						vaddrx:=vaddrx-VWIDTH;
-						xinter<=not inter;
-						if(vaddrx>xvtotal)then
-							intfil<='0';
-						else
-							intfil<='1';
-						end if;
+			if(rstn='0')then
+				vaddrx:=(others=>'0');
+				lvaddr0:=(others=>'0');
+				lvaddr1:=(others=>'0');
+				vaddrm<=(others=>'0');
+				vaddrs<=(others=>'0');
+				intfil<='0';
+			elsif(sys_ce='1')then
+				if(lvaddr0=lvaddr1)then
+					vaddrs<=lvaddr0;
+				end if;
+				lvaddr1:=lvaddr0;
+				lvaddr0:=vaddr;
+				vaddrx:=vaddrs+xvvbgn;
+				if(vaddrx>=xvtotal)then
+					vaddrx:=vaddrx-VWIDTH;
+					xinter<=not inter;
+					if(vaddrx>xvtotal)then
+						intfil<='0';
 					else
-						xinter<=inter;
 						intfil<='1';
 					end if;
-					vaddrm<=vaddrx;
+				else
+					xinter<=inter;
+					intfil<='1';
 				end if;
+				vaddrm<=vaddrx;
 			end if;
 		end if;
 	end process;

@@ -241,7 +241,7 @@ begin
 		rstn		=>rstn
 	);
 
-	process(clk,rstn)begin
+	process(clk,rstn,ce)begin
 		if rising_edge(clk) then
 			if(rstn='0')then
 				rstcount<=rstlen-1;
@@ -263,7 +263,7 @@ begin
 	
 	crstn<=rstn and (not rstcmd);
 	
-	process(clk,rstn)
+	process(clk,rstn,ce)
 	variable ldatwr	:std_logic;
 	begin
 		if rising_edge(clk) then
@@ -561,7 +561,7 @@ begin
 	txfifoclr<=TxC;
 	R36<=rxfifordat;
 	
-	process(clk,crstn)
+	process(clk,crstn,ce)
 	variable rd,lrd	:std_logic;
 	begin
 		if rising_edge(clk) then
@@ -587,7 +587,7 @@ begin
 	R54(6)<=not txfifofull;
 	R54(5 downto 3)<=(others=>'0');
 	
-	process(clk,crstn)begin
+	process(clk,crstn,ce)begin
 		if rising_edge(clk) then
 			if(crstn='0')then
 				countm<=divm-1;
@@ -604,7 +604,7 @@ begin
 		end if;
 	end process;
 	
-	process(clk,crstn)begin
+	process(clk,crstn,ce)begin
 		if rising_edge(clk) then
 			if(crstn='0')then
 				countf<=divf-1;
@@ -621,7 +621,7 @@ begin
 		end if;
 	end process;
 	
-	process(clk,crstn)begin
+	process(clk,crstn,ce)begin
 		if rising_edge(clk) then
 			if(crstn='0')then
 				rxdivcount<=0;
@@ -713,7 +713,7 @@ begin
 		end if;
 	end process;
 	
-	process(clk,crstn)begin
+	process(clk,crstn,ce)begin
 		if rising_edge(clk) then
 			if(crstn='0')then
 				srxbit<='1';
@@ -763,6 +763,7 @@ begin
 		SFTRST	=>'0',
 				
 		clk		=>clk,
+		ce      =>ce,
 		rstn		=>crstn
 	);
 	rxbyte<=rxdata(7 downto 0) when RxCL='0' else ('0' & rxdata(6 downto 0));
@@ -844,7 +845,7 @@ begin
 	end process;
 	
 	rxfifowr<=rxdone and ((not rxstoperr) and (not rxparerr) and (not rxstop2err) and (not rxfifofull));
-	process(clk,crstn)begin
+	process(clk,crstn,ce)begin
 		if rising_edge(clk) then
 			if(crstn='0')then
 				R34(6 downto 1)<=(others=>'0');
