@@ -78,7 +78,7 @@ begin
 		data_a			=>wdat(7 downto 0) & wdat(15 downto 8),
 		data_b			=>mist_wdat,
 		wren_a			=>wren and ce,
-		wren_b			=>mist_we and ce,
+		wren_b			=>mist_we,
 		q_a				=>rddattmp,
 		q_b				=>mist_rdat
 	);

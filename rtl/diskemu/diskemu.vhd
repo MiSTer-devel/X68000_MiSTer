@@ -726,7 +726,7 @@ begin
 		table	=>tbladdr,
 		haddr	=>haddr,
 
-		clk		=>sclk,
+		clk		=>sclk
 	);
 
 	fdsectwr<=	mist_buffwr when emustate=es_fload0 else
