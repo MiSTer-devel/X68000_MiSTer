@@ -727,7 +727,6 @@ begin
 		haddr	=>haddr,
 
 		clk		=>sclk,
-		ce      =>sys_ce
 	);
 
 	fdsectwr<=	mist_buffwr when emustate=es_fload0 else
@@ -742,7 +741,7 @@ begin
 		clock				=>sclk,
 		data_a			=>mist_buffdout,
 		data_b			=>img_wrdat,
-		wren_a			=>fdsectwr and sys_ce,
+		wren_a			=>fdsectwr,
 		wren_b			=>sbufwr and sys_ce,
 		q_a				=>sbuf_odat,
 		q_b				=>img_rddat
@@ -2065,7 +2064,7 @@ begin
 		clock				=>sclk,
 		data_a			=>mist_buffdout,
 		data_b			=>sasi_sectwrdat,
-		wren_a			=>sasisectwr and sys_ce,
+		wren_a			=>sasisectwr,
 		wren_b			=>sasibufwr and sys_ce,
 		q_a				=>sasi_bufodat,
 		q_b				=>sasi_sectrddat

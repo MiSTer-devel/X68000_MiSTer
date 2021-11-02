@@ -273,7 +273,7 @@ parameter CONF_STR = {
 
 /////////////////  CLOCKS  ////////////////////////
 
-wire clk_ram, clk_sys, clk_vid, clk_fdd, clk_snd, clk_emu, clk_40m;
+wire clk_ram, clk_sys;
 wire pll_locked;
 
 pll pll
@@ -281,22 +281,16 @@ pll pll
 	.refclk(CLK_50M),
 	.rst(0),
 	.outclk_0(clk_ram), // 80mhz
-	.outclk_1(clk_sys), // 10mhz
-	.outclk_2(clk_vid), // 80mhz -- change to 69.55199
-	.outclk_3(clk_fdd), // 30mhz
-	.outclk_4(clk_snd), // 32mhz
-	.outclk_5(clk_emu), // 60mhz
-	.outclk_6(clk_40m), // 20mhz
+	.outclk_1(clk_sys), // 40mhz
 	.locked(pll_locked)
 );
 
-//assign clk_sys = clk_40m;
+wire clk_vid = clk_ram;
 
 // Video oscillators
 // 40.00000 - CPU/Main Oscillator
 // 69.55199 - Video clock
 // 38.86363 - Also attached to video circuits
-
 
 altddio_out
 #(
@@ -368,7 +362,7 @@ wire [21:0] gamma_bus;
 wire  [7:0] uart1_mode;
 wire [31:0] uart1_speed;
 
-hps_io #(.CONF_STR(CONF_STR), .PS2DIV(600), .PS2WE(1), .VDNUM(4)) hps_io
+hps_io #(.CONF_STR(CONF_STR), .PS2DIV(2400), .PS2WE(1), .VDNUM(4)) hps_io
 (
 	.clk_sys(clk_sys),
 	.HPS_BUS(HPS_BUS),
@@ -469,7 +463,7 @@ mt32pi mt32pi
 
 reg mt32_info_req;
 reg [3:0] mt32_info_disp;
-always @(posedge clk_40m) begin
+always @(posedge clk_sys) begin
 	reg old_mode;
 
 	old_mode <= mt32_newmode;
@@ -541,7 +535,7 @@ assign ces[2] = &div_sys;
 assign ces[0] = div_snd2 == 9;
 assign ces[1] = div_jt == 19;
 
-always @(posedge clk_40m) begin
+always @(posedge clk_sys) begin
 	div_mpu <= ~div_mpu;
 	div_sys <= div_sys + 1'd1;
 	div_snd <= div_snd + 1'd1;
@@ -558,12 +552,10 @@ end
 X68K_top X68K_top
 (
 	.ramclk     (clk_ram),
-	.sysclk     (clk_40m),
+	.sysclk     (clk_sys),
 	.vidclk     (clk_vid),
-	.fdcclk     (clk_40m),
-	.sndclk     (clk_40m),
-	.emuclk     (clk_emu),
-	.mpuclk     (clk_40m),
+	.fdcclk     (clk_sys),
+	.sndclk     (clk_sys),
 	
 	.ram_ce     (ram_ce),
 	.sys_ce     (sys_ce),

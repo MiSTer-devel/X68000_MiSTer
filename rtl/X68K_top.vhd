@@ -19,8 +19,6 @@ port(
 	vidclk	:in std_logic;
 	fdcclk	:in std_logic;
 	sndclk	:in std_logic;
-	emuclk	:in std_logic;
-	mpuclk  :in std_logic;
 
 	ram_ce  :in std_logic;
 	sys_ce  :in std_logic;
