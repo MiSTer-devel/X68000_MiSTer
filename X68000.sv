@@ -514,39 +514,36 @@ wire disk_led;
 wire [7:0] red, green, blue;
 wire HBlank, VBlank, HSync, VSync, ce_pix, vid_de;
 
-reg [4:0] div_jt;
-reg [1:0] div_sys;
-reg [3:0] div_snd;
-reg [3:0] div_snd2;
-reg div_mpu;
-
 wire snd_clockmode;
-wire ram_ce = 1;
-wire sys_ce = &div_sys;
-wire vid_ce = 1;
-wire fd_ce = 1;
-wire snd_ce = snd_clockmode ? (div_snd2 == 9) : (div_snd == 4);
-wire emu_ce = 1;
-wire mpu_ce = ~div_mpu;
-
-logic [9:0] ces;
-
-assign ces[2] = &div_sys;
-assign ces[0] = div_snd2 == 9;
-assign ces[1] = div_jt == 19;
+reg sys_ce;
+reg snd_ce;
+reg mpu_ce;
+reg [9:0] ces = 0;
 
 always @(posedge clk_sys) begin
+	reg [4:0] div_jt;
+	reg [1:0] div_sys;
+	reg [3:0] div_snd;
+	reg [3:0] div_snd2;
+	reg       div_mpu;
+
 	div_mpu <= ~div_mpu;
 	div_sys <= div_sys + 1'd1;
 	div_snd <= div_snd + 1'd1;
 	div_snd2 <= div_snd2 + 1'd1;
 	div_jt <= div_jt + 1'd1;
-	if (div_snd2 == 9)
-		div_snd <= 0;
-	if (div_snd == 4)
-		div_snd <= 0;
-	if (div_jt == 19)
-		div_jt <= 0;
+
+	if (div_snd2 == 9) div_snd <= 0;
+	if (div_snd == 4)  div_snd <= 0;
+	if (div_jt == 19)  div_jt  <= 0;
+		
+	ces[2] <= &div_sys;
+	ces[0] <= div_snd2 == 9;
+	ces[1] <= div_jt == 19;
+
+	sys_ce <= &div_sys;
+	snd_ce <= snd_clockmode ? (div_snd2 == 9) : (div_snd == 4);
+	mpu_ce <= ~div_mpu;
 end
 
 X68K_top X68K_top
@@ -557,12 +554,10 @@ X68K_top X68K_top
 	.fdcclk     (clk_sys),
 	.sndclk     (clk_sys),
 	
-	.ram_ce     (ram_ce),
 	.sys_ce     (sys_ce),
-	.vid_ce     (vid_ce),
-	.fd_ce      (fd_ce),
+	.vid_ce     (1),
+	.fd_ce      (1),
 	.snd_ce     (snd_ce),
-	.emu_ce     (emu_ce),
 	.mpu_ce     (mpu_ce),
 	
 	.cm_out     (snd_clockmode),
@@ -618,12 +613,6 @@ X68K_top X68K_top
 
 	.pJoyA(joyA),
 	.pJoyB(joyB),
-	
-	// SD Card is unused
-	// .pSd_miso(SD_MISO),
-	// .pSd_mosi(SD_MOSI),
-	// .pSd_clk(SD_SCK),
-	// .pSd_cs(SD_CS),
 
 	.pFDSYNC(fdsync),
 	.pFDEJECT(fdeject),

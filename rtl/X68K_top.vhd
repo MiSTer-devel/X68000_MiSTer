@@ -20,12 +20,11 @@ port(
 	fdcclk	:in std_logic;
 	sndclk	:in std_logic;
 
-	ram_ce  :in std_logic;
+	ram_ce  :in std_logic := '1';
 	sys_ce  :in std_logic;
 	vid_ce  :in std_logic;
 	fd_ce   :in std_logic;
 	snd_ce  :in std_logic;
-	emu_ce  :in std_logic;
 	mpu_ce  :in std_logic;
 	
 	cm_out  :out std_logic;
@@ -73,11 +72,6 @@ port(
    pJoyB       : in std_logic_vector( 5 downto 0);
    pStrA			: out std_logic;
 	pStrB			: out std_logic;
-   -- SD/MMC slot ports
-	pSd_miso		: in std_logic;
-   --   pSd_mosi		: out std_logic;
- --  pSd_clk		: out std_logic;
-  -- pSd_cs		: out std_logic;
 
 	pFDSYNC		:in std_logic_Vector(1 downto 0);
 	pFDEJECT		:in std_logic_Vector(1 downto 0);
