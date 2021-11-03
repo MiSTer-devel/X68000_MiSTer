@@ -203,9 +203,7 @@ assign AUDIO_MIX = status[3:2];
 // 0         1         2         3          4         5         6
 // 01234567890123456789012345678901 23456789012345678901234567890123
 // 0123456789ABCDEFGHIJKLMNOPQRSTUV 0123456789ABCDEFGHIJKLMNOPQRSTUV
-// X XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX         XXX    X
-
-`define DEBUG_X68K
+// X XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX         XXX
 
 `include "build_id.v" 
 parameter CONF_STR = {
@@ -225,9 +223,6 @@ parameter CONF_STR = {
 	"RD,Load SRAM from SD Card;",
 	"RE,Save SRAM to SD Card;",
 	"-;",
-`ifdef DEBUG_X68K
-	"oF,CPU Select,TG68,fx68k;",
-`endif
 	"P1,Audio & Video;",
 	"P1-;",
 	"P1O23,Stereo Mix,None,25%,50%,100%;",
@@ -251,7 +246,7 @@ parameter CONF_STR = {
 	"-;",
 	"R7,NMI Button;",
 	"R8,Power Button;",
-	"R0,Reset and apply HDD;",
+	"R0,Reset and Apply HDD;",
 	"-;",
 	"J,Fire 1,Fire 2; ",
 	"jn,Fire 1,Fire 2;",
@@ -515,35 +510,32 @@ wire [7:0] red, green, blue;
 wire HBlank, VBlank, HSync, VSync, ce_pix, vid_de;
 
 wire snd_clockmode;
-reg sys_ce;
+reg sys_cep;
+reg sys_cen;
 reg snd_ce;
-reg mpu_ce;
-reg [9:0] ces = 0;
+reg [1:0] opn_ce = 0;
 
 always @(posedge clk_sys) begin
-	reg [4:0] div_jt;
+	reg [4:0] div_opn;
 	reg [1:0] div_sys;
 	reg [3:0] div_snd;
 	reg [3:0] div_snd2;
-	reg       div_mpu;
 
-	div_mpu <= ~div_mpu;
 	div_sys <= div_sys + 1'd1;
 	div_snd <= div_snd + 1'd1;
 	div_snd2 <= div_snd2 + 1'd1;
-	div_jt <= div_jt + 1'd1;
+	div_opn <= div_opn + 1'd1;
 
 	if (div_snd2 == 9) div_snd <= 0;
 	if (div_snd == 4)  div_snd <= 0;
-	if (div_jt == 19)  div_jt  <= 0;
-		
-	ces[2] <= &div_sys;
-	ces[0] <= div_snd2 == 9;
-	ces[1] <= div_jt == 19;
+	if (div_opn == 19) div_opn <= 0;
 
-	sys_ce <= &div_sys;
-	snd_ce <= snd_clockmode ? (div_snd2 == 9) : (div_snd == 4);
-	mpu_ce <= ~div_mpu;
+	opn_ce[0] <= div_snd2 == 9;
+	opn_ce[1] <= div_opn == 19;
+
+	sys_cep <=  div_sys[1] & div_sys[0];
+	sys_cen <= ~div_sys[1] & div_sys[0];
+	snd_ce  <= snd_clockmode ? (div_snd2 == 9) : (div_snd == 4);
 end
 
 X68K_top X68K_top
@@ -554,17 +546,14 @@ X68K_top X68K_top
 	.fdcclk     (clk_sys),
 	.sndclk     (clk_sys),
 	
-	.sys_ce     (sys_ce),
-	.vid_ce     (1),
-	.fd_ce      (1),
+	.sys_cep    (sys_cep),
+	.sys_cen    (sys_cen),
 	.snd_ce     (snd_ce),
-	.mpu_ce     (mpu_ce),
+	.opn_ce     (opn_ce),
 	
 	.cm_out     (snd_clockmode),
 
 	.plllock    (pll_locked),
-	.ces        (ces),
-	.CPUS       (status[47]),
 
 	.sysrtc     (sysrtc),
 

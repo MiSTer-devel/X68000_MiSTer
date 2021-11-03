@@ -4,6 +4,9 @@
 // Opcode to uaddr entry routines (A2-A2-A3) PLA
 //
 
+// altera message_off 10230
+
+
 `timescale 1 ns / 1 ns
 
 `define NMA_BITS   10

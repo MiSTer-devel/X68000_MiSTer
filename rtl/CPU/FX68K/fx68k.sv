@@ -7,6 +7,9 @@
 // TODO:
 // - Everything except bus retry already implemented.
 
+// altera message_off 10030
+// altera message_off 10230
+
 `timescale 1 ns / 1 ns
 
 //`define USE_E_CLKEN
@@ -144,7 +147,7 @@ module fx68k(
 	input enPhi1, enPhi2,	// Clock enables. Next cycle is PHI1 or PHI2
 
 	output eRWn, output ASn, output LDSn, output UDSn,
-	output logic E, output VMAn,
+	output logic E, output VMAn,	
 	
 `ifdef USE_E_CLKEN
 	// Next cycle would be raising/falling edge of E output
@@ -206,7 +209,7 @@ module fx68k(
 	//	
 	// We synchronize some signals half clock earlier. We compensate later
 	reg rDtack, rBerr;
-	reg [2:0] rIpl, iIpl;	
+	reg [2:0] rIpl, iIpl;
 	reg Vpai, BeI, Halti, BRi, BgackI, BeiDelay;
 	// reg rBR, rHALT;
 	wire BeDebounced = ~( BeI | BeiDelay);
@@ -2283,7 +2286,7 @@ module busControl( input s_clks Clks, input enT1, input enT4,
 	assign UDSn = rUDS;
 	assign eRWn = rRWn;
 
-	reg dataOe;
+	//reg dataOe;
 		
 	reg bcPend;
 	reg isWriteReg, bciByte, isRmcReg, wendReg;
@@ -2372,15 +2375,15 @@ module busControl( input s_clks Clks, input enT1, input enT4,
 			rUDS <= 1'b1;
 			rLDS <= 1'b1;
 			rRWn <= 1'b1;
-			dataOe <= '0;
+			//dataOe <= '0;
 		end
 		else begin
-
+/*
 			if( Clks.enPhi2 & isWriteReg & (busPhase == S2))
 				dataOe <= 1'b1;
 			else if( Clks.enPhi1 & (busEnding | (busPhase == SIDLE)) )
 				dataOe <= 1'b0;
-						
+*/						
 			if( Clks.enPhi1 & busEnding)
 				rRWn <= 1'b1;
 			else if( Clks.enPhi1 & isWriteReg) begin
