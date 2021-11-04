@@ -642,7 +642,6 @@ begin
 			bwcache_clr1<='0';
 			refcount<=refint-1;
 			lastvid<='0';
-			bcackx<='0';
 			bcpend<='0';
 			bcget<='0';
 			fde_sel<='0';
@@ -666,7 +665,6 @@ begin
 				ramwr<='0';
 				ramrefrsh<='0';
 				ramabort<='0';
-				bcackx<='0';
 				wminmaxclr<='0';
 				wminmaxall<='0';
 				bcget<='0';
@@ -984,7 +982,7 @@ begin
 				when ST_BCREAD =>
 					if(rambusy='0')then
 						refcount<=refcount-1;
-						bcackx<='1';
+						bcackx<=not bcackx;
 						RAM_STATE<=ST_IDLE;
 					end if;
 				when others =>
@@ -1078,7 +1076,7 @@ begin
 		end if;
 	end process;
 	
-	bctx	:clktx port map(bcackx,b_cack,rclk,ram_ce,sclk,sys_ce,rstn);
+	b_cack <= bcackx;
 
 	process(sclk,rstn)begin
 		if(rstn='0')then

@@ -2865,13 +2865,9 @@ begin
 
 		initdone	=>ram_inidone,
 		sclk		=>sysclk,
-		sys_ce      =>sys_cep,
 		vclk		=>vidclk,
-		vid_ce      =>vid_ce,
 		fclk		=>fdcclk,
-		fd_ce       =>fd_ce,
 		rclk		=>ramclk,
-		ram_ce      =>ram_ce,
 		rstn		=>mem_rstn
 	);
 	

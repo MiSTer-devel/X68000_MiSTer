@@ -36,6 +36,7 @@ signal	STATE	:state_t;
 constant selwidth	:integer	:=10-brsize;
 signal	sel	:std_logic_vector(selwidth-1 downto 0);
 constant	selmax	:std_logic_vector(selwidth-1 downto 0)	:=(others=>'1');
+signal	ackd	:std_logic;
 --signal	sstart	:std_logic;
 --signal	lstart	:std_logic;
 begin
@@ -68,10 +69,11 @@ begin
 						dstaddr(selwidth+7 downto selwidth)<=dst;
 						cplane<=plane;
 						cpy<='1';
+						ackd <= ack;
 						STATE<=st_COPY;
 					end if;
 				when st_COPY =>
-					if(ack='1')then
+					if(ack /= ackd)then
 						if(sel=selmax)then
 							cplane<=(others=>'0');
 							STATE<=st_IDLE;
@@ -79,6 +81,7 @@ begin
 						else
 							sel<=sel+1;
 							cpy<='1';
+							ackd <= ack;
 						end if;
 					end if;
 				when others =>
