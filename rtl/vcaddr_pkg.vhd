@@ -59,5 +59,7 @@ constant addr_tmask			:std_logic_vector(23 downto 0)	:=x"e8002e";
 constant addr_RC			:std_logic_vector(23 downto 0)	:=x"e80480";
 constant addr_FC			:std_logic_vector(23 downto 0)	:=x"e80480";
 constant addr_VI			:std_logic_vector(23 downto 0)	:=x"e80480";
+constant addr_CRTC			:std_logic_vector(23 downto 0)	:=x"e80481";
+constant SYS_DC 			:std_logic_vector(23 downto 0)	:=x"e8e007";
 end vcaddr_pkg;
 

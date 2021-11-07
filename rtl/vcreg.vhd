@@ -62,6 +62,7 @@ port(
 	GRPEN		:out std_logic_vector(4 downto 0);
 	TXTEN		:out std_logic;
 	SPREN		:out std_logic;
+	DC          :out std_logic;
 	GT			:out std_logic;
 	GG			:out std_logic;
 	BP			:out std_logic;
@@ -127,6 +128,7 @@ signal	rEXON		:std_logic;
 signal	rVHT		:std_logic;
 signal	rAH			:std_logic;
 signal	rYS			:std_logic;
+signal  rDC         :std_logic;
 
 begin
 	process(clk,rstn)begin
@@ -156,6 +158,7 @@ begin
 				rcol		<=(others=>'0');
 				rHF			<='0';
 				rVD			<=(others=>'0');
+				rDC         <='0';
 				rHD			<=(others=>'0');
 				rMEN		<='0';
 				rSA			<='0';
@@ -179,6 +182,10 @@ begin
 				rYS			<='0';
 			elsif(ce = '1')then
 				case addr(23 downto 1) is
+				when SYS_DC(23 downto 1) =>
+					if(wr(0)='1')then
+						rDC<=wdat(1);
+					end if;
 				when VC_R00(23 downto 1) =>
 					if(wr(0)='1')then
 						rhtotal(7 downto 0)<=wdat(7 downto 0);
@@ -421,6 +428,7 @@ begin
 	GRPEN		<=rGRPEN;
 	TXTEN		<=rTXTEN;
 	SPREN		<=rSPREN;
+	DC          <=rDC;
 	GT			<=rGT;
 	GG			<=rGG;
 	BP			<=rBP;

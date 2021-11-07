@@ -140,10 +140,11 @@ port(
 	gclrpage:in std_logic_vector(3 downto 0);
 	gclrbusy:out std_logic;
 	
+	hblank  :in std_logic;
+	vblank  :in std_logic;
+	
 	vidclk		:in std_logic;
 	vid_ce      :in std_logic := '1';
-	sysclk	:in std_logic;
-	sys_ce  :in std_logic := '1';
 	rstn	:in std_logic
 );
 end vidcont;
@@ -187,13 +188,12 @@ signal	g3_rdat		:std_logic_vector(15 downto 0);
 signal	cur_taddrh	:std_logic_vector(arange-9 downto 0);
 
 signal	haddr	:std_logic_vector(9 downto 0);
-signal	vaddr	:std_logic_vector(9 downto 0);
-
-signal	haddr256:std_logic_vector(9 downto 0);
-signal	haddr512:std_logic_vector(9 downto 0);
+signal	vaddr   :std_logic_vector(9 downto 0);
+signal	raster  :std_logic_vector(9 downto 0);
 
 signal	haddrmod:std_logic_vector(9 downto 0);
 signal	vaddrmod:std_logic_vector(9 downto 0);
+signal	vaddroff:std_logic_vector(9 downto 0);
 signal	h3count	:integer range 0 to 2;
 
 signal	hadly2	:std_logic_vector(9 downto 0);
@@ -270,15 +270,6 @@ signal	gdoten		:std_logic;
 signal	tdoten		:std_logic;
 signal	sdoten		:std_logic;
 signal	exbit,exbitd		:std_logic;
-signal	xhtotal		:std_logic_vector(7 downto 0);
-signal	xhvbgn		:std_logic_vector(7 downto 0);
-signal	xhvend		:std_logic_vector(7 downto 0);
-signal	xvtotal		:std_logic_vector(9 downto 0);
-signal	xvvbgn		:std_logic_vector(9 downto 0);
-signal	xvvend		:std_logic_vector(9 downto 0);
-signal	xrintline	:std_logic_vector(9 downto 0);
-signal	mrintline	:std_logic_vector(9 downto 0);
-signal	ivaddr		:std_logic_vector(9 downto 0);
 signal	vviden,lvviden	:std_logic;
 signal	hviden,lhviden	:std_logic;
 
@@ -310,17 +301,9 @@ signal	vaddrm	:std_logic_vector(9 downto 0);
 signal	vaddrs	:std_logic_vector(9 downto 0);
 signal	xinter	:std_logic;
 signal	intfil	:std_logic;
-
+signal  mix_ibit:std_logic;
 constant azero	:std_logic_vector(arange-1 downto 0)	:=(others=>'0');
 begin
-
-	xhtotal<=	htotal	when hfreq='1' else htotal(6 downto 0) & '0';
-	xhvbgn<=		hvbgn		when hfreq='1' else hvbgn(6 downto 0) & '0';
-	xhvend<=		hvend		when hfreq='1' else hvend(6 downto 0) & '0';
-	xvtotal<=	vtotal	when hfreq='1' else vtotal(8 downto 0) & '0';
-	xvvbgn<=		vvbgn		when hfreq='1' else vvbgn(8 downto 0) & '0';
-	xvvend<=		vvend		when hfreq='1' else vvend(8 downto 0) & '0';
-
 	g_ddaten<=	'1' when g4_ddat/=x"0" and gmode="00" else
 					'1' when g8_ddat(3 downto 0)/=x"0" and gmode="01" else
 					'1' when g16_ddat/=x"0000" and gmode(1)='1' else
@@ -346,12 +329,11 @@ begin
 		end if;
 	end process;
 	
-	haddrmod<=	haddr; --haddr256	when hres="00" else
-				-- haddr512 when hres="01" else
-				-- haddr;
+	haddrmod<=  haddr;
 
-	vaddrmod<=	'0' & vaddr(9 downto 1)	when vres='0' and hfreq = '1' else
-					vaddr;
+	-- 256 height in high freqency will doublescan the image
+	vaddroff <= vaddr;
+	vaddrmod<= '0' & vaddroff(9 downto 1)	when vres='0' and hfreq='1' else vaddroff; -- and hfreq='1'
 
 	thaddr_offset<=t_hoffset+haddrmod;
 	tvaddr_offset<=t_voffset+vaddrmod;
@@ -552,68 +534,98 @@ begin
 				g16_ddat(0);
 
 
-	process(vidclk,rstn)
-	variable hvwidth	:std_logic_vector(9 downto 0);
+	process(vidclk)
+	variable hvwidth	:std_logic_vector(10 downto 0);
 	begin
 		if rising_edge(vidclk) then
-			if(vid_ce = '1') then
-				if(rstn='0')then
+			if(rstn='0')then
+				haddr<=(others=>'0');
+				vaddr<=(others=>'0');
+				raster<=(others=>'0');
+				lbwr<='0';
+				nxt_trd<='0';
+				nxt_g0rd<='0';
+				nxt_g1rd<='0';
+				nxt_g2rd<='0';
+				nxt_g3rd<='0';
+				cur_trd<='0';
+				cur_g0rd<='0';
+				cur_g1rd<='0';
+				cur_g2rd<='0';
+				cur_g3rd<='0';
+				ramsel<='0';
+				cur_taddrh<=(others=>'0');
+				cur_g0r0c4addrh<=(others=>'0');
+				cur_g1r0c4addrh<=(others=>'0');
+				cur_g2r0c4addrh<=(others=>'0');
+				cur_g3r0c4addrh<=(others=>'0');
+				cur_g0r1c4addrh<=(others=>'0');
+				cur_g0r0c8addrh<=(others=>'0');
+				cur_g1r0c8addrh<=(others=>'0');
+				cur_g0r0c16addrh<=(others=>'0');
+				vviden<='0';
+				lvviden<='0';
+				hviden<='0';
+				gclrbusyb<='0';
+				gclrrast<=(others=>'0');
+				gclrbgnrq<='0';
+				gclrendrq<='0';
+			elsif (vid_ce = '1') then
+				lbwr<='0';
+				if(gclrbgn='1' and gclrbusyb='0')then
+					gclrbusyb<='1';
+					gclrbgnrq<='1';
+				elsif(gclrend='1')then
+					gclrendrq<='1';
+				end if;
+				if(hcomp='1')then
+					if(gclrbgnrq='1')then
+						gclrrast<=vaddr;
+						gclrbgnrq<='0';
+					elsif(gclrendrq='1' or gclrrast=vaddr)then
+						gclrendrq<='0';
+						gclrbusyb<='0';
+					end if;
+				end if;
+				if(vpstart='1')then
 					haddr<=(others=>'0');
 					vaddr<=(others=>'0');
-					haddr256<=(others=>'0');
-					haddr512<=(others=>'0');
+					raster<=(others=>'0');
 					h3count<=0;
-					lbwr<='0';
-					nxt_trd<='0';
-					nxt_g0rd<='0';
-					nxt_g1rd<='0';
-					nxt_g2rd<='0';
-					nxt_g3rd<='0';
-					cur_trd<='0';
-					cur_g0rd<='0';
-					cur_g1rd<='0';
-					cur_g2rd<='0';
-					cur_g3rd<='0';
-					ramsel<='0';
-					cur_taddrh<=(others=>'0');
-					cur_g0r0c4addrh<=(others=>'0');
-					cur_g1r0c4addrh<=(others=>'0');
-					cur_g2r0c4addrh<=(others=>'0');
-					cur_g3r0c4addrh<=(others=>'0');
-					cur_g0r1c4addrh<=(others=>'0');
-					cur_g0r0c8addrh<=(others=>'0');
-					cur_g1r0c8addrh<=(others=>'0');
-					cur_g0r0c16addrh<=(others=>'0');
-					vviden<='0';
-					lvviden<='0';
-					hviden<='0';
-					gclrbusyb<='0';
-					gclrrast<=(others=>'0');
-					gclrbgnrq<='0';
-					gclrendrq<='0';
-				elsif(vid_ce = '1')then
-					lbwr<='0';
-					if(gclrbgn='1' and gclrbusyb='0')then
-						gclrbusyb<='1';
-						gclrbgnrq<='1';
-					elsif(gclrend='1')then
-						gclrendrq<='1';
-					end if;
-					if(hcomp='1')then
-						if(gclrbgnrq='1')then
-							gclrrast<=vaddr;
-							gclrbgnrq<='0';
-						elsif(gclrendrq='1' or gclrrast=vaddr)then
-							gclrendrq<='0';
-							gclrbusyb<='0';
-						end if;
-					end if;
-					if(vpstart='1')then
-						haddr<=(others=>'0');
-						haddr256<=(others=>'0');
-						haddr512<=(others=>'0');
-						vaddr<=(others=>'0');
-						h3count<=0;
+					g0_clear<=	gclrpage(0) and gclrbusyb;
+					g1_clear<=	gclrpage(1) and gclrbusyb;
+					g2_clear<=	gclrpage(2) and gclrbusyb;
+					g3_clear<=	gclrpage(3) and gclrbusyb;
+					nxt_trd<=	ten;
+					nxt_g0rd<=	g0en and (not (gclrpage(0) and gclrbusyb));
+					nxt_g1rd<=	g1en and (not (gclrpage(1) and gclrbusyb));
+					nxt_g2rd<=	g2en and (not (gclrpage(2) and gclrbusyb));
+					nxt_g3rd<=	g3en and (not (gclrpage(3) and gclrbusyb));
+					cur_trd<=	'0';
+					cur_g0rd<=	'0';
+					cur_g1rd<=	'0';
+					cur_g2rd<=	'0';
+					cur_g3rd<=	'0';
+					ramsel<=not ramsel;
+					vviden<=not vblank;
+					hviden<= '1';--not hblank;
+				elsif(hcomp='1')then
+					cur_taddrh<=nxt_taddr(arange-3 downto 6);
+					cur_g0r0c4addrh<=nxt_g0r0c4addrh;
+					cur_g1r0c4addrh<=nxt_g1r0c4addrh;
+					cur_g2r0c4addrh<=nxt_g2r0c4addrh;
+					cur_g3r0c4addrh<=nxt_g3r0c4addrh;
+					cur_g0r1c4addrh<=nxt_g0r1c4addrh;
+					cur_g0r0c8addrh<=nxt_g0r0c8addrh;
+					cur_g1r0c8addrh<=nxt_g1r0c8addrh;
+					cur_g0r0c16addrh<=nxt_g0r0c16addrh;
+					haddr<=(others=>'0');
+					lvviden<=vviden;
+					raster<=raster+"0000000001";
+					hviden<='1';
+					vviden<= not vblank;
+					if vblank='0' then
+						vaddr<=vaddr+"0000000001";
 						g0_clear<=	gclrpage(0) and gclrbusyb;
 						g1_clear<=	gclrpage(1) and gclrbusyb;
 						g2_clear<=	gclrpage(2) and gclrbusyb;
@@ -623,90 +635,37 @@ begin
 						nxt_g1rd<=	g1en and (not (gclrpage(1) and gclrbusyb));
 						nxt_g2rd<=	g2en and (not (gclrpage(2) and gclrbusyb));
 						nxt_g3rd<=	g3en and (not (gclrpage(3) and gclrbusyb));
+					else
+						g0_clear<=	'0';
+						g1_clear<=	'0';
+						g2_clear<=	'0';
+						g3_clear<=	'0';
+						nxt_trd<=	'0';
+						nxt_g0rd<=	'0';
+						nxt_g1rd<=	'0';
+						nxt_g2rd<=	'0';
+						nxt_g3rd<=	'0';
+					end if;
+					cur_trd<=nxt_trd;
+					cur_g0rd<=nxt_g0rd;
+					cur_g1rd<=nxt_g1rd;
+					cur_g2rd<=nxt_g2rd;
+					cur_g3rd<=nxt_g3rd;
+					ramsel<=not ramsel;
+				else
+					if(haddr<"1111111111")then
+						hvwidth:=(hvend-hvbgn-"00000001") & "111";
+						haddr<=haddr+"0000000001";
+						lbwr<='1';
+						if(haddr=hvwidth)then -- hres(1)='1' and
+							hviden<='0';
+						end if;
+					else
 						cur_trd<=	'0';
 						cur_g0rd<=	'0';
 						cur_g1rd<=	'0';
 						cur_g2rd<=	'0';
 						cur_g3rd<=	'0';
-						ramsel<=not ramsel;
-						vviden<='1';
-						hviden<='1';
-					elsif(hcomp='1')then
-						cur_taddrh<=nxt_taddr(arange-3 downto 6);
-						cur_g0r0c4addrh<=nxt_g0r0c4addrh;
-						cur_g1r0c4addrh<=nxt_g1r0c4addrh;
-						cur_g2r0c4addrh<=nxt_g2r0c4addrh;
-						cur_g3r0c4addrh<=nxt_g3r0c4addrh;
-						cur_g0r1c4addrh<=nxt_g0r1c4addrh;
-						cur_g0r0c8addrh<=nxt_g0r0c8addrh;
-						cur_g1r0c8addrh<=nxt_g1r0c8addrh;
-						cur_g0r0c16addrh<=nxt_g0r0c16addrh;
-						haddr<=(others=>'0');
-						haddr256<=(others=>'0');
-						haddr512<=(others=>'0');
-						h3count<=0;
-						lvviden<=vviden;
-						vaddr<=vaddr+"0000000001";
-						hviden<='1';
-						if(vaddr<(xvvend-xvvbgn-"0000000001"))then
-							g0_clear<=	gclrpage(0) and gclrbusyb;
-							g1_clear<=	gclrpage(1) and gclrbusyb;
-							g2_clear<=	gclrpage(2) and gclrbusyb;
-							g3_clear<=	gclrpage(3) and gclrbusyb;
-							nxt_trd<=	ten;
-							nxt_g0rd<=	g0en and (not (gclrpage(0) and gclrbusyb));
-							nxt_g1rd<=	g1en and (not (gclrpage(1) and gclrbusyb));
-							nxt_g2rd<=	g2en and (not (gclrpage(2) and gclrbusyb));
-							nxt_g3rd<=	g3en and (not (gclrpage(3) and gclrbusyb));
-							vviden<='1';
-						else
-							g0_clear<=	'0';
-							g1_clear<=	'0';
-							g2_clear<=	'0';
-							g3_clear<=	'0';
-							nxt_trd<=	'0';
-							nxt_g0rd<=	'0';
-							nxt_g1rd<=	'0';
-							nxt_g2rd<=	'0';
-							nxt_g3rd<=	'0';
-							vviden<='0';
-						end if;
-						cur_trd<=nxt_trd;
-						cur_g0rd<=nxt_g0rd;
-						cur_g1rd<=nxt_g1rd;
-						cur_g2rd<=nxt_g2rd;
-						cur_g3rd<=nxt_g3rd;
-						ramsel<=not ramsel;
-					else
-						if(haddr<"1111111111")then
-							hvwidth:=(hvend(6 downto 0)-hvbgn(6 downto 0)-"0000001") & "111";
-							haddr<=haddr+"0000000001";
-							lbwr<='1';
-							if( haddr=hvwidth)then -- hres(1)='1' and
-								hviden<='0';
-							end if;
-							-- if(h3count<2)then
-							-- 	h3count<=h3count+1;
-							-- else
-							-- 	h3count<=0;
-							-- 	haddr256<=haddr256+"0000000001";
-							-- 	if(hres="00" and haddr256=hvwidth)then
-							-- 		hviden<='0';
-							-- 	end if;
-							-- end if;
-							-- if(h3count=1 or h3count=2)then
-							-- 	haddr512<=haddr512+"0000000001";
-							-- 	if(hres="01" and haddr512=hvwidth)then
-							-- 		hviden<='0';
-							-- 	end if;
-							--end if;
-						else
-							cur_trd<=	'0';
-							cur_g0rd<=	'0';
-							cur_g1rd<=	'0';
-							cur_g2rd<=	'0';
-							cur_g3rd<=	'0';
-						end if;
 					end if;
 				end if;
 			end if;
@@ -714,71 +673,9 @@ begin
 	end process;
 	
 	vlineno<=vaddr;
-	
-	process(vidclk,rstn)begin
-		if rising_edge(vidclk) then
-			if(vid_ce = '1')then
-				if(rstn='0')then
-					inter<='0';
-				elsif(vid_ce='1')then
-					if(vpstart='1')then
-						inter<=not inter;
-					end if;
-				end if;
-			end if;
-		end if;
-	end process;
-	
-	process(rintline,vtotal,vvbgn,vvend)
-	begin
-	end process;
-		
-	xrintline<=	rintline when hfreq='1' else rintline(8 downto 0) & '0';
---	ivaddr<=	xrintline-xvvbgn when xrintline>xvvbgn else
---				xrintline+xvvend;
 
---	rint<=	'1' when vaddr=ivaddr else '0';
-	process(sysclk)
-	variable lvaddr0,lvaddr1	:std_logic_vector(9 downto 0);
-	variable vaddrx	:std_logic_vector(9 downto 0);
-	begin
-		if rising_edge(sysclk) then
-			if(rstn='0')then
-				vaddrx:=(others=>'0');
-				lvaddr0:=(others=>'0');
-				lvaddr1:=(others=>'0');
-				vaddrm<=(others=>'0');
-				vaddrs<=(others=>'0');
-				intfil<='0';
-			elsif(sys_ce='1')then
-				if(lvaddr0=lvaddr1)then
-					vaddrs<=lvaddr0;
-				end if;
-				lvaddr1:=lvaddr0;
-				lvaddr0:=vaddr;
-				vaddrx:=vaddrs+xvvbgn;
-				if(vaddrx>=xvtotal)then
-					vaddrx:=vaddrx-VWIDTH;
-					xinter<=not inter;
-					if(vaddrx>xvtotal)then
-						intfil<='0';
-					else
-						intfil<='1';
-					end if;
-				else
-					xinter<=inter;
-					intfil<='1';
-				end if;
-				vaddrm<=vaddrx;
-			end if;
-		end if;
-	end process;
-	
-	rastnum<=	vaddrm when hfreq='1' else
-					('0' & vaddrm(9 downto 1));-- when xinter='0' else
---					('0' & vaddrm(9 downto 1)) + vtotal;
-
-	rint<='1' when rintline=rastnum and intfil='1' else '0';
+	rastnum<=raster;
+	rint<='1' when rintline=rastnum else '0';
 	
 	addrx<=haddrmod(9 downto 0);
 	addry<=vaddrmod(9 downto 0);
@@ -798,10 +695,11 @@ begin
 	tpalno<="0000" & t_ddat;
 	spalno<=sprite_in;
 	
+	mix_ibit <= '1' when mixsrc(0)='1' or gpalin(0)='1' else '0';
 	mixg<=	('0' & mixsrc(15 downto 11)) + ('0' & gpalin(15 downto 11));
 	mixr<=	('0' & mixsrc(10 downto  6)) + ('0' & gpalin(10 downto  6));
 	mixb<=	('0' & mixsrc( 5 downto  1)) + ('0' & gpalin( 5 downto  1));
-	mixdst<=	mixg(5 downto 1) & mixr(5 downto 1) & mixb(5 downto 1) & '0';
+	mixdst<=	mixg(5 downto 1) & mixr(5 downto 1) & mixb(5 downto 1) & mix_ibit;
 	gmixdat<=mixdst	when ah='1' and exbit='1' else
 				mixdst	when exon='1' and hp='1' and exbitd='1' else
 				gpalin;
@@ -945,5 +843,3 @@ begin
 	vvideoen<=vviden;
 	
 end rtl;
-				
-			
