@@ -334,26 +334,18 @@ begin
 			"00";
 	
 	process(sclk,rstn)
-	variable iocount	:integer range 0 to 1;
 	begin
 		if rising_edge(sclk) then
 			if(rstn='0')then
 				IO_ack<='0';
-				iocount:=1;
-			elsif(sys_ce = '1')then
+			else
 				if(atype=addr_IO and m_as='0')then
-					if(iocount=0)then
-						if((m_rd='1' or b_wrb/="00") and iowait='0')then
-							IO_ack<='1';
-						else
-							IO_ack<='0';
-						end if;
+					if((m_rd='1' or b_wrb/="00") and iowait='0')then
+						IO_ack<='1';
 					else
-						iocount:=iocount-1;
 						IO_ack<='0';
 					end if;
 				else
-					iocount:=1;
 					IO_ack<='0';
 				end if;
 			end if;

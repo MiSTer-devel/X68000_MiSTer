@@ -189,8 +189,6 @@ assign LED_POWER = 0;
 assign BUTTONS = 0;
 
 //////////////////////////////////////////////////////////////////
-wire hdd_active = sd_rd[2] || sd_wr[2];
-wire fdd_active = |sd_rd[1:0] || |sd_wr[1:0];
 assign LED_USER  = fdd_active;
 assign LED_DISK  = {1'b1, hdd_active};
  
@@ -613,6 +611,7 @@ X68K_top X68K_top
 
 	.pFDSYNC(fdsync),
 	.pFDEJECT(fdeject),
+	.pFDMOTOR(fdd_active),
 
 	.pLed(disk_led),
 	.pDip(4'b0000),
@@ -660,6 +659,12 @@ always @(posedge clk_sys) begin
 
 	if(old_download & ~ioctl_download) ldr_done <= 1;
 end
+
+wire hdd_active;
+wire fdd_active;
+led hdd_led(clk_sys,  sd_ack[2],   hdd_active);
+//led fdd_led(clk_sys, |sd_ack[1:0], fdd_active);
+
 
 ////////////////////////////  AUDIO  ////////////////////////////////////
 wire [17:0] mix_r, mix_l;
@@ -768,5 +773,25 @@ video_mixer #(.LINE_LENGTH(800), .HALF_DEPTH(0), .GAMMA(1)) video_mixer
 	.B(b_mt)
 );
 
+
+endmodule
+
+module led
+(
+	input      clk,
+	input      in,
+	output reg out
+);
+
+integer counter = 0;
+always @(posedge clk) begin
+	if(!counter) out <= 0;
+	else begin
+		counter <= counter - 1'b1;
+		out <= 1;
+	end
+	
+	if(in) counter <= 4500000;
+end
 
 endmodule

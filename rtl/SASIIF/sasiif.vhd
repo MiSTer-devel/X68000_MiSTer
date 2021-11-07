@@ -93,43 +93,38 @@ begin
 		end if;
 	end process;
 	
---	process(clkcs,rd,wr,addr)begin
-	process(clk)begin
-		if rising_edge(clk) then
-			if(ce = '1')then
-				if(cs='1' and wr='1')then
-					case addr is
-					when "00" =>
-						adrwr<="0001";
-					when "01" =>
-						adrwr<="0010";
-					when "10" =>
-						adrwr<="0100";
-					when "11" =>
-						adrwr<="1000";
-					when others =>
-						adrwr<="0000";
-					end case;
-				else
-					adrwr<="0000";
-				end if;
-				if(cs='1' and rd='1')then
-					case addr is
-					when "00" =>
-						adrrd<="0001";
-					when "01" =>
-						adrrd<="0010";
-					when "10" =>
-						adrrd<="0100";
-					when "11" =>
-						adrrd<="1000";
-					when others =>
-						adrrd<="0000";
-					end case;
-				else
-					adrrd<="0000";
-				end if;
-			end if;
+	process(cs,rd,wr,addr)begin
+		if(cs='1' and wr='1')then
+			case addr is
+			when "00" =>
+				adrwr<="0001";
+			when "01" =>
+				adrwr<="0010";
+			when "10" =>
+				adrwr<="0100";
+			when "11" =>
+				adrwr<="1000";
+			when others =>
+				adrwr<="0000";
+			end case;
+		else
+			adrwr<="0000";
+		end if;
+		if(cs='1' and rd='1')then
+			case addr is
+			when "00" =>
+				adrrd<="0001";
+			when "01" =>
+				adrrd<="0010";
+			when "10" =>
+				adrrd<="0100";
+			when "11" =>
+				adrrd<="1000";
+			when others =>
+				adrrd<="0000";
+			end case;
+		else
+			adrrd<="0000";
 		end if;
 	end process;
 	
@@ -195,7 +190,7 @@ begin
 				sREQ<='0';
 				lREQ<='0';
 				HSwait<='0';
-			elsif(ce = '1')then
+			else
 				lREQ<=sREQ;
 				sREQ<=REQ;
 				lACK<=ACKb;

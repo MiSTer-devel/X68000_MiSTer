@@ -76,6 +76,7 @@ port(
 
 	pFDSYNC		:in std_logic_Vector(1 downto 0);
 	pFDEJECT		:in std_logic_Vector(1 downto 0);
+	pFDMOTOR		:out std_logic;
 	
 --MiSTer diskimage
 	mist_mounted	:in std_logic_vector(3 downto 0);	--SRAM & HDD & FDD1 &FDD0
@@ -2448,7 +2449,7 @@ begin
 		sys_ce  =>sys_ce,
 		srstn	=>srstn,
 		pclk	=>sysclk,
-		mpu_ce  =>mpu_ce,
+		mpu_ce  =>mpu_cep,
 		prstn	=>rstn
 	);
 	
@@ -4148,6 +4149,10 @@ begin
 		ram_ce      =>ram_ce,
 		rstn		=>dem_rstn
 );
+
+	pFDMOTOR<=	not FDC_MOTORn(0) when FDC_USELn(0)='0' else
+					not FDC_MOTORn(1) when FDC_USELn(1)='0' else
+					'0';
 	
 	nv_wren<=	'0' when nvwp/=x"31" else
 				'0' when nv_ce='0' else
