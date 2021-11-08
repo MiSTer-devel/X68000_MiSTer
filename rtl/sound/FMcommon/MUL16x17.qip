@@ -1,4 +1,0 @@
-set_global_assignment -name IP_TOOL_NAME "LPM_MULT"
-set_global_assignment -name IP_TOOL_VERSION "17.0"
-set_global_assignment -name IP_GENERATED_DEVICE_FAMILY "{Cyclone III}"
-set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) "MUL16x17.vhd"]

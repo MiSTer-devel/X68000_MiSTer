@@ -73,7 +73,7 @@ BEGIN
 		clock_enable_output_a => "BYPASS",
 		clock_enable_output_b => "BYPASS",
 		indata_reg_b => "CLOCK0",
-		init_file => "../SRAML.mif",
+		init_file => "rtl/cycV/SRAML.mif",
 		intended_device_family => "Cyclone V",
 		lpm_type => "altsyncram",
 		numwords_a => 8192,

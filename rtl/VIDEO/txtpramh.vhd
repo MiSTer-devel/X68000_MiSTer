@@ -4,7 +4,7 @@
 -- MODULE: altsyncram 
 
 -- ============================================================
--- File Name: txtpraml.vhd
+-- File Name: txtpramh.vhd
 -- Megafunction Name(s):
 -- 			altsyncram
 --
@@ -40,7 +40,7 @@ USE ieee.std_logic_1164.all;
 LIBRARY altera_mf;
 USE altera_mf.altera_mf_components.all;
 
-ENTITY txtpraml IS
+ENTITY txtpramh IS
 	PORT
 	(
 		address_a		: IN STD_LOGIC_VECTOR (7 DOWNTO 0);
@@ -54,10 +54,10 @@ ENTITY txtpraml IS
 		q_a		: OUT STD_LOGIC_VECTOR (7 DOWNTO 0);
 		q_b		: OUT STD_LOGIC_VECTOR (7 DOWNTO 0)
 	);
-END txtpraml;
+END txtpramh;
 
 
-ARCHITECTURE SYN OF txtpraml IS
+ARCHITECTURE SYN OF txtpramh IS
 
 	SIGNAL sub_wire0	: STD_LOGIC_VECTOR (7 DOWNTO 0);
 	SIGNAL sub_wire1	: STD_LOGIC_VECTOR (7 DOWNTO 0);
@@ -74,7 +74,7 @@ BEGIN
 		clock_enable_output_a => "BYPASS",
 		clock_enable_output_b => "BYPASS",
 		indata_reg_b => "CLOCK1",
-		init_file => "TPalL.mif",
+		init_file => "rtl/cycV/TPalH.mif",
 		intended_device_family => "Cyclone V",
 		lpm_type => "altsyncram",
 		numwords_a => 256,
@@ -147,7 +147,7 @@ END SYN;
 -- Retrieval info: PRIVATE: MAXIMUM_DEPTH NUMERIC "0"
 -- Retrieval info: PRIVATE: MEMSIZE NUMERIC "2048"
 -- Retrieval info: PRIVATE: MEM_IN_BITS NUMERIC "0"
--- Retrieval info: PRIVATE: MIFfilename STRING "TPalL.mif"
+-- Retrieval info: PRIVATE: MIFfilename STRING "TPalH.mif"
 -- Retrieval info: PRIVATE: OPERATION_MODE NUMERIC "3"
 -- Retrieval info: PRIVATE: OUTDATA_ACLR_B NUMERIC "0"
 -- Retrieval info: PRIVATE: OUTDATA_REG_B NUMERIC "0"
@@ -181,7 +181,7 @@ END SYN;
 -- Retrieval info: CONSTANT: CLOCK_ENABLE_OUTPUT_A STRING "BYPASS"
 -- Retrieval info: CONSTANT: CLOCK_ENABLE_OUTPUT_B STRING "BYPASS"
 -- Retrieval info: CONSTANT: INDATA_REG_B STRING "CLOCK1"
--- Retrieval info: CONSTANT: INIT_FILE STRING "TPalL.mif"
+-- Retrieval info: CONSTANT: INIT_FILE STRING "TPalH.mif"
 -- Retrieval info: CONSTANT: INTENDED_DEVICE_FAMILY STRING "Cyclone V"
 -- Retrieval info: CONSTANT: LPM_TYPE STRING "altsyncram"
 -- Retrieval info: CONSTANT: NUMWORDS_A NUMERIC "256"
@@ -221,9 +221,9 @@ END SYN;
 -- Retrieval info: CONNECT: @wren_b 0 0 0 0 wren_b 0 0 0 0
 -- Retrieval info: CONNECT: q_a 0 0 8 0 @q_a 0 0 8 0
 -- Retrieval info: CONNECT: q_b 0 0 8 0 @q_b 0 0 8 0
--- Retrieval info: GEN_FILE: TYPE_NORMAL txtpraml.vhd TRUE
--- Retrieval info: GEN_FILE: TYPE_NORMAL txtpraml.inc FALSE
--- Retrieval info: GEN_FILE: TYPE_NORMAL txtpraml.cmp TRUE
--- Retrieval info: GEN_FILE: TYPE_NORMAL txtpraml.bsf FALSE
--- Retrieval info: GEN_FILE: TYPE_NORMAL txtpraml_inst.vhd FALSE
+-- Retrieval info: GEN_FILE: TYPE_NORMAL txtpramh.vhd TRUE
+-- Retrieval info: GEN_FILE: TYPE_NORMAL txtpramh.inc FALSE
+-- Retrieval info: GEN_FILE: TYPE_NORMAL txtpramh.cmp TRUE
+-- Retrieval info: GEN_FILE: TYPE_NORMAL txtpramh.bsf FALSE
+-- Retrieval info: GEN_FILE: TYPE_NORMAL txtpramh_inst.vhd FALSE
 -- Retrieval info: LIB_FILE: altera_mf

@@ -1,0 +1,2 @@
+set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) DMA63450.vhd ]
+set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) dma1ch.vhd ]
