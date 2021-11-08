@@ -159,7 +159,7 @@ begin
 			if(rstn='0')then
 				PS2STATE<=P2ST_INIT;
 				M_WRn<='1';
-				--M_RESET<='0';
+				M_RESET<='0';
 				WAITCNT<=0;
 				WAITSFT<=0;
 				M_TXDAT<=(others=>'0');

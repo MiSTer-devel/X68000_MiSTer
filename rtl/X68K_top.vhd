@@ -24,12 +24,12 @@ port(
 	sys_ce  :in std_logic;
 	mpu_cep :in std_logic;
 	mpu_cen :in std_logic;
-	vid_ce  :in std_logic := '1';
 	fd_ce   :in std_logic := '1';
 	snd_ce  :in std_logic;
 	opn_ce  :in std_logic_vector(1 downto 0);
 	
 	cm_out  :out std_logic;
+	vid_hz  :in std_logic;
 
 	plllock	:in std_logic;
 	CPUS    :in std_logic := '0';
@@ -113,6 +113,7 @@ port(
 	pVideoEN		:out std_logic;
 	pVideoHS		:out std_logic;
 	pVideoVS		:out std_logic;
+	pVideoF1        :out std_logic;
 	
 	pSndL		:out std_logic_vector(15 downto 0);
 	pSndR		:out std_logic_vector(15 downto 0);
@@ -689,6 +690,20 @@ signal	dwait		:std_logic;
 signal	dsprbgen	:std_logic_vector(1 downto 0);
 
 signal  ce          :std_logic := '1';
+signal out_HMODE		:std_logic_vector(1 downto 0);
+signal out_VMODE		:std_logic_vector(1 downto 0);
+signal out_hfreq        :std_logic;
+signal out_htotal		:std_logic_vector(7 downto 0);
+signal out_hsynl		:std_logic_vector(7 downto 0);
+signal out_hvbgn		:std_logic_vector(7 downto 0);
+signal out_hvend		:std_logic_vector(7 downto 0);
+signal out_vtotal		:std_logic_vector(9 downto 0);
+signal out_vsynl		:std_logic_vector(9 downto 0);
+signal out_vvbgn		:std_logic_vector(9 downto 0);
+signal out_vvend		:std_logic_vector(9 downto 0);
+signal out_rintl	    :std_logic_vector(9 downto 0);
+signal vid_ce           :std_logic;
+signal vr_DC            :std_logic;
 
 component TG68
 	port(
@@ -1130,30 +1145,11 @@ port(
 end component;
 
 component mister_sync
-generic(
-	DACRES		:integer	:=4
-);
 port(
 	LRAMSEL		:out std_logic;
 	LRAMADR		:out std_logic_vector(9 downto 0);
 	LRAMDAT		:in std_logic_vector(15 downto 0);
-	
-	TRAM_ADR	:out std_logic_vector(12 downto 0);
-	TRAM_DAT	:in std_logic_vector(7 downto 0);
-	
-	FRAM_ADR	:out std_logic_vector(11 downto 0);
-	FRAM_DAT	:in std_logic_vector(7 downto 0);
-	
-	CURL		:in std_logic_vector(5 downto 0);
-	CURC		:in std_logic_vector(6 downto 0);
-	CURE		:in std_logic;
 
-	TXTMODE		:in std_logic;
-	
-	ROUT		:out std_logic_vector(DACRES-1 downto 0);
-	GOUT		:out std_logic_vector(DACRES-1 downto 0);
-	BOUT		:out std_logic_vector(DACRES-1 downto 0);
-	
 	RFOUT		:out std_logic_vector(5 downto 0);
 	GFOUT		:out std_logic_vector(5 downto 0);
 	BFOUT		:out std_logic_vector(5 downto 0);
@@ -1162,8 +1158,9 @@ port(
 	VSYNC		:out std_logic;
 	
 	HMODE		:in std_logic_vector(1 downto 0);		-- "00":256 "01":512 "10":768 "11":768
-	VMODE		:in std_logic;		-- 1:512 0:256
-	
+	VMODE		:in std_logic_vector(1 downto 0);		-- 1:512 0:256
+
+	HRL         :in std_logic;
 	hfreq       :in std_logic;
 	htotal		:in std_logic_vector(7 downto 0);
 	hsynl		:in std_logic_vector(7 downto 0);
@@ -1174,6 +1171,20 @@ port(
 	vvbgn		:in std_logic_vector(9 downto 0);
 	vvend		:in std_logic_vector(9 downto 0);
 	hadj		:in std_logic_vector(7 downto 0);
+	rintl		:in std_logic_vector(9 downto 0);
+	
+	out_HMODE		:out std_logic_vector(1 downto 0);		-- "00":256 "01":512 "10":768 "11":768
+	out_VMODE		:out std_logic_vector(1 downto 0);		-- 1:512 0:256
+	out_hfreq       :out std_logic;
+	out_htotal		:out std_logic_vector(7 downto 0);
+	out_hsynl		:out std_logic_vector(7 downto 0);
+	out_hvbgn		:out std_logic_vector(7 downto 0);
+	out_hvend		:out std_logic_vector(7 downto 0);
+	out_vtotal		:out std_logic_vector(9 downto 0);
+	out_vsynl		:out std_logic_vector(9 downto 0);
+	out_vvbgn		:out std_logic_vector(9 downto 0);
+	out_vvend		:out std_logic_vector(9 downto 0);
+	out_rintl		:out std_logic_vector(9 downto 0);
 
 	VRTC		:out std_logic;
 	HRTC		:out std_logic;
@@ -1183,10 +1194,11 @@ port(
 	VCOMP		:out std_logic;
 	VPSTART		:out std_logic;
 	
-	dclk		:out std_logic;
+	pix_ce		:out std_logic;
+	v60hz       :in std_logic;
+	f1          :out std_logic;
 
 	gclk		:in std_logic;
-	vid_ce      :in std_logic;
 	rstn		:in std_logic
 );
 end component;
@@ -1664,10 +1676,11 @@ port(
 	gclrpage:in std_logic_vector(3 downto 0);
 	gclrbusy:out std_logic;
 	
+	hblank  :in std_logic;
+	vblank  :in std_logic;
+	
 	vidclk		:in std_logic;
 	vid_ce      :in std_logic := '1';
-	sysclk	:in std_logic;
-	sys_ce  :in std_logic := '1';
 	rstn	:in std_logic
 );
 end component;
@@ -1756,6 +1769,7 @@ port(
 	SA			:out std_logic;
 	AP			:out std_logic_vector(3 downto 0);
 	CP			:out std_logic_vector(3 downto 0);
+	DC          :out std_logic;
 	csrc		:out std_logic_vector(7 downto 0);
 	cdst		:out std_logic_vector(7 downto 0);
 	tmask		:out std_logic_vector(15 downto 0);
@@ -2904,18 +2918,8 @@ begin
 	-- 	HSYNC		=>vidHS,
 	-- 	VSYNC		=>vidVS,
 		
-	-- 	HMODE		=>dHMode,
-	-- 	VMODE		=>dVMode,
-		
-	-- 	-- htotal		=>vr_htotal,
-	-- 	-- hsync		=>vr_hsync,
-	-- 	-- hvbgn		=>vr_hvbgn,
-	-- 	-- hvend		=>vr_hvend,
-	-- 	-- vtotal		=>vr_vtotal,
-	-- 	-- vsync		=>vr_vsync,
-	-- 	-- vvbgn		=>vr_vvbgn,
-	-- 	-- vvend		=>vr_vvend,
-	-- 	-- hadj		=>vr_hadj,
+	-- 	HMODE		=>"11",
+	-- 	VMODE		=>'1',
 
 	-- 	VRTC		=>VID_VRTC,
 	-- 	HRTC		=>VID_HRTC,
@@ -2930,65 +2934,79 @@ begin
 	-- 	gclk		=>vidclk,
 	-- 	rstn		=>vid_rstn
 	-- );
-	
+
+	-- out_HMODE  <= vr_HD;
+	-- out_VMODE  <= vr_VD;
+	-- out_hfreq  <= vr_hfreq;
+	-- out_htotal <= vr_htotal;
+	-- out_hsynl  <= vr_hsync;
+	-- out_hvbgn  <= vr_hvbgn;
+	-- out_hvend  <= vr_hvend;
+	-- out_vtotal <= vr_vtotal;
+	-- out_vsynl  <= vr_vsync;
+	-- out_vvbgn  <= vr_vvbgn;
+	-- out_vvend  <= vr_vvend;
+	-- out_rintl  <= vr_rintline;
+
 	CRTC	:mister_sync 
 	port map(
-		LRAMSEL		=>LRAMSEL,
-		LRAMADR		=>LVIDADR,
-		LRAMDAT		=>LVIDRD,
-		
-		TRAM_ADR	=>open,
-		TRAM_DAT	=>(others=>'0'),
-		
-		FRAM_ADR	=>open,
-		FRAM_DAT	=>(others=>'0'),
-		
-		CURL		=>(others=>'0'),
-		CURC		=>(others=>'0'),
-		CURE		=>'0',
+		LRAMSEL     =>LRAMSEL,
+		LRAMADR     =>LVIDADR,
+		LRAMDAT     =>LVIDRD,
 
-		TXTMODE		=>'0',
+		RFOUT       =>vidRF,
+		GFOUT       =>vidGF,
+		BFOUT       =>vidBF,
+		
+		HSYNC       =>vidHS,
+		VSYNC       =>vidVS,
+		
+		HMODE       =>vr_HD,
+		VMODE       =>vr_VD,
 	
-		ROUT		=>vidR,
-		GOUT		=>vidG,
-		BOUT		=>vidB,
+		hrl         =>vr_DC,
+		hfreq       =>vr_hfreq,
+		htotal      =>vr_htotal,
+		hsynl       =>vr_hsync,
+		hvbgn       =>vr_hvbgn,
+		hvend       =>vr_hvend,
+		vtotal      =>vr_vtotal,
+		vsynl       =>vr_vsync,
+		vvbgn       =>vr_vvbgn,
+		vvend       =>vr_vvend,
+		rintl       =>vr_rintline,
+		hadj        =>vr_hadj,
+		
+		out_HMODE   =>out_HMODE,
+		out_VMODE   =>out_VMODE,
+		out_hfreq   =>out_hfreq,
+		out_htotal  =>out_htotal,
+		out_hsynl   =>out_hsynl,
+		out_hvbgn   =>out_hvbgn,
+		out_hvend   =>out_hvend,
+		out_vtotal  =>out_vtotal,
+		out_vsynl   =>out_vsynl,
+		out_vvbgn   =>out_vvbgn,
+		out_vvend   =>out_vvend,
+		out_rintl   =>out_rintl,
 
-		RFOUT		=>vidRF,
-		GFOUT		=>vidGF,
-		BFOUT		=>vidBF,
-		
-		HSYNC		=>vidHS,
-		VSYNC		=>vidVS,
-		
-		HMODE		=>vr_HD,
-		VMODE		=>vr_VD(0),
-		
-		hfreq       =>'1', --vr_hfreq
-		htotal		=>"10001001",--vr_htotal,
-		hsynl		=>vr_hsync,
-		hvbgn		=>vr_hvbgn,
-		hvend		=>vr_hvend,
-		vtotal		=>"1000110111", --vr_vtotal,
-		vsynl		=>vr_vsync,
-		vvbgn		=>vr_vvbgn,
-		vvend		=>vr_vvend,
-		hadj		=>vr_hadj,
+		VRTC        =>VID_VRTC,
+		HRTC        =>VID_HRTC,
+		VIDEN       =>vidEN,
 
-		VRTC		=>VID_VRTC,
-		HRTC		=>VID_HRTC,
-		VIDEN		=>vidEN,
-
-		HCOMP		=>HCOMP,
-		VCOMP		=>open,
-		VPSTART		=>VPSTART,
+		HCOMP       =>HCOMP,
+		VCOMP       =>open,
+		VPSTART     =>VPSTART,
 		
-		dclk		=>dclk,
+		pix_ce      =>dclk,
+		v60hz       =>vid_hz,
+		f1          =>pVideoF1,
 		
-		gclk		=>vidclk,
-		vid_ce      =>vid_ce,
-		rstn		=>vid_rstn
+		gclk        =>vidclk,
+		rstn        =>vid_rstn
 	);
 
+	vid_ce <= '1';
 	cont	:contcont generic map(context) port map(
 		addrin	=>abus,
 		wr		=>b_wr(0),
@@ -3020,8 +3038,8 @@ begin
 	pVideoVS<=vidVS;
 	
 
-	pVideoHB<= not VID_HRTC;
-	pVideoVB<= not VID_VRTC;
+	pVideoHB<= VID_HRTC;
+	pVideoVB<= VID_VRTC;
 
 
 	LBUFWR0<=LBUFWR and LRAMSEL;
@@ -3088,6 +3106,7 @@ begin
 		SA			=>vr_SA,
 		AP			=>vr_AP,
 		CP			=>vr_rcpyplane,
+		DC          =>vr_DC,
 		csrc		=>vr_rcpysrc,
 		cdst		=>vr_rcpydst,
 		RCbgn		=>vr_rcpybgn,
@@ -3195,8 +3214,8 @@ begin
 
 		gmode		=>vr_GR_CMODE,		--00:4bit color 01:8bit color 11/10:16bit color
 		memres		=>vr_GR_SIZE,		--0:512x512 1:1024x1024
-		hres	=>vr_HD,
-		vres	=>vr_VD(0),
+		hres	=>out_HMODE,
+		vres	=>out_VMODE(0),
 		txten	=>vr_TXTEN,
 		grpen	=>vr_GREN,
 		spren	=>vr_SPREN,
@@ -3221,13 +3240,13 @@ begin
 		
 		hcomp	=>HCOMP,
 		vpstart	=>VPSTART,
-		hfreq	=>vr_hfreq,
-		htotal	=>vr_htotal,
-		hvbgn	=>vr_hvbgn,
-		hvend	=>vr_hvend,
-		vtotal	=>vr_vtotal,
-		vvbgn	=>vr_vvbgn,
-		vvend	=>vr_vvend,
+		hfreq	=>out_hfreq,
+		htotal	=>out_htotal,
+		hvbgn	=>out_hvbgn,
+		hvend	=>out_hvend,
+		vtotal	=>out_vtotal,
+		vvbgn	=>out_vvbgn,
+		vvend	=>out_vvend,
 		
 		addrx	=>spr_x,
 		addry	=>spr_y,
@@ -3245,7 +3264,7 @@ begin
 		gpalin	=>gpal_pdat,
 	
 		vvideoen	=>VID_VVIDEN,
-		rintline=>vr_rintline,
+		rintline=>out_rintl,
 		rint	=>VID_RINT,
 		
 		vlineno	=>vlineno,
@@ -3255,10 +3274,11 @@ begin
 		gclrpage=>vr_rcpyplane,
 		gclrbusy=>vr_fcbusy,
 		
+		hblank  =>VID_HRTC,
+		vblank  =>VID_VRTC,
+		
 		vidclk	=>vidclk,
 		vid_ce  =>vid_ce,
-		sysclk	=>sysclk,
-		sys_ce  =>sys_ce,
 		rstn	=>vid_rstn
 	);
 	
@@ -3270,8 +3290,8 @@ begin
 		dst		=>vr_rcpydst,
 		plane	=>vr_rcpyplane,
 		start	=>vr_rcpybgn,
---		stop	=>vr_rcpyend,
-		stop	=>'0',
+		stop	=>vr_rcpyend,
+--		stop	=>'0',
 		busy	=>vr_rcpybusy,
 		
 		t_base	=>trambase(RAMAWIDTH-1 downto brsize+1),	
@@ -3652,15 +3672,17 @@ begin
 	pcm_enL<=not ppi_pclo(0);
 	pcm_enR<=not ppi_pclo(1);
 	
-	process(vidclk,srstn,vid_ce)begin
-		if(srstn='0')then
-			VID_HRTCd<='0';
-		elsif(vidclk' event and vidclk='1' and vid_ce = '1')then
-			VID_HRTCd<=VID_HRTC;
+	process(vidclk) begin
+		if rising_edge(vidclk) then
+			if(srstn='0')then
+				VID_HRTCd<='0';
+			elsif(vid_ce = '1')then
+				VID_HRTCd<=VID_HRTC;
+			end if;
 		end if;
 	end process;
 	
-	VID_HRTCi<=VID_HRTCd and (vr_hfreq or vlineno(0));
+	VID_HRTCi<=VID_HRTCd;-- and (vr_hfreq or vlineno(0));
 	
 	mfp_gpip7<=VID_HRTCi;
 	mfp_gpip6<=not VID_RINT;

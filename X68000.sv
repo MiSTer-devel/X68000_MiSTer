@@ -181,7 +181,6 @@ assign {UART_RTS, UART_DTR} = 0;
 assign {SD_SCK, SD_MOSI, SD_CS} = 'Z;
 assign {DDRAM_CLK, DDRAM_BURSTCNT, DDRAM_ADDR, DDRAM_DIN, DDRAM_BE, DDRAM_RD, DDRAM_WE} = '0;  
 
-assign VGA_F1 = 0;
 assign VGA_SCALER = 0;
 assign HDMI_FREEZE = 0;
 
@@ -201,7 +200,7 @@ assign AUDIO_MIX = status[3:2];
 // 0         1         2         3          4         5         6
 // 01234567890123456789012345678901 23456789012345678901234567890123
 // 0123456789ABCDEFGHIJKLMNOPQRSTUV 0123456789ABCDEFGHIJKLMNOPQRSTUV
-// X XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX X       XXX
+// X XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX XX      XXX
 
 `include "build_id.v" 
 parameter CONF_STR = {
@@ -228,6 +227,7 @@ parameter CONF_STR = {
 	"d0P1ONQ,Crop Offset,0,2,4,8,10,12,-12,-10,-8,-6,-4,-2;",
 	"P1ORS,Scale,Normal,V-Integer,Narrower HV-Integer,Wider HV-Integer;",
 	"P1-;",
+	"P1o1,Video Frequency,60fps,Original;",
 	"P1O45,Aspect ratio,Original,Full Screen,[ARC1],[ARC2];",
 //	"P1OFH,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
 	"h1P3,MT32-pi;",
@@ -247,8 +247,8 @@ parameter CONF_STR = {
 	"R8,Power Button;",
 	"R0,Reset and Apply HDD;",
 	"-;",
-	"J,Fire 1,Fire 2; ",
-	"jn,Fire 1,Fire 2;",
+	"J,Fire 1,Fire 2, Run, Select; ",
+	"jn,Fire 1,Fire 2, Run, Select;",
 	"I,",
 	"MT32-pi: SoundFont #0,",
 	"MT32-pi: SoundFont #1,",
@@ -318,8 +318,8 @@ wire  [1:0] buttons;
 
 wire [15:0] joystick_0, joystick_1;
 
-wire  [5:0] joyA = ~{joystick_0[5:4],joystick_0[0],joystick_0[1],joystick_0[2],joystick_0[3]};
-wire  [5:0] joyB = ~{joystick_1[5:4],joystick_1[0],joystick_1[1],joystick_1[2],joystick_1[3]};
+wire  [5:0] joyA = ~{joystick_0[5:4],joystick_0[0] | joystick_0[6],joystick_0[1] | joystick_0[6],joystick_0[2] | joystick_0[7],joystick_0[3] | joystick_0[7]};
+wire  [5:0] joyB = ~{joystick_1[5:4],joystick_1[0] | joystick_1[6],joystick_1[1] | joystick_1[6],joystick_1[2] | joystick_1[7],joystick_1[3] | joystick_1[7]};
 
 wire        ioctl_download;
 wire  [7:0] ioctl_index;
@@ -581,6 +581,7 @@ X68K_top X68K_top
 	.ldr_wr(ldr_wr),
 	.ldr_ack(ldr_ack),
 	.ldr_done(ldr_done),
+	.vid_hz(~status[33]),
 
 	.pPs2Clkin(ps2_kbd_clk_out),
 	.pPs2Clkout(ps2_kbd_clk_in),
@@ -631,6 +632,7 @@ X68K_top X68K_top
 	.pVideoVB(VBlank),
 	.pVideoEN(vid_de),
 	.pVideoClk(ce_pix),
+	.pVideoF1(VGA_F1),
 
 	.pSndL(aud_r),
 	.pSndR(aud_l),

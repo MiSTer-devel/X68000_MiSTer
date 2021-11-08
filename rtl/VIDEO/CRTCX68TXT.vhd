@@ -3,7 +3,7 @@ USE	IEEE.STD_LOGIC_1164.ALL;
 use ieee.std_logic_arith.all;
 USE	IEEE.STD_LOGIC_UNSIGNED.ALL;
 
-use work.VIDEO_TIMING_640x400_pkg.all;
+use work.VIDEO_TIMING_800x600_pkg.all;
 
 entity CRTCX68TXT is
 generic(
