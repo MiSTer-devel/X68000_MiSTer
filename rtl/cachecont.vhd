@@ -456,6 +456,7 @@ port(
 	used	:in std_logic;
 	
 	nextno	:out integer range 0 to blocks-1;
+	currno	:in integer range 0 to blocks-1;
 	get		:in std_logic;
 	
 	clk		:in std_logic;
@@ -553,6 +554,7 @@ begin
 		used	=>bcread,
 		
 		nextno	=>bcnext,
+		currno	=>brcache_sel,
 		get		=>bcget,
 		
 		clk		=>rclk,

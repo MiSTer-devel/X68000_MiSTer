@@ -779,6 +779,8 @@ begin
 	variable	parloc	:integer range 0 to 12;
 	variable parlen	:integer range 0 to 4;
 	begin
+		rxparerr<='0';
+		rxstop2err<='0';
 		if(rxdone='1')then
 			par:='0';
 			if(RxCL='0')then
@@ -794,58 +796,41 @@ begin
 				par4:=rxdata(3 downto 0) xor ('0' & rxdata(6 downto 4));
 				parloc:=7;
 			end if;
+
 			if(RxPE='1')then
 				if(RxPL='0')then
 					parlen:=1;
 					if(RxEO='0')then
-						if(par=rxdata(parloc))then
-							rxparerr<='0';
-						else
+						if(par/=rxdata(parloc))then
 							rxparerr<='1';
 						end if;
 					else
 						if(par=rxdata(parloc))then
 							rxparerr<='1';
-						else
-							rxparerr<='0';
 						end if;
 					end if;
 				else
 					parlen:=4;
 					if(RxEO='0')then
-						if(par4=rxdata(parloc+3 downto parloc))then
-							rxparerr<='0';
-						else
+						if(par4/=rxdata(parloc+3 downto parloc))then
 							rxparerr<='1';
 						end if;
 					else
-						if((par4 xor rxdata(parloc+3 downto parloc))="0000")then
-							rxparerr<='0';
-						else
+						if((par4 xor rxdata(parloc+3 downto parloc)) /= "0000")then
 							rxparerr<='1';
 						end if;
 					end if;
 				end if;
 			else
-				rxparerr<='0';
 				parlen:=0;
 			end if;
+			
 			if(RxSL='1')then
 				if(RxST='1')then
-					if(rxdata(parloc+parlen)='0')then
-						rxstop2err<='0';
-					else
-						rxstop2err<='1';
-					end if;
+					rxstop2err<=rxdata(parloc+parlen);
 				else
-					if(rxdata(parloc+parlen)='0')then
-						rxstop2err<='1';
-					else
-						rxstop2err<='0';
-					end if;
+					rxstop2err<=not rxdata(parloc+parlen);
 				end if;
-			else
-				rxstop2err<='0';
 			end if;
 		end if;
 	end process;

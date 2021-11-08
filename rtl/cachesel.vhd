@@ -7,17 +7,19 @@ generic(
 	blocks	:integer	:=4
 );
 port(
-	useno	:in integer range 0 to blocks-1;
-	used	:in std_logic;
+	useno  :in integer range 0 to blocks-1;
+	used   :in std_logic;
 	
-	nextno	:out integer range 0 to blocks-1;
-	get		:in std_logic;
+	nextno :out integer range 0 to blocks-1;
+	currno :in  integer range 0 to blocks-1;
+	get    :in  std_logic;
 	
-	clk		:in std_logic;
-	ce      :in std_logic := '1';
-	rstn	:in std_logic
+	clk    :in std_logic;
+	ce     :in std_logic := '1';
+	rstn   :in std_logic
 );
 end cachesel;
+
 architecture rtl of cachesel is
 type prio_t is array (0 to blocks-1) of integer range 0 to blocks-1;
 signal prio	:prio_t;
@@ -52,7 +54,8 @@ begin
 		end if;
 	end process;
 	
-	process(prio)begin
+	process(prio,currno)begin
+		nextno<=currno;
 		for i in 0 to blocks-1 loop
 			if(prio(i)=blocks-1)then
 				nextno<=i;
