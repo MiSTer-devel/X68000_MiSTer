@@ -196,6 +196,13 @@ port(
 end component;
 begin
 
+	dtc <= '0';
+	pclo <= '0';
+
+	S_NDTset <= '0';
+	S_DITset <= '0';
+	S_PCTset <= '0';
+
 	COCR	:g_srff port map(S_COCset,S_COCres,S_COC,clk,ce,rstn);
 	BTCR	:g_srff port map(S_BTCset,S_BTCres,S_BTC,clk,ce,rstn);
 	NDTR	:g_srff port map(S_NDTset,S_NDTres,S_NDT,clk,ce,rstn);
@@ -516,6 +523,9 @@ begin
 	S_ACT<='0' when STATE=ST_IDLE else '1';
 	buschk<=reqwait when STATE=ST_BUSWAIT or STATE=ST_CHAINBUSWAIT else '0';
 
+	GCR_BT <= (others => '0');
+	GCR_BR <= (others => '0');
+	
 	regrdatx<=
 		S_COC & S_BTC & S_NDT & S_ERR & S_ACT & S_DIT & S_PCT & S_PCS & "000" & S_CER when regaddr(5 downto 1)="00000" else
 		DCR_XRM & DCR_DTYPE & DCR_DPS & '0' & DCR_PCL & OCR_DIR & OCR_BTD & OCR_SIZE & OCR_CHAIN & OCR_REQG when regaddr(5 downto 1)="00010" else
@@ -571,7 +581,7 @@ begin
 			if(rstn='0')then
 				STATE<=ST_IDLE;
 				busreq<='0';
-				ldrq<='0';
+				--ldrq<='0';
 				dack<='0';
 				BUSADDR<=(others=>'0');
 				b_outdat<=(others=>'0');
@@ -649,7 +659,7 @@ begin
 				BAR_inc		<='0';
 				MFC_BFC		<='0';
 				CONT_clr<='0';
-				ldrq<=drqx;
+				--ldrq<=drqx;
 				int_comp<='0';
 				S_BTCset<='0';
 				drqeclr<='0';

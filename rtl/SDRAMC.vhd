@@ -102,7 +102,7 @@ begin
 	addr1	<=conv_std_logic_vector(1,LAWIDTH);
 	addr2	<=conv_std_logic_vector(2,LAWIDTH);
 	addr3	<=conv_std_logic_vector(3,LAWIDTH);
-	addr4	<=conv_std_logic_vector(4,LAWIDTH);
+	--addr4	<=conv_std_logic_vector(4,LAWIDTH);
 
 	busy<= '1' when STATE/=ST_IDLE else
 	       '1' when rd='1' else
@@ -139,11 +139,11 @@ begin
 		CBADDR(CAWIDTH-1 downto LAWIDTH)<=addr_high(CAWIDTH-LAWIDTH-1 downto 0);
 		CBADDR(LAWIDTH-1 downto 0)<=bgnaddr;
 	end process;
-	process(addr_high,endaddr)begin
-		CEADDR<=(others=>'0');
-		CEADDR(CAWIDTH-1 downto LAWIDTH)<=addr_high(CAWIDTH-LAWIDTH-1 downto 0);
-		CEADDR(LAWIDTH-1 downto 0)<=endaddr;
-	end process;
+	--process(addr_high,endaddr)begin
+	--	CEADDR<=(others=>'0');
+	--	CEADDR(CAWIDTH-1 downto LAWIDTH)<=addr_high(CAWIDTH-LAWIDTH-1 downto 0);
+	--	CEADDR(LAWIDTH-1 downto 0)<=endaddr;
+	--end process;
 
 
 	process(clk)

@@ -102,11 +102,11 @@ begin
 	addrx<=addr(23 downto 1) & '1';
 	cmdBwr<='1' when addrx=x"e98001" and wr='1' else '0';
 	cmdBrd<='1' when addrx=x"e98001" and rd='1' else '0';
-	datBwr<='1' when addrx=x"e98003" and wr='1' else '0';
+	--datBwr<='1' when addrx=x"e98003" and wr='1' else '0';
 	datBrd<='1' when addrx=x"e98003" and rd='1' else '0';
 	cmdAwr<='1' when addrx=x"e98005" and wr='1' else '0';
 	cmdArd<='1' when addrx=x"e98005" and rd='1' else '0';
-	datAwr<='1' when addrx=x"e98007" and wr='1' else '0';
+	--datAwr<='1' when addrx=x"e98007" and wr='1' else '0';
 	datArd<='1' when addrx=x"e98007" and rd='1' else '0';
 	
 	regA :sccreg port map(wdat,cmdAwr,cmdArd,regAno,regAwr,clk,ce,rstn);

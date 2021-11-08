@@ -109,7 +109,7 @@ begin
 				id<=(others=>'0');
 				unit<=(others=>'0');
 				lbab<=(others=>'0');
-				control<=(others=>'0');
+				--control<=(others=>'0');
 				message<=(others=>'0');
 				status<=(others=>'0');
 				wrreq<='0';
@@ -214,7 +214,7 @@ begin
 						end if;
 					when st_cmd5 =>
 						if(sack='1')then
-							control<=IDAT;
+							--control<=IDAT;
 							REQ<='0';
 							state<=st_cmd5w;
 						end if;

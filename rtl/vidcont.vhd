@@ -591,7 +591,7 @@ begin
 					haddr<=(others=>'0');
 					vaddr<=(others=>'0');
 					raster<=(others=>'0');
-					h3count<=0;
+					--h3count<=0;
 					g0_clear<=	gclrpage(0) and gclrbusyb;
 					g1_clear<=	gclrpage(1) and gclrbusyb;
 					g2_clear<=	gclrpage(2) and gclrbusyb;

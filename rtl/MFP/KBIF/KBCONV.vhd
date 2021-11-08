@@ -203,8 +203,8 @@ begin
 	BUSY	=>KB_BUSY,
 	RXED	=>KB_RXEDx,
 	RESET	=>KB_RESET,
-	COL		=>KB_COL,
-	PERR	=>KB_PERR,
+	--COL		=>KB_COL,
+	--PERR	=>KB_PERR,
 	TWAIT	=>KBWAIT,
 	
 	KBCLKIN	=>KBCLKIN,
@@ -221,7 +221,7 @@ begin
 	KB_RXED<=KB_RXEDx when KBSELx='0' else '0';
 	kbrx<=KB_RXEDx when KBSELx='1' else '0';
 	kbout<=KB_RXDAT;
-	
+	TXEMP<= '0';
 	
 	process(clk,rstn)begin
 		if rising_edge(clk) then

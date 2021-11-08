@@ -25,7 +25,6 @@ port(
 
 	USEL	:in std_logic_vector(1 downto 0);
 	MOTOR	:in std_logic;
-	READY	:out std_logic;
 	WRENn	:in std_logic;		--pin24
 	WRBITn	:in std_logic;		--pin22
 	WRFDMODE:in std_logic_vector(1 downto 0);
@@ -437,7 +436,7 @@ begin
 		break	=>'0',
 
 		txemp	=>fmtxemp,
-		txend	=>fmtxend,
+		--txend	=>fmtxend,
 
 		bitout	=>fmwrbit,
 		writeen	=>open,
@@ -456,7 +455,7 @@ begin
 		break	=>'0',
 
 		txemp	=>mfmtxemp,
-		txend	=>mfmtxend,
+		--txend	=>mfmtxend,
 
 		bitout	=>mfmwrbit,
 		writeen	=>open,

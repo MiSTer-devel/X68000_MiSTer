@@ -103,7 +103,8 @@ signal	TCDRRD	:std_logic;
 signal	TCDRWR	:std_logic;
 signal	TDDRRD	:std_logic;
 signal	TDDRWR	:std_logic;
-signal	TAE,TBE	:std_logic;
+constant TAE	:std_logic := '0';
+constant TBE	:std_logic := '0';
 
 signal	INTrdat		:std_logic_vector(7 downto 0);
 signal	INTdoe		:std_logic;

@@ -85,10 +85,10 @@ begin
 				COL<='0';
 				PERR<='0';
 				TIMECNT<=0;
-				LASTWRn<='1';
+				--LASTWRn<='1';
 			elsif(ce = '1')then
 				LASTCLK<=KBCLKIN;
-				LASTWRn<=WRn;
+				--LASTWRn<=WRn;
 				RXED<='0';
 				if(RESET='1')then
 					STATE<=ST_IDLE;

@@ -73,7 +73,7 @@ begin
 					when "11" =>
 						REG<=DATIN;
 						if(DATIN(7)='1')then	--mode select
-							MODE<=DATIN(6 downto 5);
+							--MODE<=DATIN(6 downto 5);
 							OE_A<=not DATIN(4);
 							OE_CH<=not DATIN(3);
 							OE_B<=not DATIN(1);

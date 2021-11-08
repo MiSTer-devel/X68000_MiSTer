@@ -140,7 +140,7 @@ port(
 end component;
 
 begin
-	change<=hcomp;
+	--change<=hcomp;
 	process(clk,rstn)begin
 		if rising_edge(clk) then
 			if(rstn='0')then
@@ -238,9 +238,9 @@ begin
 				bg0wr<=bg0wrdly;
 				bg1wr<=bg1wrdly;
 				bg_xmodd<=bg_xmod;
-				bg_waddr<=bg_waddrd1;
+				--bg_waddr<=bg_waddrd1;
 				sp_waddrd<=sp_waddr(8 downto 0);
-				sp_xposd<=sp_xposd1;
+				--sp_xposd<=sp_xposd1;
 				bg_xd<=bg_xd1;
 				bgCOLORd<=bgCOLOR;
 				sprCOLORd<=	sprCOLOR;
@@ -254,16 +254,16 @@ begin
 				else
 					bg1wrdly:='0';
 				end if;
-				bg_waddrd1:=bg_x;
+				--bg_waddrd1:=bg_x;
 				if(sp_state=sp_copy)then
-					spwrdly:=sp_wren;
+					--spwrdly:=sp_wren;
 					sp_wr<=sp_wren;
 				else
-					spwrdly:='0';
+					--spwrdly:='0';
 					sp_wr<='0';
 				end if;
-				sp_waddrd1:=sp_waddr(8 downto 0);
-				sp_xposd1:=sp_xpos;
+				--sp_waddrd1:=sp_waddr(8 downto 0);
+				--sp_xposd1:=sp_xpos;
 				bg_xd1:=bg_x;
 			end if;
 		end if;

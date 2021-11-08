@@ -2440,7 +2440,7 @@ begin
 	-- pllrst<=not pwr_rstn;
 --	pMemClk<=not ramclk;
 
-	sr	:sftclk    generic map(100000000,1,1) port map("1",srst,sysclk,sys_ce,rstn);
+	--sr	:sftclk    generic map(100000000,1,1) port map("1",srst,sysclk,sys_ce,rstn);
 
 	mem_rstn<=	plllock;
 
@@ -2571,7 +2571,7 @@ begin
 		
 		int4	=>INT4,
 		vect4	=>IVECT4,
-		iack4	=>IACK4,
+		--iack4	=>IACK4,
 		e_ln4	=>'1',
 		
 		int3	=>INT3,
@@ -2581,7 +2581,7 @@ begin
 		
 		int2	=>INT2,
 		vect2	=>IVECT2,
-		iack2	=>IACK2,
+		--iack2	=>IACK2,
 		e_ln2	=>'1',
 		
 		int1	=>INT1,
@@ -2642,8 +2642,8 @@ begin
 		pclo3	=>open,
 		doneo3	=>open,
 		
-		d_rd	=>dma_drd,
-		d_wr	=>dma_dwr,
+		--d_rd	=>dma_drd,
+		--d_wr	=>dma_dwr,
 		
 		donei	=>'0',
 
@@ -2692,7 +2692,7 @@ begin
 	b_ldsn<=dma_ldsn when dma_bconte='1' else mpu_ldsn;
 	b_rwn<=dma_rwn when dma_bconte='1' else mpu_rwn;
 	b_lds<=not b_ldsn;
-	b_uds<=not b_udsn;
+	--b_uds<=not b_udsn;
 	
 	iowait<=iowait_rcpy or iowait_sasi or iowait_opm;
 	process(sysclk, sys_ce)begin
@@ -2718,8 +2718,8 @@ begin
 		b_rd	=>b_rd,
 		b_wr	=>b_wr,
 		
-		buserr	=>buserr,
-		iackbe	=>iackbe,
+		--buserr	=>buserr,
+		--iackbe	=>iackbe,
 		
 		MEN		=>vr_MEN,
 		SA		=>vr_SA,
@@ -2799,42 +2799,42 @@ begin
 		g00_addr	=>g00_addr,
 		g00_rd		=>g00_rd,
 		g00_rdat	=>g00_rdat,
-		g00_ack		=>g00_ack,
+		--g00_ack		=>g00_ack,
 
 		g01_addr	=>g01_addr,
 		g01_rd		=>g01_rd,
 		g01_rdat	=>g01_rdat,
-		g01_ack		=>g01_ack,
+		--g01_ack		=>g01_ack,
 
 		g02_addr	=>g02_addr,
 		g02_rd		=>g02_rd,
 		g02_rdat	=>g02_rdat,
-		g02_ack		=>g02_ack,
+		--g02_ack		=>g02_ack,
 
 		g03_addr	=>g03_addr,
 		g03_rd		=>g03_rd,
 		g03_rdat	=>g03_rdat,
-		g03_ack		=>g03_ack,
+		--g03_ack		=>g03_ack,
 
 		g10_addr	=>g10_addr,
 		g10_rd		=>g10_rd,
 		g10_rdat	=>g10_rdat,
-		g10_ack		=>g10_ack,
+		--g10_ack		=>g10_ack,
 
 		g11_addr	=>g11_addr,
 		g11_rd		=>g11_rd,
 		g11_rdat	=>g11_rdat,
-		g11_ack		=>g11_ack,
+		--g11_ack		=>g11_ack,
 
 		g12_addr	=>g12_addr,
 		g12_rd		=>g12_rd,
 		g12_rdat	=>g12_rdat,
-		g12_ack		=>g12_ack,
+		--g12_ack		=>g12_ack,
 
 		g13_addr	=>g13_addr,
 		g13_rd		=>g13_rd,
 		g13_rdat	=>g13_rdat,
-		g13_ack		=>g13_ack,
+		--g13_ack		=>g13_ack,
 
 		t0_addr		=>t0_addr,
 		t0_rd		=>t0_rd,
@@ -2842,7 +2842,7 @@ begin
 		t0_rdat1	=>t0_rdat1,
 		t0_rdat2	=>t0_rdat2,
 		t0_rdat3	=>t0_rdat3,
-		t0_ack		=>t0_ack,
+		--t0_ack		=>t0_ack,
 		
 		t1_addr		=>t1_addr,
 		t1_rd		=>t1_rd,
@@ -2850,7 +2850,7 @@ begin
 		t1_rdat1	=>t1_rdat1,
 		t1_rdat2	=>t1_rdat2,
 		t1_rdat3	=>t1_rdat3,
-		t1_ack		=>t1_ack,
+		--t1_ack		=>t1_ack,
 		
 		g0_caddr	=>g0_caddr,
 		g0_clear	=>g0_clear,
@@ -2981,11 +2981,11 @@ begin
 		out_VMODE   =>out_VMODE,
 		out_hfreq   =>out_hfreq,
 		out_htotal  =>out_htotal,
-		out_hsynl   =>out_hsynl,
+		--out_hsynl   =>out_hsynl,
 		out_hvbgn   =>out_hvbgn,
 		out_hvend   =>out_hvend,
 		out_vtotal  =>out_vtotal,
-		out_vsynl   =>out_vsynl,
+		--out_vsynl   =>out_vsynl,
 		out_vvbgn   =>out_vvbgn,
 		out_vvend   =>out_vvend,
 		out_rintl   =>out_rintl,
@@ -3052,7 +3052,7 @@ begin
 		data_b		=>(others=>'0'),
 		wren_a		=>LBUFWR0 and vid_ce,
 		wren_b		=>'0',
-		q_a			=>LBUFRD0,
+		--q_a			=>LBUFRD0,
 		q_b			=>LVIDRD0
 	);
 	VLBUF1	:VLINEBUF port map(
@@ -3063,10 +3063,10 @@ begin
 		data_b		=>(others=>'0'),
 		wren_a		=>LBUFWR1 and vid_ce,
 		wren_b		=>'0',
-		q_a			=>LBUFRD1,
+		--q_a			=>LBUFRD1,
 		q_b			=>LVIDRD1
 	);
-	LBUFRD<=LBUFRD0 when LRAMSEL='0' else LBUFRD1;
+	--LBUFRD<=LBUFRD0 when LRAMSEL='0' else LBUFRD1;
 	LVIDRD<=LVIDRD0 when LRAMSEL='1' else LVIDRD1;
 
 	vreg	:vcreg port map(
@@ -3133,9 +3133,9 @@ begin
 		BP			=>vr_BP,
 		HP			=>vr_HP,
 		EXON		=>vr_EXON,
-		VHT			=>vr_VHT,
+		--VHT			=>vr_VHT,
 		AH			=>vr_AH,
-		YS			=>vr_YS,
+		--YS			=>vr_YS,
 		
 		clk		=>sysclk,
 		ce      =>sys_ce,
@@ -3267,7 +3267,7 @@ begin
 		rintline=>out_rintl,
 		rint	=>VID_RINT,
 		
-		vlineno	=>vlineno,
+		--vlineno	=>vlineno,
 	
 		gclrbgn	=>vr_fcbgn,
 		gclrend	=>vr_fcend,
@@ -3382,7 +3382,7 @@ begin
 		HDISP	=>open,
 		VDISP	=>open,
 		LH		=>open,
-		VRES	=>spreg_VRES,
+		--VRES	=>spreg_VRES,
 		HRES	=>spreg_HRES,
 		
 		sclk	=>sysclk,
@@ -3543,7 +3543,7 @@ begin
 		DRQ		=>FDC_DRQ,
 		TC		=>FDC_TC,
 		INTn	=>FDC_INTn,
-		WAITIN	=>FDC_WAIT,
+		--WAITIN	=>FDC_WAIT,
 
 		WREN	=>FDC_wrenn,
 		WRBIT	=>FDC_wrbitn,
@@ -3569,7 +3569,7 @@ begin
 		
 		hmssft	=>FD_hmssft,
 		
-		busy	=>FDC_BUSY,
+		--busy	=>FDC_BUSY,
 		mfm		=>FDC_MFM,
 		
 		ismode	=>'0',
@@ -3634,6 +3634,8 @@ begin
 	SASI_IACK<='0';
 	
 	ppi_csn<='0' when abus(23 downto 3)=(x"e9a00" & '0') else '1';
+	ppi_pchi <= (others=>'0');
+	ppi_pcli <= (others=>'0');
 
 	PPI	: e8255 port map(
 		CSn		=>ppi_csn,
@@ -3645,17 +3647,17 @@ begin
 		DATOE	=>ppi_doe,
 		
 		PAi		=>ppi_pai,
-		PAo		=>ppi_pao,
-		PAoe	=>ppi_paoe,
+		--PAo		=>ppi_pao,
+		--PAoe	=>ppi_paoe,
 		PBi		=>ppi_pbi,
-		PBo		=>ppi_pbo,
-		PBoe	=>ppi_pboe,
+		--PBo		=>ppi_pbo,
+		--PBoe	=>ppi_pboe,
 		PCHi	=>ppi_pchi,
 		PCHo	=>ppi_pcho,
 		PCHoe	=>ppi_pchoe,
 		PCLi	=>ppi_pcli,
 		PCLo	=>ppi_pclo,
-		PCLoe	=>ppi_pcloe,
+		--PCLoe	=>ppi_pcloe,
 		
 		clk		=>sysclk,
 		ce      =>sys_ce,
@@ -4013,8 +4015,8 @@ begin
 		DATOUT=>midi_odat,
 		DATWR	=>midi_wr,
 		DATRD	=>midi_rd,
-		INT	=>midi_int,
-		IVECT	=>midi_ivect,
+		--INT	=>midi_int,
+		--IVECT	=>midi_ivect,
 
 		RxD	=>pMidi_in,
 		TxD	=>pMidi_out,
@@ -4183,6 +4185,6 @@ begin
 				
 	nv_doe<=b_rd when nv_ce='1' else '0';
 	
-	SASI_BUSY<=SASI_BSY;
+	--SASI_BUSY<=SASI_BSY;
 	
 end rtl;

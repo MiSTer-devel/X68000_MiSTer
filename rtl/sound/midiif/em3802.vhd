@@ -204,6 +204,11 @@ component txframe
 end component;
 
 begin
+	TxF	<= '0';
+	SYNC	<= '0';
+	CLICK	<= '0';
+	INT	<= '0';
+	IVECT	<= (others => '0');
 
 	txfifo	:datfifo generic map(8,64) port map(
 		datin		=>txfifowdat,
@@ -270,130 +275,130 @@ begin
 			if(rstn='0')then
 				reggroup<=(others=>'0');
 				crsten<='0';
-				intclr<=(others=>'0');
-				inten<=(others=>'0');
-				intvectoff<=(others=>'0');
-				R05<=(others=>'0');
-				R14<=(others=>'0');
+				--intclr<=(others=>'0');
+				--inten<=(others=>'0');
+				--intvectoff<=(others=>'0');
+				--R05<=(others=>'0');
+				--R14<=(others=>'0');
 				R25<=(others=>'0');
-				R26<=(others=>'0');
-				R27<=(others=>'0');
+				--R26<=(others=>'0');
+				--R27<=(others=>'0');
 				R44<=(others=>'0');
 				R45<=(others=>'0');
-				R66<=(others=>'0');
-				rmsg_tx<='0';
-				rmsg_sync<='0';
-				rmsg_cc<='0';
-				rmsg_pc<='0';
-				rmsg_rc<='0';
-				rmsg_content<=(others=>'0');
-				fifo_IRx<='0';
+				--R66<=(others=>'0');
+				--rmsg_tx<='0';
+				--rmsg_sync<='0';
+				--rmsg_cc<='0';
+				--rmsg_pc<='0';
+				--rmsg_rc<='0';
+				--rmsg_content<=(others=>'0');
+				--fifo_IRx<='0';
 				rxrate<=(others=>'0');
-				rxsrc<='0';
+				--rxsrc<='0';
 				RxC<='0';
 				RxOVC<='0';
-				FLTE<='0';
-				BLKC<='0';
-				RxOLC<='0';
-				AHE<='0';
+				--FLTE<='0';
+				--BLKC<='0';
+				--RxOLC<='0';
+				--AHE<='0';
 				RxE<='0';
 				TxC<='0';
-				BRKE<='0';
-				TxIDLC<='0';
-				TxE<='0';
+				--BRKE<='0';
+				--TxIDLC<='0';
+				--TxE<='0';
 				txfifowdat<=(others=>'0');
 				txfifowr<='0';
-				ME<='0';
-				CFC<='0';
-				DE<='0';
-				APD<='0';
-				PN<='0';
-				PDFC<='0';
-				CCLD<='0';
-				CCLDVAL<=(others=>'0');
-				PCADD<='0';
-				PCCLR<='0';
-				INTRATE<=(others=>'0');
-				PCADDVAL<=(others=>'0');
-				GTLDVAL<=(others=>'0');
-				GTLD<='0';
-				MTLDVAL<=(others=>'0');
-				MTLD<='0';
+				--ME<='0';
+				--CFC<='0';
+				--DE<='0';
+				--APD<='0';
+				--PN<='0';
+				--PDFC<='0';
+				--CCLD<='0';
+				--CCLDVAL<=(others=>'0');
+				--PCADD<='0';
+				--PCCLR<='0';
+				--INTRATE<=(others=>'0');
+				--PCADDVAL<=(others=>'0');
+				--GTLDVAL<=(others=>'0');
+				--GTLD<='0';
+				--MTLDVAL<=(others=>'0');
+				--MTLD<='0';
 				GPOE<=(others=>'0');
 				GPOUT<=(others=>'0');
 				ldatwr:='0';
 			elsif(ce = '1')then
-				intclr<=(others=>'0');
-				rmsg_tx<='0';
-				rmsg_sync<='0';
-				rmsg_cc<='0';
-				rmsg_pc<='0';
-				rmsg_rc<='0';
-				fifo_IRx<='0';
+				--intclr<=(others=>'0');
+				--rmsg_tx<='0';
+				--rmsg_sync<='0';
+				--rmsg_cc<='0';
+				--rmsg_pc<='0';
+				--rmsg_rc<='0';
+				--fifo_IRx<='0';
 				RxC<='0';
 				RxOVC<='0';
-				BLKC<='0';
-				RxOLC<='0';
+				--BLKC<='0';
+				--RxOLC<='0';
 				TxC<='0';
-				TxIDLC<='0';
+				--TxIDLC<='0';
 				txfifowr<='0';
-				CFC<='0';
-				PDFC<='0';
-				CCLD<='0';
-				PCADD<='0';
-				PCCLR<='0';
-				GTLD<='0';
-				MTLD<='0';
+				--CFC<='0';
+				--PDFC<='0';
+				--CCLD<='0';
+				--PCADD<='0';
+				--PCCLR<='0';
+				--GTLD<='0';
+				--MTLD<='0';
 				if(rstcmd='1')then
-					intclr<=(others=>'0');
-					inten<=(others=>'0');
-					intvectoff<=(others=>'0');
-					R05<=(others=>'0');
-					R14<=(others=>'0');
+					--intclr<=(others=>'0');
+					--inten<=(others=>'0');
+					--intvectoff<=(others=>'0');
+					--R05<=(others=>'0');
+					--R14<=(others=>'0');
 					R25<=(others=>'0');
-					R26<=(others=>'0');
-					R27<=(others=>'0');
+					--R26<=(others=>'0');
+					--R27<=(others=>'0');
 					R44<=(others=>'0');
 					R45<=(others=>'0');
-					R66<=(others=>'0');
-					rmsg_tx<='0';
-					rmsg_sync<='0';
-					rmsg_cc<='0';
-					rmsg_pc<='0';
-					rmsg_rc<='0';
-					rmsg_content<=(others=>'0');
-					fifo_IRx<='0';
+					--R66<=(others=>'0');
+					--rmsg_tx<='0';
+					--rmsg_sync<='0';
+					--rmsg_cc<='0';
+					--rmsg_pc<='0';
+					--rmsg_rc<='0';
+					--rmsg_content<=(others=>'0');
+					--fifo_IRx<='0';
 					rxrate<=(others=>'0');
-					rxsrc<='0';
+					--rxsrc<='0';
 					RxC<='0';
 					RxOVC<='0';
-					FLTE<='0';
-					BLKC<='0';
-					RxOLC<='0';
-					AHE<='0';
+					--FLTE<='0';
+					--BLKC<='0';
+					--RxOLC<='0';
+					--AHE<='0';
 					RxE<='0';
 					TxC<='0';
-					BRKE<='0';
-					TxIDLC<='0';
-					TxE<='0';
+					--BRKE<='0';
+					--TxIDLC<='0';
+					--TxE<='0';
 					txfifowdat<=(others=>'0');
 					txfifowr<='0';
-					ME<='0';
-					CFC<='0';
-					DE<='0';
-					APD<='0';
-					PN<='0';
-					PDFC<='0';
-					CCLD<='0';
-					CCLDVAL<=(others=>'0');
-					PCADD<='0';
-					PCCLR<='0';
-					INTRATE<=(others=>'0');
-					PCADDVAL<=(others=>'0');
-					GTLDVAL<=(others=>'0');
-					GTLD<='0';
-					MTLDVAL<=(others=>'0');
-					MTLD<='0';
+					--ME<='0';
+					--CFC<='0';
+					--DE<='0';
+					--APD<='0';
+					--PN<='0';
+					--PDFC<='0';
+					--CCLD<='0';
+					--CCLDVAL<=(others=>'0');
+					--PCADD<='0';
+					--PCCLR<='0';
+					--INTRATE<=(others=>'0');
+					--PCADDVAL<=(others=>'0');
+					--GTLDVAL<=(others=>'0');
+					--GTLD<='0';
+					--MTLDVAL<=(others=>'0');
+					--MTLD<='0';
 					GPOE<=(others=>'0');
 					GPOUT<=(others=>'0');
 				end if;
@@ -402,108 +407,108 @@ begin
 					when "001" =>
 						crsten<=DATIN(7);
 						reggroup<=DATIN(3 downto 0);
-					when "011" =>
-						intclr<=DATIN;
+					--when "011" =>
+					--	intclr<=DATIN;
 					when "100" =>
 						case reggroup is
-						when x"0" =>
-							intvectoff<=DATIN(7 downto 5);
-						when x"1" =>
-							R14<=DATIN;
+						--when x"0" =>
+						--	intvectoff<=DATIN(7 downto 5);
+						--when x"1" =>
+						--	R14<=DATIN;
 						when x"2" =>
-							rxsrc<=DATIN(5);
+							--rxsrc<=DATIN(5);
 							rxrate<=DATIN(4 downto 0);
 						when x"4" =>
 							R44<=DATIN;
-						when x"8" =>
-							GTLDVAL(7 downto 0)<=DATIN;
+						--when x"8" =>
+							--GTLDVAL(7 downto 0)<=DATIN;
 						when x"9" =>
 							GPOE<=DATIN;
 						when others =>
 						end case;
 					when "101" =>
 						case reggroup is
-						when x"0" =>
-							R05<=DATIN;
+						--when x"0" =>
+						--	R05<=DATIN;
 						when x"1" =>
-							rmsg_content<=DATIN(2 downto 0);
+							--rmsg_content<=DATIN(2 downto 0);
 							if(DATIN(2 downto 0)="000")then
-								rmsg_tx<='1';
-								rmsg_sync<='1';
-								rmsg_cc<='1';
-								rmsg_pc<='1';
-								rmsg_rc<='1';
+								--rmsg_tx<='1';
+								--rmsg_sync<='1';
+								--rmsg_cc<='1';
+								--rmsg_pc<='1';
+								--rmsg_rc<='1';
 							else
-								rmsg_tx<=DATIN(7);
-								rmsg_sync<=DATIN(6);
-								rmsg_cc<=DATIN(5);
-								rmsg_pc<=DATIN(4);
-								rmsg_rc<=DATIN(3);
+								--rmsg_tx<=DATIN(7);
+								--rmsg_sync<=DATIN(6);
+								--rmsg_cc<=DATIN(5);
+								--rmsg_pc<=DATIN(4);
+								--rmsg_rc<=DATIN(3);
 							end if;
 						when x"2" =>
 							R25<=DATIN;
 						when x"3" =>
 							RxC<=DATIN(7);
 							RxOVC<=DATIN(6);
-							FLTE<=DATIN(4);
-							BLKC<=DATIN(3);
-							RxOLC<=DATIN(2);
-							AHE<=DATIN(1);
+							--FLTE<=DATIN(4);
+							--BLKC<=DATIN(3);
+							--RxOLC<=DATIN(2);
+							--AHE<=DATIN(1);
 							RxE<=DATIN(0);
 						when x"4" =>
 							R45<=DATIN;
 						when x"5" =>
 							TxC<=DATIN(7);
-							BRKE<=DATIN(3);
-							TxIDLC<=DATIN(2);
-							TxE<=DATIN(0);
-						when x"6" =>
-							ME<=DATIN(7);
-							CFC<=DATIN(4);
-							DE<=DATIN(3);
-							APD<=DATIN(2);
-							PN<=DATIN(1);
-							PDFC<=DATIN(0);
-						when x"7" =>
-							PCADD<=DATIN(5);
-							PCCLR<=DATIN(4);
-							INTRATE<=DATIN(3 downto 0);
-						when x"8" =>
-							GTLDVAL(13 downto 8)<=DATIN(5 downto 0);
-							GTLD<=DATIN(7);
+							--BRKE<=DATIN(3);
+							--TxIDLC<=DATIN(2);
+							--TxE<=DATIN(0);
+						--when x"6" =>
+							--ME<=DATIN(7);
+							--CFC<=DATIN(4);
+							--DE<=DATIN(3);
+							--APD<=DATIN(2);
+							--PN<=DATIN(1);
+							--PDFC<=DATIN(0);
+						--when x"7" =>
+							--PCADD<=DATIN(5);
+							--PCCLR<=DATIN(4);
+							--INTRATE<=DATIN(3 downto 0);
+						--when x"8" =>
+						--	GTLDVAL(13 downto 8)<=DATIN(5 downto 0);
+						--	GTLD<=DATIN(7);
 						when x"9" =>
 							GPOUT<=DATIN;
 						when others =>
 						end case;
 					when "110" =>
 						case reggroup is
-						when x"2" =>
-							R26<=DATIN;
+						--when x"2" =>
+						--	R26<=DATIN;
 						when x"5" =>
 							txfifowdat<=DATIN;
 							txfifowr<='1';
-						when x"6" =>
-							R66<=DATIN;
-						when x"7" =>
-							PCADDVAL(7 downto 0)<=DATIN;
-						when x"8" =>
-							MTLDVAL(7 downto 0)<=DATIN;
+						--when x"6" =>
+						--	R66<=DATIN;
+						--when x"7" =>
+						--	PCADDVAL(7 downto 0)<=DATIN;
+						--when x"8" =>
+							--MTLDVAL(7 downto 0)<=DATIN;
 						when others =>
 						end case;
 					when "111" =>
 						case reggroup is
-						when x"1" =>
-							fifo_IRx<=DATIN(0);
-						when x"2" =>
-							R27<=DATIN;
-						when x"6" =>
-							CCLD<=DATIN(7);
-							CCLDVAL<=DATIN(6 downto 0);
-						when x"7" =>
-							PCADDVAL(14 downto 8)<=DATIN(6 downto 0);
-						when x"8" =>
-							MTLDVAL(13 downto 8)<=DATIN(5 downto 0);
-							MTLD<=DATIN(7);
+						--when x"1" =>
+						--	fifo_IRx<=DATIN(0);
+						--when x"2" =>
+						--	R27<=DATIN;
+						--when x"6" =>
+						--	CCLD<=DATIN(7);
+						--	CCLDVAL<=DATIN(6 downto 0);
+						--when x"7" =>
+						--	PCADDVAL(14 downto 8)<=DATIN(6 downto 0);
+						--when x"8" =>
+							--MTLDVAL(13 downto 8)<=DATIN(5 downto 0);
+							--MTLD<=DATIN(7);
 						when others =>
 						end case;
 					when others =>
@@ -514,27 +519,27 @@ begin
 		end if;
 	end process;
 
-	CT<=R05(3);
-	OB<=R05(2);
-	VE<=R05(1);
-	VM<=R05(0);
-	ASE<=R14(5);
-	MCE<=R14(4);
-	CDE<=R14(3);
-	MCDS<=R14(2);
-	MCFS<=R14(1 downto 0);
+	--CT<=R05(3);
+	--OB<=R05(2);
+	--VE<=R05(1);
+	--VM<=R05(0);
+	--ASE<=R14(5);
+	--MCE<=R14(4);
+	--CDE<=R14(3);
+	--MCDS<=R14(2);
+	--MCFS<=R14(1 downto 0);
 	RxCL<=R25(5);
 	RxPE<=R25(4);
 	RxPL<=R25(3);
 	RxEO<=R25(2);
 	RxSL<=R25(1);
 	RxST<=R25(0);
-	IDCL<=R26(7);
-	ID_MAKER<=R26(6 downto 0);
-	BDRE<=R27(7);
-	ID_DEVICE<=R27(6 downto 0);
-	TxRx<=R44(6);
-	TxDF<=R44(5);
+	--IDCL<=R26(7);
+	--ID_MAKER<=R26(6 downto 0);
+	--BDRE<=R27(7);
+	--ID_DEVICE<=R27(6 downto 0);
+	--TxRx<=R44(6);
+	--TxDF<=R44(5);
 	txrate<=R44(4 downto 0);
 	TxCL<=R45(5);
 	TxPE<=R45(4);
@@ -542,18 +547,18 @@ begin
 	TxEO<=R45(2);
 	TxSL<=R45(1);
 	TxST<=R45(0);
-	CLKM<=R66(1);
-	OUTE<=R66(0);
+	--CLKM<=R66(1);
+	--OUTE<=R66(0);
 	
-	DATOUT<=	R00	when reggroup=x"0" and ADDR="000" else
-				R02	when reggroup=x"0" and ADDR="010" else
-				R16	when reggroup=x"1" and ADDR="110" else
+	DATOUT<=	--R00	when reggroup=x"0" and ADDR="000" else
+				--R02	when reggroup=x"0" and ADDR="010" else
+				--R16	when reggroup=x"1" and ADDR="110" else
 				R34	when reggroup=x"3" and ADDR="100" else
 				R36	when reggroup=x"3" and ADDR="110" else
 				R54	when reggroup=x"5" and ADDR="100" else
-				R64	when reggroup=x"6" and ADDR="100" else
-				R74	when reggroup=x"7" and ADDR="100" else
-				R96	when reggroup=x"9" and ADDR="110" else
+				--R64	when reggroup=x"6" and ADDR="100" else
+				--R74	when reggroup=x"7" and ADDR="100" else
+				--R96	when reggroup=x"9" and ADDR="110" else
 				(others=>'0');
 	
 	R34(7)<=not rxfifoemp;
@@ -583,9 +588,10 @@ begin
 		end if;
 	end process;
 	
+
 	R54(7)<=txfifoemp;
 	R54(6)<=not txfifofull;
-	R54(5 downto 3)<=(others=>'0');
+	R54(5 downto 0) <=(others=>'0');
 	
 	process(clk,crstn,ce)begin
 		if rising_edge(clk) then
@@ -1021,7 +1027,7 @@ begin
 	
 	txunit	:txframe	generic map(13,3)	port map(
 		SD			=>TxD,
-		DRCNT		=>txbusy,
+		--DRCNT		=>txbusy,
 
 		SFT		=>txsft,
 		WIDTH		=>"100",

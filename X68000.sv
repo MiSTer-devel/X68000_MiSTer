@@ -715,8 +715,8 @@ always @(posedge CLK_AUDIO) begin
 	// out_l <= (^tmp_l[17:16]) ? {tmp_l[17], {15{tmp_l[16]}}} : tmp_l[17:2];
 	// out_r <= (^tmp_r[17:16]) ? {tmp_r[17], {15{tmp_r[16]}}} : tmp_r[17:2];
 
-	cmp_l <= compr(tmp_l);
-	cmp_r <= compr(tmp_r);
+	// cmp_l <= compr(tmp_l);
+	// cmp_r <= compr(tmp_r);
 end
 
 

@@ -1,4 +1,4 @@
-DEPTH = 392;
+DEPTH = 512;
 WIDTH = 12;
 ADDRESS_RADIX = HEX;
 DATA_RADIX = HEX;
@@ -396,4 +396,5 @@ ff      : 23f;
 185     : 7ff;
 186     : 7ff;
 187     : 7ff;
+[188..1ff] : 000;
 END;

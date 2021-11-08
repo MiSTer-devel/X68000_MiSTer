@@ -150,6 +150,8 @@ port(
 end component;
 
 begin
+	dtc <= '0';
+
 	rd<=b_rd when addrin(23 downto 8)=BASEADDR else '0';
 	wr<=b_wr when addrin(23 downto 8)=BASEADDR else "00";
 

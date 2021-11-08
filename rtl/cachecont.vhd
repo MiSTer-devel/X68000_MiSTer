@@ -480,10 +480,10 @@ end component;
 begin
 
 	braddr_sel<=braddr(brcache_sel);
-	brcache_exts<=brcache_ext(brcache_sel);
+	--brcache_exts<=brcache_ext(brcache_sel);
 
 	bwaddr_sel<=bwaddr0 when bwcache_sel='0' else bwaddr1;
-	bwaddr_nsel<=bwaddr1 when bwcache_sel='0' else bwaddr0;
+	--bwaddr_nsel<=bwaddr1 when bwcache_sel='0' else bwaddr0;
 	
 	b_wdatm<=	b_wdat when b_wr/="00" else
 				(rmw_rdat and (not b_rmwmsk)) or (b_wdat and b_rmwmsk) when b_rmw/="00" else
@@ -598,7 +598,7 @@ begin
 	fde_wr0<=fde_wr when fde_addr0s=fde_addr(awidth-1 downto 8) else '0';
 	fde_wr1<=fde_wr when fde_addr1s=fde_addr(awidth-1 downto 8) else '0';
 	
-	wren<='1' when b_wr/="00" or b_rmw/="00" else '0';
+	--wren<='1' when b_wr/="00" or b_rmw/="00" else '0';
 	
 	process(rclk,rstn)
 	variable nxtaddr	:std_logic_vector(awidth-9 downto 0);
@@ -654,8 +654,8 @@ begin
 			lfec_wr:="000";
 			ramabort<='0';
 			aborted<='0';
-			swren<='0';
-			lwren<='0';
+			--swren<='0';
+			--lwren<='0';
 		elsif rising_edge(rclk) then
 			if (ram_ce = '1') then
 				brcache_clr<=(others=>'0');
@@ -668,8 +668,8 @@ begin
 				wminmaxclr<='0';
 				wminmaxall<='0';
 				bcget<='0';
-				swren<=wren;
-				lwren<=swren;
+				--swren<=wren;
+				--lwren<=swren;
 				lsb_cpy<=sb_cpy;
 				sb_cpy<=b_cpy;
 				if(fde_wr0='1')then
@@ -1142,12 +1142,12 @@ begin
 					ramaddrwc;
 	ramaddrwex<=	ramaddrrc when RAM_STATE=ST_BCREAD else b_addr(7 downto 0);
 	
-	biwdata0<="1" when RAM_STATE=ST_BCREAD and bwcache_sel='0' else "0";
-	biwdata1<="1" when RAM_STATE=ST_BCREAD and bwcache_sel='1' else "0";
+	--biwdata0<="1" when RAM_STATE=ST_BCREAD and bwcache_sel='0' else "0";
+	--biwdata1<="1" when RAM_STATE=ST_BCREAD and bwcache_sel='1' else "0";
 	
 	bwwr0m<=bwwr0 or (b_cwr0 & b_cwr0);
 	bwwr1m<=bwwr1 or (b_cwr1 & b_cwr1);
-	BWewaddr<= ramaddrrc when RAM_STATE=ST_BCREAD else b_addr(7 downto 0);
+	--BWewaddr<= ramaddrrc when RAM_STATE=ST_BCREAD else b_addr(7 downto 0);
 	BWext0h	:cacheext generic map(brsize) port map(ramaddrwex(brsize-1 downto 0),bwwr0m(1),bwcache_clr0,bwcache_busy0,ramaddrwc(brsize-1 downto 0),bwwe0(1),'0',rclk, ram_ce, rclk, ram_ce, rstn);
 	BWext0l	:cacheext generic map(brsize) port map(ramaddrwex(brsize-1 downto 0),bwwr0m(0),bwcache_clr0,open,         ramaddrwc(brsize-1 downto 0),bwwe0(0),'0',rclk, ram_ce, rclk, ram_ce, rstn);
 	BWext1h	:cacheext generic map(brsize) port map(ramaddrwex(brsize-1 downto 0),bwwr1m(1),bwcache_clr1,bwcache_busy1,ramaddrwc(brsize-1 downto 0),bwwe1(1),'0',rclk, ram_ce, rclk, ram_ce, rstn);
@@ -1224,8 +1224,8 @@ begin
 	
 	brmwack<='1' when rmw_state=rmw_WRITE else '0';
 			
-	vrcawr<=b_cwr0 or b_cwr1;
-	b_cdaddra<=b_cdaddr & bcazero;
+	--vrcawr<=b_cwr0 or b_cwr1;
+	--b_cdaddra<=b_cdaddr & bcazero;
 
 	g00rwdath<=	
 				(others=>'0') when RAM_STATE=ST_G0CLR else

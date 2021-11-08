@@ -137,8 +137,8 @@ begin
 	BUSY	=>M_BUSY,
 	RXED	=>M_RXED,
 	RESET	=>M_RESET,
-	COL		=>M_COL,
-	PERR	=>M_PERR,
+	--COL		=>M_COL,
+	--PERR	=>M_PERR,
 	TWAIT	=>'0',
 
 	KBCLKIN	=>MCLKIN,
@@ -163,7 +163,7 @@ begin
 				WAITCNT<=0;
 				WAITSFT<=0;
 				M_TXDAT<=(others=>'0');
-				TXEMPb<='0';
+				--TXEMPb<='0';
 				RXED<='0';
 				waitrcount<=0;
 				TXDAT0<=(others=>'0');

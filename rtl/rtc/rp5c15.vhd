@@ -196,6 +196,8 @@ begin
 		sys_ce  =>ce,
 		rstn	=>rstn
 	);
+	
+	clkout <= '0';
 
 	process(clk,rstn)
 	variable modx	:integer range 0 to (div16-1);

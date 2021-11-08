@@ -69,6 +69,11 @@ begin
 	ADDRx<=addr(23 downto 1) & '1';
 	INTx<=hdd_int & fdc_int & fdd_int & prn_int;
 	
+	fd_dcontsel	<= (others => '0');
+	fd_drvled	<= (others => '0');
+	fd_drveject	<= (others => '0');
+	fd_drvejen	<= (others => '0');
+	
 	process(clk,rstn)begin
 		if rising_edge(clk) then
 			if(rstn='0')then

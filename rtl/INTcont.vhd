@@ -148,13 +148,13 @@ begin
 			if(rstn='0')then
 				sINT<=(others=>'0');
 				lINT<=(others=>'0');
-				lINTclr<=(others=>'0');
-				svectv<=(others=>x"00");
+				--lINTclr<=(others=>'0');
+				--svectv<=(others=>x"00");
 			elsif(ce = '1')then
 				sINT<=vINT;
 				lINT<=sINT;
-				lINTclr<=INTclr;
-				svectv<=vectv;
+				--lINTclr<=INTclr;
+				--svectv<=vectv;
 			end if;
 		end if;
 	end process;

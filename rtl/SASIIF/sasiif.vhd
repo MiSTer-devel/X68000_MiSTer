@@ -186,14 +186,14 @@ begin
 		if rising_edge(clk) then
 			if(rstn='0')then
 				drq<='0';
-				lACK<='0';
+				--lACK<='0';
 				sREQ<='0';
 				lREQ<='0';
 				HSwait<='0';
 			else
 				lREQ<=sREQ;
 				sREQ<=REQ;
-				lACK<=ACKb;
+				--lACK<=ACKb;
 				if(BUSRST='1')then
 					drq<='0';
 					HSwait<='0';

@@ -26,7 +26,11 @@ begin
 				q<='0';
 			elsif(ce = '1')then
 				q<=fifo(0);
-				fifo<=a & fifo(counts-1 downto 1);
+				if(counts>1) then
+					fifo<=a & fifo(counts-1 downto 1);
+				else
+					fifo(0) <=a;
+				end if;
 			end if;
 		end if;
 	end process;
