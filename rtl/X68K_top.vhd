@@ -26,7 +26,7 @@ port(
 	mpu_cen :in std_logic;
 	fd_ce   :in std_logic := '1';
 	snd_ce  :in std_logic;
-	opn_ce  :in std_logic_vector(1 downto 0);
+	opm_ce  :in std_logic_vector(1 downto 0);
 	
 	cm_out  :out std_logic;
 	vid_hz  :in std_logic;
@@ -568,7 +568,7 @@ signal	vidVS	:std_logic;
 signal	vidEN	:std_logic;
 
 --for OPM
-signal	opm_cen		:std_logic;
+signal	opm_csn		:std_logic;
 signal	opm_odat	:std_logic_vector(7 downto 0);
 signal	opm_doe		:std_logic;
 signal	opm_intn	:std_logic;
@@ -3788,7 +3788,7 @@ begin
 	);
 
 	
-	opm_cen<='0' when abus(23 downto 2)="1110100100000000000000" else '1';
+	opm_csn<='0' when abus(23 downto 2)="1110100100000000000000" else '1';
 	
 --	process(sysclk,rstn)begin
 --		if(rstn='0')then
@@ -3803,7 +3803,7 @@ begin
 	-- 	DIN		=>dbus(7 downto 0),
 	-- 	DOUT	=>opm_odat,
 	-- 	DOE		=>opm_doe,
-	-- 	CSn		=>opm_cen,
+	-- 	CSn		=>opm_csn,
 	-- 	ADR0	=>abus(1),
 	-- 	RDn		=>b_rdn,
 	-- 	WRn		=>b_wrn(0),
@@ -3823,13 +3823,13 @@ begin
 	-- 	rstn	=>srstn
 	-- );
 
-	opm_doe <= b_rd when opm_cen = '0';
+	opm_doe <= b_rd and not opm_csn;
 	FM:jt51 port map(
 		rst      => not srstn,
 		clk      => sysclk,
-		cen      => opn_ce(0),
-		cen_p1   => opn_ce(1),
-		cs_n     => opm_cen,
+		cen      => opm_ce(0),
+		cen_p1   => opm_ce(1),
+		cs_n     => opm_csn,
 		wr_n     => b_wrn(0),
 		a0       => abus(1),
 		din      => dbus(7 downto 0),
@@ -3902,13 +3902,13 @@ begin
 		elsif(sndclk' event and sndclk='1' and snd_ce = '1')then
 			case opm_wstate is
 			when 0 =>
-				if(opm_cen='0' and (b_wrn(0)='0' or b_rdn='0'))then
+				if(opm_csn='0' and (b_wrn(0)='0' or b_rdn='0'))then
 					opm_wstate<=1;
 				end if;
 			when 1 =>
 				opm_wstate<=2;
 			when 2 =>
-				if(opm_cen='1')then
+				if(opm_csn='1')then
 					opm_wstate<=0;
 				end if;
 			when others =>
@@ -3917,7 +3917,7 @@ begin
 		end if;
 	end process;
 	
-	iowait_opm<='1' when (opm_cen='0' and (b_wrn(0)='0' or b_rdn='0') and opm_wstate/=2) else '0';
+	iowait_opm<='1' when (opm_csn='0' and (b_wrn(0)='0' or b_rdn='0') and opm_wstate/=2) else '0';
 
 	mixL	:addsat generic map(16) port map(opm_sndL(15) & opm_sndL(15 downto 1),pcm_sndL,mix_sndL,open,open);
 	mixR	:addsat generic map(16) port map(opm_sndR(15) & opm_sndR(15 downto 1),pcm_sndR,mix_sndR,open,open);
@@ -3953,7 +3953,7 @@ begin
 	-- 	rstn	=>srstn
 	-- );
 
---opm_doe<='1' when opm_cen='0' and b_rdn='1' else '0';
+--opm_doe<='1' when opm_csn='0' and b_rdn='1' else '0';
 	
 	pPs2Clkout<=kb_clkout;
 	pPs2Datout<=kb_datout;

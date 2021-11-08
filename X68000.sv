@@ -513,10 +513,10 @@ reg sys_ce;
 reg mpu_cep;
 reg mpu_cen;
 reg snd_ce;
-reg [1:0] opn_ce = 0;
+reg [1:0] opm_ce = 0;
 
 always @(posedge clk_sys) begin
-	reg [4:0] div_opn;
+	reg [4:0] div_opm;
 	reg [1:0] div_sys;
 	reg [3:0] div_snd;
 	reg [3:0] div_snd2;
@@ -525,14 +525,14 @@ always @(posedge clk_sys) begin
 	div_sys <= div_sys + 1'd1;
 	div_snd <= div_snd + 1'd1;
 	div_snd2 <= div_snd2 + 1'd1;
-	div_opn <= div_opn + 1'd1;
+	div_opm <= div_opm + 1'd1;
 
 	if (div_snd2 == 9) div_snd <= 0;
 	if (div_snd == 4)  div_snd <= 0;
-	if (div_opn == 19) div_opn <= 0;
+	if (div_opm == 19) div_opm <= 0;
 
-	opn_ce[0] <= div_snd2 == 9;
-	opn_ce[1] <= div_opn == 19;
+	opm_ce[0] <= div_snd2 == 9;
+	opm_ce[1] <= div_opm == 19;
 
 	sys_ce <= &div_sys;
 
@@ -555,7 +555,7 @@ X68K_top X68K_top
 	.mpu_cep    (mpu_cep),
 	.mpu_cen    (mpu_cen),
 	.snd_ce     (snd_ce),
-	.opn_ce     (opn_ce),
+	.opm_ce     (opm_ce),
 	
 	.cm_out     (snd_clockmode),
 
