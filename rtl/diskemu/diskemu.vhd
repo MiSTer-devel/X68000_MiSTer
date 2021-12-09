@@ -4,7 +4,7 @@ USE	IEEE.STD_LOGIC_UNSIGNED.ALL;
 
 entity diskemu is
 generic(
-	fclkfreq		:integer	:=30000;
+	fclkfreq		:integer	:=10000;
 	sclkfreq		:integer	:=10000;
 	fdwait	:integer	:=10
 );
@@ -394,7 +394,7 @@ END component;
 
 component FDemu
 generic(
-	sysclk		:integer	:=20000;
+	sysclk		:integer	:=10000;
 	fdwait		:integer	:=10
 );
 port(

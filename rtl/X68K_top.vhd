@@ -113,7 +113,7 @@ port(
 	pVideoEN		:out std_logic;
 	pVideoHS		:out std_logic;
 	pVideoVS		:out std_logic;
-	pVideoF1        :out std_logic;
+	pVideoF1        :buffer std_logic;
 	
 	pSndL		:out std_logic_vector(15 downto 0);
 	pSndR		:out std_logic_vector(15 downto 0);
@@ -544,6 +544,7 @@ signal	tpal_pdat	:std_logic_vector(15 downto 0);
 signal	spal_pno	:std_logic_vector(7 downto 0);
 signal	spal_pdat	:std_logic_vector(15 downto 0);
 signal	tpal0_pdat	:std_logic_vector(15 downto 0);
+signal	gpal0_pdat	:std_logic_vector(15 downto 0);
 --graphics palette
 signal	gpal_cs		:std_logic;
 signal	gpal_rdat	:std_logic_vector(15 downto 0);
@@ -1404,7 +1405,7 @@ end component;
 
 component diskemu
 generic(
-	fclkfreq		:integer	:=30000;
+	fclkfreq		:integer	:=10000;
 	sclkfreq		:integer	:=10000;
 	fdwait	:integer	:=10
 );
@@ -1635,7 +1636,10 @@ port(
 	gg			:in std_logic;
 	gt			:in std_logic;
 	ah			:in std_logic;
-	
+	ys          :in std_logic;
+	vht         :in std_logic;
+	lsel        :in std_logic;
+
 	lbaddr	:out std_logic_vector(9 downto 0);
 	lbwdat	:out std_logic_vector(15 downto 0);
 	lbwr	:out std_logic;
@@ -1657,6 +1661,7 @@ port(
 	tpalno	:out std_logic_vector(7 downto 0);
 	tpalin	:in std_logic_vector(15 downto 0);
 	tpal0in	:in std_logic_vector(15 downto 0);
+	gpal0in	:in std_logic_vector(15 downto 0);
 	
 	spalno	:out std_logic_vector(7 downto 0);
 	spalin	:in std_logic_vector(15 downto 0);
@@ -2635,8 +2640,7 @@ begin
 		pclo2	=>open,
 		doneo2	=>open,
 
---		drq3	=>pcm_drq,
-		drq3	=>pcm_drq and ((not pDip(2)) or (not DEBUG(DBIT_ADPCM_ONOFF))),
+		drq3	=>pcm_drq,
 		dack3	=>open,
 		pcli3	=>pcm_drq,
 		pclo3	=>open,
@@ -2695,14 +2699,14 @@ begin
 	--b_uds<=not b_udsn;
 	
 	iowait<=iowait_rcpy or iowait_sasi or iowait_opm;
-	process(sysclk, sys_ce)begin
-		if(sysclk' event and sysclk='1' and sys_ce = '1') then
-			dwait<=pDip(3);
-		end if;
-	end process;
+	-- process(sysclk, sys_ce)begin
+	-- 	if(sysclk' event and sysclk='1' and sys_ce = '1') then
+	-- 		dwait<=pDip(3);
+	-- 	end if;
+	-- end process;
 			
-	mpu_dtack<='1' when (dwait='1' and DEBUG(DBIT_PAUSE_ONOFF)='1') else b_ack when dma_bconte='0' else '1';
---	mpu_dtack<=b_ack when dma_bconte='0' else '1';
+	--mpu_dtack<='1' when (dwait='1' and DEBUG(DBIT_PAUSE_ONOFF)='1') else b_ack when dma_bconte='0' else '1';
+	mpu_dtack<=b_ack when dma_bconte='0' else '1';
 	mmap_min<='0';
 	MMP	:X68mmapCV port map(
 		m_addr	=>abus(23 downto 0),
@@ -3050,7 +3054,7 @@ begin
 		clock		=>vidclk,
 		data_a		=>LBUFWD,
 		data_b		=>(others=>'0'),
-		wren_a		=>LBUFWR0 and vid_ce,
+		wren_a		=>LBUFWR0,
 		wren_b		=>'0',
 		--q_a			=>LBUFRD0,
 		q_b			=>LVIDRD0
@@ -3061,7 +3065,7 @@ begin
 		clock		=>vidclk,
 		data_a		=>LBUFWD,
 		data_b		=>(others=>'0'),
-		wren_a		=>LBUFWR1 and vid_ce,
+		wren_a		=>LBUFWR1,
 		wren_b		=>'0',
 		--q_a			=>LBUFRD1,
 		q_b			=>LVIDRD1
@@ -3133,9 +3137,9 @@ begin
 		BP			=>vr_BP,
 		HP			=>vr_HP,
 		EXON		=>vr_EXON,
-		--VHT			=>vr_VHT,
+		VHT			=>vr_VHT,
 		AH			=>vr_AH,
-		--YS			=>vr_YS,
+		YS			=>vr_YS,
 		
 		clk		=>sysclk,
 		ce      =>sys_ce,
@@ -3233,7 +3237,10 @@ begin
 		gg			=>vr_GG,
 		gt			=>vr_GT,
 		ah			=>vr_AH,
-		
+		ys          =>vr_YS,
+		vht         =>vr_VHT,
+		lsel        =>LRAMSEL,
+
 		lbaddr	=>LBUFADR,
 		lbwdat	=>LBUFWD,
 		lbwr	=>LBUFWR,
@@ -3255,7 +3262,7 @@ begin
 		tpalno	=>tpal_pno,
 		tpalin	=>tpal_pdat,
 		tpal0in	=>tpal0_pdat,
-
+		gpal0in =>gpal0_pdat,
 		spalno	=>spal_pno,
 		spalin	=>spal_pdat,
 
@@ -3267,7 +3274,7 @@ begin
 		rintline=>out_rintl,
 		rint	=>VID_RINT,
 		
-		--vlineno	=>vlineno,
+--		vlineno	=>vlineno,
 	
 		gclrbgn	=>vr_fcbgn,
 		gclrend	=>vr_fcend,
@@ -3442,6 +3449,7 @@ begin
 	process(sysclk,rstn,sys_ce)begin
 		if(rstn='0')then
 			tpal0_pdat<=(others=>'0');
+			gpal0_pdat<=(others=>'0');
 		elsif(sysclk' event and sysclk='1' and sys_ce = '1')then
 			if(tpal_cs='1' and abus(8 downto 1)="00000000")then
 				if(b_wr(1)='1')then
@@ -3449,6 +3457,14 @@ begin
 				end if;
 				if(b_wr(0)='1')then
 					tpal0_pdat( 7 downto 0)<=dbus( 7 downto 0);
+				end if;
+			end if;
+			if(gpal_cs='1' and abus(8 downto 1)="00000000")then
+				if(b_wr(1)='1')then
+					gpal0_pdat(15 downto 8)<=dbus(15 downto 8);
+				end if;
+				if(b_wr(0)='1')then
+					gpal0_pdat( 7 downto 0)<=dbus( 7 downto 0);
 				end if;
 			end if;
 		end if;
@@ -3657,7 +3673,7 @@ begin
 		PCHoe	=>ppi_pchoe,
 		PCLi	=>ppi_pcli,
 		PCLo	=>ppi_pclo,
-		--PCLoe	=>ppi_pcloe,
+		PCLoe	=>ppi_pcloe,
 		
 		clk		=>sysclk,
 		ce      =>sys_ce,
@@ -3671,8 +3687,8 @@ begin
 --	pJoyA(4)<='Z' when ppi_pcho(2)='0' else '0';
 --	pJoyA(5)<='Z' when ppi_pcho(3)='0' else '0';
 	pcm_clkdiv<=ppi_pclo(3 downto 2);
-	pcm_enL<=not ppi_pclo(0);
-	pcm_enR<=not ppi_pclo(1);
+	pcm_enL<=not ppi_pclo(1);
+	pcm_enR<=not ppi_pclo(0);
 	
 	process(vidclk) begin
 		if rising_edge(vidclk) then
@@ -3684,7 +3700,7 @@ begin
 		end if;
 	end process;
 	
-	VID_HRTCi<=VID_HRTCd;-- and (vr_hfreq or vlineno(0));
+	VID_HRTCi<=VID_HRTCd;-- and (vr_hfreq or not vr_VD(0) or (pVideoF1 and vlineno(0)) or (not pVideoF1 and not vlineno(0)));
 	
 	mfp_gpip7<=VID_HRTCi;
 	mfp_gpip6<=not VID_RINT;
@@ -3880,15 +3896,19 @@ begin
 		rstn		=>srstn
 	);
 	
+	-- pcm_sndL<= (others=>'0') when (pcm_enL='0' and ppi_pcloe='1') else (pcm_snd(11) & pcm_snd & "000");
+	-- pcm_sndR<= (others=>'0') when (pcm_enR='0' and ppi_pcloe='1') else (pcm_snd(11) & pcm_snd & "000");
+	
 	process(sndclk, snd_ce) begin
 		if rising_edge(sndclk) then
 			if (srstn = '0') then
 				pcm_sndL <= (others=>'0');
 				pcm_sndR <= (others=>'0');
 			elsif (snd_ce = '1') then
-				if (pcm_enL='1') then
+				if (pcm_enL='1' or ppi_pcloe='0') then
 					pcm_sndL<=(pcm_snd(11) & pcm_snd & "000");
-				elsif (pcm_enR='1') then
+				end if;
+				if (pcm_enR='1' or ppi_pcloe='0') then
 					pcm_sndR<=(pcm_snd(11) & pcm_snd & "000");
 				end if;
 			end if;
@@ -3924,10 +3944,10 @@ begin
 
 	--dacs	:sftclk generic map(ACFREQ,DACFREQ,1) port map("1",dacsft,sndclk,snd_ce,srstn);
 	
-	pSndPCML <= opm_sndL;
-	pSndPCMR <= opm_sndR;
-	pSndYML  <= pcm_sndL;
-	pSndYMR  <= pcm_sndR;
+	pSndPCML <= pcm_sndL;
+	pSndPCMR <= pcm_sndR;
+	pSndYML  <= opm_sndL;
+	pSndYMR  <= opm_sndR;
 
 	sndL<=mix_sndL;
 

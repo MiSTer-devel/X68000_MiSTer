@@ -1,7 +1,7 @@
 LIBRARY	IEEE,work;
 USE	IEEE.STD_LOGIC_1164.ALL;
 USE	IEEE.STD_LOGIC_UNSIGNED.ALL;
-use work.VIDEO_TIMING_800x600_pkg.all;
+USE IEEE.numeric_std.ALL;
 
 entity vidcont is
 generic(
@@ -99,6 +99,9 @@ port(
 	gg			:in std_logic;
 	gt			:in std_logic;
 	ah			:in std_logic;
+	ys          :in std_logic;
+	vht         :in std_logic;
+	lsel      :in std_logic;
 	
 	lbaddr	:out std_logic_vector(9 downto 0);
 	lbwdat	:out std_logic_vector(15 downto 0);
@@ -121,6 +124,7 @@ port(
 	tpalno	:out std_logic_vector(7 downto 0);
 	tpalin	:in std_logic_vector(15 downto 0);
 	tpal0in	:in std_logic_vector(15 downto 0);
+	gpal0in	:in std_logic_vector(15 downto 0);
 	
 	spalno	:out std_logic_vector(7 downto 0);
 	spalin	:in std_logic_vector(15 downto 0);
@@ -302,12 +306,27 @@ signal	vaddrs	:std_logic_vector(9 downto 0);
 signal	xinter	:std_logic;
 signal	intfil	:std_logic;
 signal  mix_ibit:std_logic;
+signal  sprio   :std_logic;
+signal  gpal0noi:std_logic_vector(7 downto 0);
+signal  gpal1noi:std_logic_vector(7 downto 0);
+signal  addrpr0 :std_logic;
+signal  addrpr1 :std_logic;
+signal  txt_solid:std_logic;
+signal  spr_solid:std_logic;
+signal  grp_solid:std_logic;
+signal tx_pal_0:std_logic;
+signal sp_pal_0:std_logic;
+signal gr_pal_0:std_logic;
+signal semitrans:std_logic;
+signal gpriobit:std_logic;
+signal tpriobit:std_logic;
+
 constant azero	:std_logic_vector(arange-1 downto 0)	:=(others=>'0');
 begin
-	g_ddaten<=	'1' when g4_ddat/=x"0" and gmode="00" else
-					'1' when g8_ddat(3 downto 0)/=x"0" and gmode="01" else
-					'1' when g16_ddat/=x"0000" and gmode(1)='1' else
-					'0';
+	-- g_ddaten<=	'1' when g4_ddat/=x"0" and gmode="00" else
+	-- 				'1' when g8_ddat(3 downto 0)/=x"0" and gmode="01" else
+	-- 				'1' when g16_ddat/=x"0000" and gmode(1)='1' else
+	-- 				'0';
 
 	process(vidclk)begin
 		if rising_edge(vidclk) then
@@ -323,17 +342,15 @@ begin
 				lhviden<=hviden;
 				exbitd<=exbit;
 				sprite_ind<=sprite_in;
-				t_ddatd<=t_ddat;
-				g_ddatend<=g_ddaten;
+				--t_ddatd<=t_ddat;
+				--g_ddatend<=g_ddaten;
 			end if;
 		end if;
 	end process;
-	
-	haddrmod<=  haddr;
 
 	-- 256 height in high freqency will doublescan the image
-	vaddroff <= vaddr;
-	vaddrmod<= '0' & vaddroff(9 downto 1)	when vres='0' and hfreq='1' else vaddroff; -- and hfreq='1'
+	vaddrmod<= '0' & vaddr(9 downto 1)	when vres='0' and hfreq='1' else vaddr; -- and hfreq='1'
+	haddrmod<= haddr;
 
 	thaddr_offset<=t_hoffset+haddrmod;
 	tvaddr_offset<=t_voffset+vaddrmod;
@@ -515,24 +532,28 @@ begin
 	
 	grskel<='1' when exon='1' and hp='1' and gg='1' else '0';
 	
-	gpal0no<=	
+	gpal0noi<=	
 				x"0" & g4p1_ddat when gmode="00" and grskel='1' and g4p1_ddat(0)='1' else
 				x"0" & g4_ddat when gmode="00" else
 				g8p1_ddat when gmode="01" and grskel='1' and g8p1_ddat(0)='1' else
 				g8_ddat when gmode="01" else
 				g16_ddat(7 downto 0);
 				
-	gpal1no<=
+	gpal1noi<=
 				x"0" & g4p2_ddat when gmode="00" and grskel='1' and g4p1_ddat(0)='1' else
 				x"0" & g4_ddat when gmode="00" else
 				g8p2_ddat when gmode="01" and grskel='1' and g8p1_ddat(0)='1' else
 				g8_ddat when gmode="01" else
 				g16_ddat(15 downto 8);
+	
+	gpal0no<=gpal0noi;
+	gpal1no<=gpal1noi;
 	exbit<=	'0' when bp='0' else
 				g4p1_ddat(0) when gmode="00" else
 				g8p1_ddat(0) when gmode="01" else
 				g16_ddat(0);
-
+	-- texbit<= '0' when bp='0' else
+		
 
 	process(vidclk)
 	variable hvwidth	:std_logic_vector(10 downto 0);
@@ -606,8 +627,8 @@ begin
 					cur_g1rd<=	'0';
 					cur_g2rd<=	'0';
 					cur_g3rd<=	'0';
-					ramsel<=not ramsel;
-					vviden<=not vblank;
+					ramsel<=lsel; --not ramsel;
+					vviden<='1';
 					hviden<= '1';--not hblank;
 				elsif(hcomp='1')then
 					cur_taddrh<=nxt_taddr(arange-3 downto 6);
@@ -623,8 +644,11 @@ begin
 					lvviden<=vviden;
 					raster<=raster+"0000000001";
 					hviden<='1';
-					vviden<= not vblank;
-					if vblank='0' then
+
+					if (raster = vvend-"0000000001") then
+						vviden<='0';
+					end if;
+					if (vblank = '0') then
 						vaddr<=vaddr+"0000000001";
 						g0_clear<=	gclrpage(0) and gclrbusyb;
 						g1_clear<=	gclrpage(1) and gclrbusyb;
@@ -651,10 +675,10 @@ begin
 					cur_g1rd<=nxt_g1rd;
 					cur_g2rd<=nxt_g2rd;
 					cur_g3rd<=nxt_g3rd;
-					ramsel<=not ramsel;
+					ramsel<=lsel; --not ramsel;
 				else
 					if(haddr<"1111111111")then
-						hvwidth:=(hvend-hvbgn-"00000001") & "111";
+						hvwidth:=(hvend-hvbgn) & "111";
 						haddr<=haddr+"0000000001";
 						lbwr<='1';
 						if(haddr=hvwidth)then -- hres(1)='1' and
@@ -679,43 +703,39 @@ begin
 	
 	addrx<=haddrmod(9 downto 0);
 	addry<=vaddrmod(9 downto 0);
---	tdoten<='0' when txten='0' or t_ddatd="0000" or tpalin=x"0000" else '1';
-	tdoten<='0' when txten='0' or (tpalin=x"0000" and t_ddatd="0000") else '1';
-	sdoten<=	'0' when spren='0' else
-				'0' when sprite_ind(3 downto 0)=x"0" or (spalin=x"0000" and sprite_ind(3 downto 0)/=x"1") else
-				'1';
-	gdoten<=	'0' when grpen='0' else
-				'0' when gpalin=x"0000" and g_ddatend='0' else
-				-- '0' when gpalin=x"0000" and g4_ddat="0000" and gmode="00" else
-				-- '0' when gpalin=x"0000" and g8_ddat=x"00" and gmode="01" else
-				-- '0' when gpalin=x"0000" and g16_ddat=x"0000" and gmode(1)='1' else
-				-- '0' when gpalin=x"0000" else
-				-- '0' when gmixdat=x"0000" else
-				'1';
+
+	sprio<= '1' when bp='1' and hp='0' else '0';
+	-- if the address of the next highest palette is 0, then the next lowest data will be valid.
+	tdoten<='0' when (txten='0' or tpalin=x"0000") else '1';--or (txt_solid='0' and t_ddatd="0000")   
+	sdoten<='0' when (spren='0' or sprite_ind(3 downto 0)=x"0" or spalin=x"0000") else '1';--or (spr_solid='0' and sprite_ind=x"00")  -- sprite_ind(3 downto 0)=x"0" or
+	gdoten<='0' when (grpen='0' or gpalin=x"0000") else '1';--or (grp_solid='0' and g_ddatend='0')    
 	tpalno<="0000" & t_ddat;
 	spalno<=sprite_in;
 	
-	mix_ibit <= '1' when mixsrc(0)='1' or gpalin(0)='1' else '0';
 	mixg<=	('0' & mixsrc(15 downto 11)) + ('0' & gpalin(15 downto 11));
 	mixr<=	('0' & mixsrc(10 downto  6)) + ('0' & gpalin(10 downto  6));
 	mixb<=	('0' & mixsrc( 5 downto  1)) + ('0' & gpalin( 5 downto  1));
-	mixdst<=	mixg(5 downto 1) & mixr(5 downto 1) & mixb(5 downto 1) & mix_ibit;
-	gmixdat<=mixdst	when ah='1' and exbit='1' else
+	mixdst<=	mixg(5 downto 1) & mixr(5 downto 1) & mixb(5 downto 1) & mixsrc(0);
+	gmixdat<=mixdst	when ah='1' and exbitd='1' else
 				mixdst	when exon='1' and hp='1' and exbitd='1' else
+				mixdst	when exon='1' and sprio='1' and gpal0in/=x"0000" else
 				gpalin;
 
-	wdatpr0<=tpalin	when pri_tx="00" and txten='1' else
-				spalin	when pri_sp="00" and spren='1' else
-				gmixdat	when pri_gr="00" and grpen='1' else
-				(others=>'0');
-	wdatpr1<=tpalin	when pri_tx="01" and txten='1' else
-				spalin	when pri_sp="01" and spren='1' else
-				gmixdat	when pri_gr="01" and grpen='1' else
-				(others=>'0');
-	wdatpr2<=tpalin	when pri_tx="10" and txten='1' else
-				spalin	when pri_sp="10" and spren='1' else
-				gmixdat	when pri_gr="10" and grpen='1' else
-				(others=>'0');
+	wdatpr0<=
+		tpalin	when pri_tx="00" and txten='1' and tdoten = '1' else
+		spalin	when pri_sp="00" and spren='1' and sdoten = '1' else
+		gmixdat	when pri_gr="00" and grpen='1' and gdoten = '1' else
+		tpal0in;
+	wdatpr1<=
+		tpalin	when pri_tx="01" and txten='1' and tdoten = '1' else
+		spalin	when pri_sp="01" and spren='1' and sdoten = '1' else
+		gmixdat	when pri_gr="01" and grpen='1' and gdoten = '1' else
+		tpal0in;
+	wdatpr2<=
+		tpalin	when (pri_tx="10" or pri_tx="11") and txten='1' and tdoten = '1' else
+		spalin	when (pri_sp="10" or pri_sp="11") and spren='1' and sdoten = '1' else
+		gmixdat	when (pri_gr="10" or pri_gr="11") and grpen='1' and gdoten = '1' else
+		tpal0in;
 	msrcpr1<=	tpalin	when pri_tx="01" and txten='1' else
 					spalin	when pri_sp="01" and spren='1' else
 					(others=>'0');
@@ -732,33 +752,55 @@ begin
 				msrcpr1	when (msrcpr1/=x"0000" and msenpr1='1' and pri_gr="00") else
 				msrcpr2	when (msrcpr2/=x"0000" and msenpr2='1') else
 				tpal0in;
-	
-	wenpr0<=	tdoten	when pri_tx="00" else
-				sdoten	when pri_sp="00" else
-				gdoten	when pri_gr="00" else
-				'0';
-	wenpr1<=	tdoten	when pri_tx="01" else
-				sdoten	when pri_sp="01" else
-				gdoten	when pri_gr="01" else
-				'0';
-	wenpr2<=	tdoten	when pri_tx="10" else
-				sdoten	when pri_sp="10" else
-				gdoten	when pri_gr="10" else
-				'0';
+	-- tx_pal_0 <= '1' when t_ddatd="0000" else '0';
+	-- sp_pal_0 <= '1' when sprite_ind=x"00" else '0';
+	-- gr_pal_0 <= '1' when g_ddatend='0' else '0';
 
-	lbwdat<=	(others=>'0') when lvviden='0' or lhviden='0' else
-				gpalin	when exon='1' and hp='0' and exbitd='1' else	--ex priority
---				wdatpr0	when wdatpr0/=x"0000" and wenpr0='1' else
---				wdatpr1	when wdatpr1/=x"0000" and wenpr1='1' else
---				wdatpr2	when wdatpr2/=x"0000" and wenpr2='1' else
---				tpal0in;
-				wdatpr0	when wenpr0='1' else
-				wdatpr1	when wenpr1='1' else
-				wdatpr2	when wenpr2='1' else
-				tpal0in;
---				(others=>'0');
+	-- addrpr0<= '1' when
+	-- 	(tx_pal_0='1' and pri_tx="00") or
+	-- 	(sp_pal_0='1' and pri_sp="00") or
+	-- 	(gr_pal_0='1' and pri_gr="00") else
+	-- 	'0';
+
+	-- addrpr1<='1' when
+	-- 	(tx_pal_0='1' and pri_tx="01") or
+	-- 	(sp_pal_0='1' and pri_sp="01") or
+	-- 	(gr_pal_0='1' and pri_gr="01") else
+	-- 	'0';
+
+	wenpr0<= '1' when
+		(tdoten='1' and pri_tx="00") or
+		(sdoten='1' and pri_sp="00") or
+		(gdoten='1'	and pri_gr="00") else
+		'0';
+
+	wenpr1<='1' when
+		(tdoten='1' and pri_tx="01") or
+		(sdoten='1' and pri_sp="01") or
+		(gdoten='1'	and pri_gr="01") else
+		'0';
+
+	wenpr2<='1' when
+		(tdoten='1' and (pri_tx="10" or pri_tx="11")) or
+		(sdoten='1' and (pri_sp="10" or pri_sp="11")) or
+		(gdoten='1'	and (pri_gr="10" or pri_gr="11")) else
+		'0';
+
+	gpriobit<='0' when bp='0' or hp='1' or exon='0' or gpalin=x"0000" else --or gpal0in/=x"0000"
+		exbitd;
+
+	tpriobit<='0';
 	
-				
+	lbwdat<=(others=>'0') when lvviden='0' or lhviden='0' else
+		gpalin when gpriobit='1' else
+		tpalin when tpriobit='1' else
+		wdatpr0	when wenpr0='1' else
+		wdatpr1	when wenpr1='1' else
+		wdatpr2	when wenpr2='1' else
+		-- "Air Control" will show wrong colors unless this is 0000
+		(others=>'0'); --when (spren='0' and txten='0' and grpen='0') else
+		--tpal0in;
+
 	lbaddr<=hadly2;
 	
 	g00_addr<=	g_base(arange-1 downto 18) & nxt_g0addr	when ramsel='0' else
