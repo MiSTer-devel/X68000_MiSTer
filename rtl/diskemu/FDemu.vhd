@@ -6,7 +6,7 @@ use work.FDC_timing.all;
 
 entity FDemu is
 generic(
-	sysclk		:integer	:=20000;
+	sysclk		:integer	:=10000;
 	fdwait		:integer	:=10
 );
 port(

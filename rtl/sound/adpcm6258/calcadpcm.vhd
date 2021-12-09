@@ -15,6 +15,7 @@ port(
 	sft		:in std_logic;
 	clk		:in std_logic;
 	ce      :in std_logic := '1';
+	sys_ce  :in std_logic := '1';
 	rstn	:in std_logic
 );
 
@@ -150,7 +151,7 @@ begin
 	datout<=curval(19 downto 8);
 	
 	diffvalx<=	"0000000000" & diffval		when clkdiv="00" else
-				"000000000" & diffval & '0'	when clkdiv="01" else
+				("000000000" & diffval) + ("00000000000" & diffval(11 downto 1))	when clkdiv="01" else
 				"000000000" & diffval & '0'	when clkdiv="10" else
 				"00" & diffval & "00000000";
 

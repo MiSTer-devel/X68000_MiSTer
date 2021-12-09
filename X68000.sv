@@ -245,7 +245,7 @@ parameter CONF_STR = {
 	"o0,CPU speed,Normal,Turbo;",
 	"R7,NMI Button;",
 	"R8,Power Button;",
-	"R0,Reset and Apply HDD;",
+	"R0,Reset;",
 	"-;",
 	"J,Fire 1,Fire 2,Run,Select;",
 	"jn,Fire 1,Fire 2,Run,Select;",
@@ -414,17 +414,53 @@ hps_io #(.CONF_STR(CONF_STR), .PS2DIV(2400), .PS2WE(1), .VDNUM(4)) hps_io
 
 /////////////////  RESET  /////////////////////////
 
+wire [3:0] img_mounted_d;
+wire [1:0] fdd_eject_d;
+reg [23:0] mount_count[4];
+reg [15:0] fdd_eject_count[2];
+assign fdd_eject_d[0] = |mount_count[0][23:16] || |fdd_eject_count[0];
+assign fdd_eject_d[1] = |mount_count[1][23:16] || |fdd_eject_count[1];
+assign img_mounted_d[0] = ~fdd_eject_d[0] && |mount_count[0];
+assign img_mounted_d[1] = ~fdd_eject_d[1] && |mount_count[1];
+assign img_mounted_d[2] = |mount_count[2];
+assign img_mounted_d[3] = |mount_count[3];
+
 reg reset_n = 0;
 reg reset;
 always @(posedge clk_sys) begin : rst_block
 	reg init_reset_n = 0;
 	reg old_rst = 0;
+	reg [3:0] old_im = 4'd0;
 	reg old_download;
+	reg [15:0] reset_delayed;
 	
 	old_download <= ioctl_download;
+	old_im <= img_mounted;
 	if(~old_download & ioctl_download) reset_n <= 1;
+	
+	for (logic [2:0] x = 0; x < 3'd4; x=x+1'd1) begin
+		if (mount_count[x])
+			mount_count[x] <= mount_count[x] - 1'd1;
+		if (img_mounted[x])
+			mount_count[x] <= 24'hFFFFFF;
+	end
+	if (fdeject[0])
+		fdd_eject_count[0]<= 16'hFFFF;
+	if (fdeject[1])
+		fdd_eject_count[1]<= 16'hFFFF;
+	if (fdd_eject_count[0])
+		fdd_eject_count[0] <= fdd_eject_count[0] - 1'd1;
+	if (fdd_eject_count[1])
+		fdd_eject_count[1] <= fdd_eject_count[1] - 1'd1;
 
-	reset <= buttons[1] | status[0] | RESET | ~init_reset_n;
+	reset <= buttons[1] | status[0] | RESET | ~init_reset_n | |reset_delayed;
+
+	if (reset_delayed)
+		reset_delayed <= reset_delayed - 1'd1;
+	if (~old_im[2] && img_mounted[2]) begin
+		reset_delayed <= 16'hFFFF;
+	end
+
 
 	old_rst <= status[0];
 	if(old_rst & ~status[0]) init_reset_n <= 1;
@@ -593,7 +629,7 @@ X68K_top X68K_top
 	.pPmsDatin(ps2_mouse_data_out),
 	.pPmsDatout(ps2_mouse_data_in),
 
-	.mist_mounted(img_mounted),
+	.mist_mounted(img_mounted_d),
 	.mist_readonly(img_readonly),
 	.mist_imgsize(img_size),
 
@@ -611,7 +647,7 @@ X68K_top X68K_top
 	.pJoyB(joyB),
 
 	.pFDSYNC(fdsync),
-	.pFDEJECT(fdeject),
+	.pFDEJECT(fdd_eject_d),
 	.pFDMOTOR(fdd_active),
 
 	.pLed(disk_led),

@@ -76,38 +76,37 @@ module mister_sync
 	logic d_line;
 	integer polyclock_cnt, mod_inc;
 
-	wire hfreq_ovr = hfreq; //1'b1; ;
+	wire interlaced = (VMODE[0] == 1'b1 && ~hfreq);
+
+	wire hfreq_ovr = interlaced ? 1'b1 : hfreq; //1'b1;
 	wire [1:0] HMODE_ovr = HMODE;//2'b10;
-	wire [1:0] VMODE_ovr = VMODE;
+	//wire [1:0] VMODE_ovr = VMODE;
 	wire [7:0] htotal_ovr = htotal;//8'd137;
-	wire [9:0] vtotal_ovr = vtotal;//(VMODE[0]) ? vtotal : {vtotal[8:0], 1'b0};//10'd567;
-	wire [9:0] vsynl_ovr  = vsynl; //(VMODE[0]) ? vsynl : {vsynl[8:0], 1'b0};
-	wire [9:0] vvbgn_ovr  = vvbgn; //(VMODE[0]) ? vvbgn : {vvbgn[8:0], 1'b0};
-	wire [9:0] vvend_ovr  = vvend; //(VMODE[0]) ? vvend : {vvend[8:0], 1'b0};
-	
+	wire [9:0] vtotal_ovr = ~interlaced ? vtotal : {vtotal[8:0], 1'b1};
+	wire [9:0] vsynl_ovr  = vsynl;
+	wire [9:0] vvbgn_ovr  = ~interlaced ? vvbgn : {vvbgn[8:0], 1'b1};
+	wire [9:0] vvend_ovr  = ~interlaced ? vvend : {vvend[8:0], 1'b1};
+	wire [9:0] rintl_ovr  = ~interlaced ? rintl : {rintl[8:0], 1'b1};
+
 	assign out_HMODE    = HMODE;
 	assign out_VMODE    = VMODE;
-	assign out_hfreq    = hfreq;
+	assign out_hfreq    = hfreq_ovr;
 	assign out_htotal   = htotal;
 	assign out_hsynl    = hsynl;
 	assign out_hvbgn    = hvbgn;
 	assign out_hvend    = hvend;
-	assign out_vtotal   = vtotal;
+	assign out_vtotal   = vtotal_ovr;
 	assign out_vsynl    = vsynl;
-	assign out_vvbgn    = vvbgn;
-	assign out_vvend    = vvend;
-	assign out_rintl    = rintl;
-	
-	
+	assign out_vvbgn    = vvbgn_ovr;
+	assign out_vvend    = vvend_ovr;
+	assign out_rintl    = rintl_ovr;
 
-	// assign VRTC = ~((VCOUNT >= vvbgn_ovr) && (VCOUNT < vvend_ovr));
-	// assign HRTC = ~((HUCOUNT >= hvbgn) && (HUCOUNT < hvend));
 	assign HSYNC = HUCOUNT < hsynl;
 	assign VSYNC = VCOUNT < vsynl_ovr;
 
 	assign VIDEN = ~(VRTC || HRTC);
-	wire [7:0] htotal_m = /*~hfreq ? {htotal[6:0], 1'b0} :*/ htotal_ovr;
-	wire [9:0] vtotal_m = /*(~VMODE[0] && ~hfreq) ? {vtotal[8:0], 1'b0} :*/ vtotal_ovr;
+	wire [7:0] htotal_m = htotal_ovr;
+	wire [9:0] vtotal_m = vtotal_ovr;
 	// 69.55199 - Video clock
 	// 38.86363 - Also attached to video circuits
 	//                       69.55199       38.86363   80
@@ -140,6 +139,7 @@ module mister_sync
 	// Rising edge of visible area
 	assign HCOMPb = (HCOMPw && ~HCOMPl);
 	assign VCOMPb = (VCOMPw && ~VCOMPl);
+	
 
 	always_comb begin
 		case ({HRL, hfreq_ovr, HMODE_ovr})
@@ -164,7 +164,7 @@ module mister_sync
 	end
 
 	assign pix_ce = polyclock;
-	assign f1 = (VMODE_ovr && ~hfreq_ovr) ? field : 1'd0;
+	assign f1 = 1'b0;//(VMODE_ovr[0] && ~hfreq_ovr) ? field : 1'd0;
 	assign vid_osc = pix_ce;
 
 	always_ff @(posedge gclk) begin // 80mhz is 12.5ns per tick
@@ -204,9 +204,9 @@ module mister_sync
 
 			if (&dotpu_cnt) begin // Horizontal Tick
 				HUCOUNT <= HUCOUNT + 1'd1;
-				if (HUCOUNT == hvbgn)
+				if (HUCOUNT == hvbgn + 3'd4)
 					HRTC <= 0;
-				else if (HUCOUNT == hvend)
+				else if (HUCOUNT == hvend + 3'd4)
 					HRTC <= 1;
 
 				if (~HRTC)
@@ -242,7 +242,6 @@ module mister_sync
 	assign VCOMP    = VCOMPb & pix_ce;
 	assign VPSTART  = HCOMP && VCOUNT==0;
 
-	// FIXME: Make blank color black after debugging
 	assign RFOUT = VIDEN ? {Rdat, Idat} : 6'd0;
 	assign GFOUT = VIDEN ? {Gdat, Idat} : 6'd0;
 	assign BFOUT = VIDEN ? {Bdat, Idat} : 6'd0;

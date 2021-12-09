@@ -85,6 +85,16 @@ begin
 				drq<='0';
 				ldatwr:="00";
 			elsif(snd_ce = '1')then
+				if(datuse='1')then
+					nxtbuf0<=nxtbuf1;
+					nxtbuf1<=(others=>'0');
+					if(bufcount>0)then
+						bufcount<=bufcount-1;
+					end if;
+					if(bufcount<=1)then
+						drq<='1';
+					end if;
+				end if;
 				if(datwr='1')then
 					drq<='0';
 				elsif(ldatwr="10")then
@@ -101,16 +111,6 @@ begin
 						nxtbuf1<=datinbuf(7 downto 4);
 						nxtbuf0<=datinbuf(3 downto 0);
 						bufcount<=2;
-					end if;
-				end if;
-				if(datuse='1')then
-					nxtbuf0<=nxtbuf1;
-					nxtbuf1<=(others=>'0');
-					if(bufcount>0)then
-						bufcount<=bufcount-1;
-					end if;
-					if(bufcount<=1)then
-						drq<='1';
 					end if;
 				end if;
 				ldatwr:=ldatwr(0) & datwr;
@@ -154,7 +154,7 @@ begin
 							when "00" =>
 								divcount<=255;
 							when "01" =>
-								divcount<=127;
+								divcount<=191;
 							when "10" =>
 								divcount<=127;
 							when others =>
@@ -184,6 +184,6 @@ begin
 		rstn	=>rstn
 	);
 
-	datout<=	(playen or recen) & '1' & "000000" when addr='0' else
+	datout<=	((not playen) or recen) & '0' & "000000" when addr='0' else
 				(others=>'0');
 	end rtl;
