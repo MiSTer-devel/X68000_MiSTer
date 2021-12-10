@@ -2,16 +2,13 @@
 
 ## Work in progress...
 
-### What is working:
-* FDD images on secondary SD card
-* HDD images (SASI only!) on secondary SD card
+### Supported storage
+* FDD *.d88 images
+* SASI HDD *.hdf images
 
-### Issues:
-* keyboard in disk emu screen sometimes doesn't work
-* config file sometimes gets corrupted after save.
-* floppy images mounted as ejected (Nios II source code required to get it fixed)
-* Unused real HDD/FDD options should be deleted from menu.
-* Reset works only once (probably Nios II FW bug).
+### Additional info
+- Supported MT32-pi over USER I/O port.
 
-### Special keys
-**F11** - switch to diskemu menu.
+### Installation
+Copy *.rbf to SD card. Copy boot.rom and boot3.vhd to Games/X69000 folder.
+You can use BLANK_disk_X68000.D88 if you need to make a new FDD image (or for saves).
