@@ -1,4 +1,6 @@
-# [Sharp X68000](https://en.wikipedia.org/wiki/X68000) for MiSTer Platform
+# [Sharp X68000](https://en.wikipedia.org/wiki/X68000) for [MiSTer Platform](https://github.com/MiSTer-devel/Main_MiSTer/wiki)
+
+This is the port of the [Sharp X68000](http://fpga8801.seesaa.net/category/24786679-1.html) core by Puu-san.
 
 ## Work in progress...
 
