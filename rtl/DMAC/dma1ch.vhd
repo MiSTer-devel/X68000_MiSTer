@@ -1238,7 +1238,7 @@ begin
 				TERR_CNT<='0';
 				CERR_CNT<='0';
 				if(lCNT='0' and CCR_CNT='1')then
-					if(S_ACT='0')then
+					if(OCR_CHAIN(1)='1' and S_ACT='0')then
 						TERR_CNT<='1';
 					elsif(OCR_CHAIN(1)='1')then
 						CERR_CNT<='1';
