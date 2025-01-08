@@ -1031,6 +1031,7 @@ port(
 
 	clk			:in std_logic;
 	ce          :in std_logic := '1';
+	is_ch3		:in std_logic;
 	rstn		:in std_logic
 );
 
@@ -2659,6 +2660,7 @@ begin
 		
 		clk		=>sysclk,
 		ce      =>sys_ce,
+		is_ch3		=>'0',
 		rstn	=>srstn
 	);
 

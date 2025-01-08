@@ -59,6 +59,7 @@ port(
 
 	clk			:in std_logic;
 	ce          :in std_logic := '1';
+	is_ch3      :in std_logic;
 	rstn		:in std_logic
 );
 
@@ -145,6 +146,7 @@ port(
 
 	clk			:in std_logic;
 	ce          :in std_logic := '1';
+	is_ch3		:in std_logic;
 	rstn		:in std_logic
 );
 end component;
@@ -327,6 +329,7 @@ begin
 
 		clk			=>clk,
 		ce          =>ce,
+		is_ch3		=>'0',
 		rstn		=>rstn
 	);
 
@@ -372,6 +375,7 @@ begin
 
 		clk			=>clk,
 		ce          =>ce,
+		is_ch3		=>'0',
 		rstn		=>rstn
 	);
 
@@ -417,6 +421,7 @@ begin
 
 		clk			=>clk,
 		ce          =>ce,
+		is_ch3		=>'0',
 		rstn		=>rstn
 	);
 
@@ -462,6 +467,7 @@ begin
 
 		clk			=>clk,
 		ce          =>ce,
+		is_ch3		=>'1',
 		rstn		=>rstn
 	);
 	busreqv(4)<='1';

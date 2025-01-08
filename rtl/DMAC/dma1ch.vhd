@@ -45,6 +45,7 @@ port(
 
 	clk			:in std_logic;
 	ce          :in std_logic := '1';
+	is_ch3		:in std_logic;
 	rstn		:in std_logic
 );
 end dma1ch;
@@ -581,7 +582,11 @@ begin
 			if(rstn='0')then
 				STATE<=ST_IDLE;
 				busreq<='0';
-				--ldrq<='0';
+--puu
+				if(is_ch3='1') then
+					ldrq<='0';
+				end if;
+				
 				dack<='0';
 				BUSADDR<=(others=>'0');
 				b_outdat<=(others=>'0');
@@ -659,7 +664,11 @@ begin
 				BAR_inc		<='0';
 				MFC_BFC		<='0';
 				CONT_clr<='0';
-				--ldrq<=drqx;
+--puu				
+				if(is_ch3='1') then
+					ldrq<=drqx;
+				end if;
+				
 				int_comp<='0';
 				S_BTCset<='0';
 				drqeclr<='0';
@@ -669,7 +678,12 @@ begin
 					case STATE is
 					when ST_IDLE =>
 						if(CHactive='1')then
-							drqeclr<='1';
+--puu
+							--drqeclr<='1';
+							if(is_ch3='0') then
+								drqeclr<='1';
+							end if;
+							
 							CONTMODE<='0';
 							if(OCR_CHAIN(1)='1')then
 								busreq<='1';

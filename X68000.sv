@@ -565,7 +565,7 @@ always @(posedge clk_sys) begin
 	div_snd2 <= div_snd2 + 1'd1;
 	div_opm <= div_opm + 1'd1;
 
-	if (div_snd2 == 9) div_snd <= 0;
+	if (div_snd2 == 9) div_snd2 <= 0;
 	if (div_snd == 4)  div_snd <= 0;
 	if (div_opm == 19) div_opm <= 0;
 
