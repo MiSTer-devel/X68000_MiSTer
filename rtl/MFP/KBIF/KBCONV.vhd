@@ -37,6 +37,7 @@ port(
 	kbrx	:out std_logic;
 	
 	LED		:out std_logic_vector(6 downto 0);
+	kbdtype	:in std_logic_vector(1 downto 0)	:="00";
 	
 	clk		:in std_logic;
 	ce      :in std_logic := '1';
@@ -91,28 +92,30 @@ port(
 );
 end component;
 
-component  ktbln
+component  ktbln_m
 	PORT
 	(
-		address		: IN STD_LOGIC_VECTOR (7 DOWNTO 0);
+		address		: IN STD_LOGIC_VECTOR (9 DOWNTO 0);
 		clock		: IN STD_LOGIC  := '1';
 		q			: OUT STD_LOGIC_VECTOR (6 DOWNTO 0)
 	);
 END component;
 
-component  ktble0
+component  ktble0_m
 	PORT
 	(
-		address		: IN STD_LOGIC_VECTOR (7 DOWNTO 0);
+		address		: IN STD_LOGIC_VECTOR (9 DOWNTO 0);
 		clock		: IN STD_LOGIC  := '1';
 		q			: OUT STD_LOGIC_VECTOR (6 DOWNTO 0)
 	);
 END component;
 
 signal	E0en	:std_logic;
+signal	E1en	:std_logic;
 signal	F0en	:std_logic;
 signal	SFT		:std_logic;
 signal	TBLADR	:std_logic_vector(7 downto 0);
+signal	TBLADRm	:std_logic_vector(7 downto 0);
 signal	TBLDAT	:std_logic_vector(6 downto 0);
 signal	NTBLDAT	:std_logic_vector(6 downto 0);
 signal	E0TBLDAT:std_logic_vector(6 downto 0);
@@ -273,8 +276,9 @@ begin
 		if rising_edge(clk) then
 			if(rstn='0')then
 				KBSTATE<=KS_RESET;
-				E0EN<='0';
-				F0EN<='0';
+				E0en<='0';
+				E1en<='0';
+				F0en<='0';
 				KB_WRn<='1';
 				KB_RESET<='0';
 				WAITCNT<=0;
@@ -363,8 +367,10 @@ begin
 					when KS_IDLE =>
 						TXEMPb<='1';
 						if(KB_RXED='1')then
-							if(KB_RXDAT=x"e0" or KB_RXDAT=x"e1")then
+							if(KB_RXDAT=x"e0")then
 								E0en<='1';
+							elsif(KB_RXDAT=x"e1")then
+								E1en<='1';
 							elsif(KB_RXDAT=x"f0")then
 								F0en<='1';
 							else
@@ -415,9 +421,8 @@ begin
 					when KS_RDTBL =>
 						if(TBLDAT="1111111")then
 							E0en<='0';
+							E1en<='0';
 							F0en<='0';
-							KBSTATE<=KS_IDLE;
-						elsif(TBLDAT="1111110")then
 							KBSTATE<=KS_IDLE;
 						else
 							if(F0en='1')then
@@ -506,9 +511,14 @@ begin
 	RXEN<=(not KBWAIT_CMD) and RSR(0);
 	TXEN<=TSR(0);
 	
-	NTBL	:ktbln port map(TBLADR,clk,NTBLDAT);
-	E0TBL	:ktble0 port map(TBLADR,clk,E0TBLDAT);
-	TBLDAT<=E0TBLDAT when E0en='1' else NTBLDAT;
+	TBLADRm(7)<='1' when E1en='1' else TBLADR(7);
+	TBLADRm(6 downto 0)<=TBLADR(6 downto 0);
+	
+	NTBL	:ktbln_m port map(kbdtype & TBLADR,clk,NTBLDAT);
+	E0TBL	:ktble0_m port map(kbdtype & TBLADRm,clk,E0TBLDAT);
+	TBLDAT<=	E0TBLDAT when E0en='1' else
+				E0TBLDAT	when E1en='1' else
+				NTBLDAT;
 	
 	process(clk,rstn)begin
 		if rising_edge(clk) then

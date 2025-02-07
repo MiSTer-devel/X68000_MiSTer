@@ -97,6 +97,7 @@ port(
 	pDip       : in std_logic_vector( 3 downto 0);     -- 0=ON,  1=OFF(default on shipment)
 	pLed       : out std_logic;
 	pPsw			: in std_logic_vector(1 downto 0);
+	pkbdtype	:in std_logic_vector(1 downto 0);
 	
 	pSramld		:in std_logic;
 	pSramst		:in std_logic;
@@ -1947,6 +1948,8 @@ port(
 	IVECT	:out std_logic_vector(7 downto 0);
 	INTack	:in std_logic;
 	IVack	:in std_logic_vector(7 downto 0);
+
+	kbdtype	:in std_logic_vector(1 downto 0);
 	
 	clk		:in std_logic;
 	ce      :in std_logic := '1';
@@ -3776,6 +3779,8 @@ begin
 		IVECT	=>IVECT6,
 		INTack	=>IACK6,
 		IVack	=>mfp_ivack,
+
+		kbdtype	=>pkbdtype,
 			
 		clk		=>sysclk,
 		ce      =>sys_ce,

@@ -204,7 +204,7 @@ assign AUDIO_MIX = status[3:2];
 // 0         1         2         3          4         5         6
 // 01234567890123456789012345678901 23456789012345678901234567890123
 // 0123456789ABCDEFGHIJKLMNOPQRSTUV 0123456789ABCDEFGHIJKLMNOPQRSTUV
-// X XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX XX      XXX
+// X XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX XXXX    XXX
 
 `include "build_id.v" 
 parameter CONF_STR = {
@@ -245,6 +245,8 @@ parameter CONF_STR = {
 	"h1P3OTV,SoundFont,0,1,2,3,4,5,6,7;",
 	"h1P3-;",
 	"h1P3r8,Reset Hanging Notes;",
+	"-;",
+	"o23,KBD layout,JP Func.,JP Pos.,US Std,US Alt;",
 	"-;",
 	"o0,CPU speed,Normal,Turbo;",
 	"R7,NMI Button;",
@@ -539,6 +541,7 @@ wire [1:0] fdsync = status[10:9];
 wire [1:0] fdeject = status[12:11];
 wire sramld	= status[13];
 wire sramst = status[14];
+wire [1:0] kbdtype = status[35:34];
 
 assign CLK_VIDEO = clk_vid;
 assign AUDIO_S = 1;
@@ -659,6 +662,8 @@ X68K_top X68K_top
 	.pPsw({~NMI,~POWER}),
 	.pSramld(sramld),
 	.pSramst(sramst),
+
+	.pkbdtype(kbdtype),
 
 	.pMidi_in(UART_RXD),
 	.pMidi_out(UART_TXD),
