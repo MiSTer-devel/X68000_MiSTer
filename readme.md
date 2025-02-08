@@ -14,3 +14,7 @@ This is the port of the [Sharp X68000](http://fpga8801.seesaa.net/category/24786
 ### Installation
 Copy *.rbf to SD card. Copy boot.rom and boot3.vhd to Games/X68000 folder.
 You can use BLANK_disk_X68000.D88 if you need to make a new FDD image (or for saves).
+
+### Keyboard Layouts
+There is an OSD option to choose different keyboard layouts.
+Each layout are described on this excel sheet [Keyboard Layouts Excel Sheet](Doc/keymap.xlsx) from Puu-San, there is also this PDF file [Keyboard Layouts PDF](Doc/keymap.pdf) from Tonton that you can deployed on your MiSTer at this directory /media/fat/docs/X68000. You could opened this PDF on the core by selecting System -> Help on the OSD.
