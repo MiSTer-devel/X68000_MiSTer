@@ -1,0 +1,193 @@
+-- Copyright (C) 2017  Intel Corporation. All rights reserved.
+-- Your use of Intel Corporation's design tools, logic functions 
+-- and other software and tools, and its AMPP partner logic 
+-- functions, and any output files from any of the foregoing 
+-- (including device programming or simulation files), and any 
+-- associated documentation or information are expressly subject 
+-- to the terms and conditions of the Intel Program License 
+-- Subscription Agreement, the Intel Quartus Prime License Agreement,
+-- the Intel FPGA IP License Agreement, or other applicable license
+-- agreement, including, without limitation, that your use is for
+-- the sole purpose of programming logic devices manufactured by
+-- Intel and sold by Intel or its authorized distributors.  Please
+-- refer to the applicable agreement for further details.
+
+-- Quartus Prime generated Memory Initialization File (.mif)
+
+WIDTH=7;
+DEPTH=1024;
+
+ADDRESS_RADIX=HEX;
+DATA_RADIX=HEX;
+
+CONTENT BEGIN
+	[000..010]  :   7F;
+	011  :   59;
+	[012..013]  :   7F;
+	014  :   5C;
+	[015..01E]  :   7F;
+	01F  :   55;
+	[020..026]  :   7F;
+	027  :   5A;
+	[028..02E]  :   7F;
+	02F  :   5B;
+	[030..036]  :   7F;
+	037  :   52;
+	[038..03E]  :   7F;
+	03F  :   53;
+	[040..049]  :   7F;
+	04A  :   40;
+	[04B..059]  :   7F;
+	05A  :   4E;
+	[05B..05D]  :   7F;
+	05E  :   54;
+	[05F..068]  :   7F;
+	069  :   3A;
+	06A  :   7F;
+	06B  :   3B;
+	06C  :   36;
+	[06D..06F]  :   7F;
+	070  :   5E;
+	071  :   37;
+	072  :   3E;
+	073  :   7F;
+	074  :   3D;
+	075  :   3C;
+	076  :   7F;
+	077  :   61;
+	078  :   7F;
+	079  :   46;
+	07A  :   39;
+	07B  :   7F;
+	07C  :   62;
+	07D  :   38;
+	[07E..093]  :   7F;
+	094  :   61;
+	[095..110]  :   7F;
+	111  :   60;
+	[112..113]  :   7F;
+	114  :   5A;
+	[115..11E]  :   7F;
+	11F  :   55;
+	[120..126]  :   7F;
+	127  :   72;
+	[128..12E]  :   7F;
+	12F  :   73;
+	[130..136]  :   7F;
+	137  :   52;
+	[138..13E]  :   7F;
+	13F  :   53;
+	[140..149]  :   7F;
+	14A  :   40;
+	[14B..159]  :   7F;
+	15A  :   4E;
+	[15B..15D]  :   7F;
+	15E  :   54;
+	[15F..168]  :   7F;
+	169  :   39;
+	16A  :   7F;
+	16B  :   3B;
+	16C  :   5E;
+	[16D..16F]  :   7F;
+	170  :   36;
+	171  :   38;
+	172  :   3E;
+	173  :   7F;
+	174  :   3D;
+	175  :   3C;
+	176  :   7F;
+	177  :   61;
+	178  :   7F;
+	179  :   46;
+	17A  :   39;
+	17B  :   7F;
+	17C  :   5B;
+	17D  :   37;
+	[17E..193]  :   7F;
+	194  :   5D;
+	[195..210]  :   7F;
+	211  :   57;
+	[212..213]  :   7F;
+	214  :   34;
+	[215..21E]  :   7F;
+	21F  :   55;
+	[220..226]  :   7F;
+	227  :   58;
+	[228..22E]  :   7F;
+	22F  :   0E;
+	[230..236]  :   7F;
+	237  :   52;
+	[238..23E]  :   7F;
+	23F  :   53;
+	[240..249]  :   7F;
+	24A  :   40;
+	[24B..259]  :   7F;
+	25A  :   4E;
+	[25B..25D]  :   7F;
+	25E  :   54;
+	[25F..268]  :   7F;
+	269  :   3A;
+	26A  :   7F;
+	26B  :   3B;
+	26C  :   36;
+	[26D..26F]  :   7F;
+	270  :   5E;
+	271  :   37;
+	272  :   3E;
+	273  :   7F;
+	274  :   3D;
+	275  :   3C;
+	276  :   7F;
+	277  :   61;
+	278  :   7F;
+	279  :   46;
+	27A  :   39;
+	27B  :   7F;
+	27C  :   62;
+	27D  :   38;
+	[27E..293]  :   7F;
+	294  :   61;
+	[295..310]  :   7F;
+	311  :   52;
+	[312..313]  :   7F;
+	314  :   60;
+	[315..31E]  :   7F;
+	31F  :   72;
+	[320..326]  :   7F;
+	327  :   53;
+	[328..32E]  :   7F;
+	32F  :   54;
+	[330..336]  :   7F;
+	337  :   52;
+	[338..33E]  :   7F;
+	33F  :   53;
+	[340..349]  :   7F;
+	34A  :   40;
+	[34B..359]  :   7F;
+	35A  :   4E;
+	[35B..35D]  :   7F;
+	35E  :   54;
+	[35F..368]  :   7F;
+	369  :   3A;
+	36A  :   7F;
+	36B  :   3B;
+	36C  :   36;
+	[36D..36F]  :   7F;
+	370  :   5E;
+	371  :   37;
+	372  :   3E;
+	373  :   7F;
+	374  :   3D;
+	375  :   3C;
+	376  :   7F;
+	377  :   61;
+	378  :   7F;
+	379  :   46;
+	37A  :   39;
+	37B  :   7F;
+	37C  :   62;
+	37D  :   38;
+	[37E..393]  :   7F;
+	394  :   61;
+	[395..3FF]  :   7F;
+END;

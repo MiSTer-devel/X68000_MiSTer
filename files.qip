@@ -6,6 +6,8 @@ set_global_assignment -name QIP_FILE  rtl/FDC/fdc.qip
 set_global_assignment -name QIP_FILE  rtl/GPALETTE/gpalette.qip
 set_global_assignment -name QIP_FILE  rtl/LIB/lib.qip
 set_global_assignment -name QIP_FILE  rtl/MFP/mfp.qip
+set_global_assignment -name QIP_FILE  rtl/MFP/KBIF/ktble0_m.qip
+set_global_assignment -name QIP_FILE  rtl/MFP/KBIF/ktbln_m.qip
 set_global_assignment -name QIP_FILE  rtl/SCC/scc.qip
 set_global_assignment -name QIP_FILE  rtl/rtc/rtc.qip
 set_global_assignment -name QIP_FILE  rtl/sound/sound.qip
