@@ -1,2 +1,4 @@
 set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) txframe.vhd ]
 set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) rxframe.vhd ]
+set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) txframenb.vhd ]
+
