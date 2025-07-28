@@ -204,7 +204,7 @@ assign AUDIO_MIX = status[3:2];
 // 0         1         2         3          4         5         6
 // 01234567890123456789012345678901 23456789012345678901234567890123
 // 0123456789ABCDEFGHIJKLMNOPQRSTUV 0123456789ABCDEFGHIJKLMNOPQRSTUV
-// X XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX XXXX    XXX
+// X XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX XXXXxxx XXX
 
 `include "build_id.v" 
 parameter CONF_STR = {
@@ -246,6 +246,8 @@ parameter CONF_STR = {
 	"h1P3-;",
 	"h1P3r8,Reset Hanging Notes;",
 	"-;",
+//	"o46,Controller,2 Button,2 Turbo,MegaDrive 3,Capcom 6,Megadrive 6,XE-1AP,PacLand;",  // More controllers will be added soon
+	"o46,Controller,2 Button,2 Turbo,MegaDrive 3,Capcom 6;",
 	"o23,KBD layout,JP Func.,JP Pos.,US Std,US Alt;",
 	"-;",
 	"o0,CPU speed,Normal,Turbo;",
@@ -253,8 +255,9 @@ parameter CONF_STR = {
 	"R8,Power Button;",
 	"R0,Reset;",
 	"-;",
-	"J,Fire 1,Fire 2,Run,Select;",
-	"jn,Fire 1,Fire 2,Run,Select;",
+	"J,Button 1,Button 2,Run,Select,Button 3,Button 4,Button 5,Button 6;",
+	"jn,A,B,Run,Select,X,Y,L,R;",
+	"jp,A,B,Run,Select,X,Y,L,R;",
 	"I,",
 	"MT32-pi: SoundFont #0,",
 	"MT32-pi: SoundFont #1,",
@@ -322,11 +325,6 @@ sdramclk_ddr
 wire [63:0] status;
 wire  [1:0] buttons;
 
-wire [15:0] joystick_0, joystick_1;
-
-wire  [5:0] joyA = ~{joystick_0[5:4],joystick_0[0] | joystick_0[6],joystick_0[1] | joystick_0[6],joystick_0[2] | joystick_0[7],joystick_0[3] | joystick_0[7]};
-wire  [5:0] joyB = ~{joystick_1[5:4],joystick_1[0] | joystick_1[6],joystick_1[1] | joystick_1[6],joystick_1[2] | joystick_1[7],joystick_1[3] | joystick_1[7]};
-
 wire        ioctl_download;
 wire  [7:0] ioctl_index;
 wire        ioctl_wr;
@@ -361,6 +359,115 @@ wire forced_scandoubler;
 wire [21:0] gamma_bus;
 wire  [7:0] uart1_mode;
 wire [31:0] uart1_speed;
+
+wire [15:0] joystick_0, joystick_1;
+wire [15:0] joy_analog_a, joy_analog_b;
+
+wire        strA;
+wire  [5:0] joyA = (status[38:36] == 3'b000) ?		// default 2-button
+						~{joystick_0[5:4], (joystick_0[0]|joystick_0[6]), (joystick_0[1]|joystick_0[6]), (joystick_0[2]|joystick_0[7]), (joystick_0[3]|joystick_0[7])} :
+
+						// turbo
+						 (status[38:36] == 3'b001) ?
+						~{joyrept_0[1:0], (joystick_0[0]|joystick_0[6]), (joystick_0[1]|joystick_0[6]), (joystick_0[2]|joystick_0[7]), (joystick_0[3]|joystick_0[7])} :
+
+						// MegaDrive 3-button - strobe = low
+						 ((status[38:36] == 3'b010) && (strA == 1'b0)) ?
+						~{joystick_0[6], joystick_0[4], 1'b1, 1'b1, joystick_0[2], joystick_0[3]} :
+						// strobe - high
+						 ((status[38:36] == 3'b010) && (strA == 1'b1)) ?
+						~{joystick_0[9],  joystick_0[5], joystick_0[0], joystick_0[1], joystick_0[2], joystick_0[3]} :
+
+						// XE-1AP
+						(status[38:36] == 3'b100) ?
+						~{xe1_trg2, xe1_trg1, xe1_data[3:0]} :
+
+						// Capcom 6-button - strobe = low
+						 ((status[38:36] == 3'b011) && (strA == 1'b0)) ?
+						~{joystick_0[5],  joystick_0[4], joystick_0[0], joystick_0[1], joystick_0[2], joystick_0[3]} :
+						// strobe = high
+						 ((status[38:36] == 3'b011) && (strA == 1'b1)) ?
+						~{joystick_0[6], joystick_0[10], joystick_0[7], joystick_0[8], joystick_0[9], joystick_0[11]} :
+						6'b111111;
+
+wire        strB;
+wire  [5:0] joyB = ((status[38:36] == 3'b000) || (status[37:36] == 2'b100)) ?		// default 2-button or XE-1AP (only support 1 XE-1AP)
+						~{joystick_1[5:4], (joystick_1[0]|joystick_1[6]), (joystick_1[1]|joystick_1[6]), (joystick_1[2]|joystick_1[7]), (joystick_1[3]|joystick_1[7])} :
+
+						// turbo
+						 (status[38:36] == 3'b001) ?
+						~{joyrept_1[1:0], (joystick_1[0]|joystick_1[6]), (joystick_1[1]|joystick_1[6]), (joystick_1[2]|joystick_1[7]), (joystick_1[3]|joystick_1[7])} :
+
+						// MegaDrive 3-button - strobe = low
+						 ((status[38:36] == 3'b010) && (strB == 1'b0)) ?
+						~{joystick_1[6], joystick_1[4], 1'b1, 1'b1, joystick_1[2], joystick_1[3]} :
+						// strobe - high
+						 ((status[38:36] == 3'b010) && (strB == 1'b1)) ?
+						~{joystick_1[9],  joystick_1[5], joystick_1[0], joystick_1[1], joystick_1[2], joystick_1[3]} :
+						
+						// Capcom 6-button - strobe = low
+						((status[38:36] == 3'b011) && (strB == 1'b0)) ?
+						~{joystick_1[5],  joystick_1[4], joystick_1[0], joystick_1[1], joystick_1[2], joystick_1[3]} :
+						// strobe = high
+						((status[38:36] == 3'b011) && (strB == 1'b1)) ?
+						~{joystick_1[6], joystick_1[10], joystick_1[7], joystick_1[8], joystick_1[9], joystick_1[11]}:
+						6'b111111;
+
+
+////////////////////////////  Joystick values  ////////////////////////////////// 
+
+reg [3:0] scan_counter = 0;
+reg [1:0] joyrept_0;
+reg [1:0] joyrept_1;
+
+
+always @(posedge clk_sys) begin
+	reg VBlank_ff;
+
+	VBlank_ff <= VBlank;
+	if ((VBlank_ff == 1'b0) && (VBlank == 1'b1)) begin
+		scan_counter <= scan_counter + 1'd1;
+
+		joyrept_0[0] <= (joystick_0[8] & scan_counter[2]) | (joystick_0[11] & scan_counter[1]) | joystick_0[4];
+		joyrept_0[1] <= (joystick_0[9] & scan_counter[2]) | (joystick_0[10] & scan_counter[1]) | joystick_0[5];
+		
+		joyrept_1[0] <= (joystick_1[8] & scan_counter[2]) | (joystick_1[11] & scan_counter[1]) | joystick_1[4];
+		joyrept_1[1] <= (joystick_1[9] & scan_counter[2]) | (joystick_1[10] & scan_counter[1]) | joystick_1[5];
+
+	end
+
+end
+
+wire xe1_trg1;
+wire xe1_trg2;
+wire xe1_runbtn;
+wire xe1_selbtn;
+wire [3:0] xe1_data;
+
+
+XE1AP #(40) XE1AP		// 40 clock cycles per microsecond (40MHz)
+(
+	.reset(reset),
+	.clk_sys(clk_sys),
+
+   .joystick_0(joystick_0),
+   .joystick_l_analog_0(joy_analog_a),
+   .joystick_r_analog_0(joy_analog_b),
+   .req(~strA),				// signal requesting response from XE-1AP (on return to high)
+									// pin 8 on original 9-pin connector 
+   .trg1(xe1_trg1),			// pin 6 on original 9-pin connector
+   .trg2(xe1_trg2),			// pin 7 on original 9-pin connector
+   .data(xe1_data),			// Data[3] = pin 4 on original 9-pin connector
+									// Data[2] = pin 3 on original 9-pin connector
+									// Data[1] = pin 2 on original 9-pin connector
+									// Data[0] = pin 1 on original 9-pin connector
+   .run_btn(xe1_runbtn),	// need to send back for the XHE-3 PC Engine attachment
+   .select_btn(xe1_selbtn)	// need to send back for the XHE-3 PC Engine attachment
+
+);
+
+////////////////////////////  End Joystick  ////////////////////////////////// 
+
 
 hps_io #(.CONF_STR(CONF_STR), .PS2DIV(2400), .PS2WE(1), .VDNUM(4)) hps_io
 (
@@ -415,7 +522,9 @@ hps_io #(.CONF_STR(CONF_STR), .PS2DIV(2400), .PS2WE(1), .VDNUM(4)) hps_io
 	.RTC(sysrtc),
 
 	.joystick_0(joystick_0),
-	.joystick_1(joystick_1)
+	.joystick_1(joystick_1),
+	.joystick_l_analog_0(joy_analog_a),
+	.joystick_r_analog_0(joy_analog_b)
 );
 
 /////////////////  RESET  /////////////////////////
@@ -654,7 +763,9 @@ X68K_top X68K_top
 	.mist_buffdin(sd_buff_din),
 	.mist_buffwr(sd_buff_wr),
 
+	.pStrA(strA),
 	.pJoyA(joyA),
+	.pStrB(strB),
 	.pJoyB(joyB),
 
 	.pFDSYNC(fdsync),
