@@ -73,7 +73,9 @@ port(
    pJoyB       : in std_logic_vector( 5 downto 0);
    pStrA			: out std_logic;
 	pStrB			: out std_logic;
-
+	pJoySelA		: out std_logic;
+	pJoySelB		: out std_logic;
+	
 	pFDSYNC		:in std_logic_Vector(1 downto 0);
 	pFDEJECT		:in std_logic_Vector(1 downto 0);
 	pFDMOTOR		:out std_logic;
@@ -3727,6 +3729,8 @@ begin
 
 	ppi_pai<='1' & pJoyA(5 downto 4) & '1' & pJoyA(3 downto 0);
 	ppi_pbi<='1' & pJoyB(5 downto 4) & '1' & pJoyB(3 downto 0);
+	pJoySelA<=ppi_pcho(0);
+	pJoySelB<=ppi_pcho(1);
 	pStrA<=ppi_pcho(0) when ppi_pchoe='1' else 'Z';
 	pStrB<=ppi_pcho(1) when ppi_pchoe='1' else 'Z';
 --	pJoyA(4)<='Z' when ppi_pcho(2)='0' else '0';

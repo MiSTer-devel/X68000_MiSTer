@@ -8,6 +8,15 @@ This is the port of the [Sharp X68000](http://fpga8801.seesaa.net/category/24786
 * FDD *.d88 images
 * SASI HDD *.hdf images
 
+### Supported Controller Types - [Check here for a game compatibility list](controllers.md)
+* 2-button controller (Standard)
+* 2-button controller with turbo (SNES buttons B-Y-L and A-X-R for faster repeats)
+* 3-button Megadrive
+* 6-button Magical (included with Garou Densetsu 2)
+* 6-button Capcom (adapter included with some Street Fighter 2 games)
+* Double D-pad (Libble Rabble/Crazy Clinber)
+* CyberStick/XE-1AP
+
 ### Additional info
 - Supported MT32-pi over USER I/O port.
 
