@@ -641,7 +641,7 @@ mt32pi mt32pi
 (
 	.*,
 	.reset(mt32_reset),
-	.midi_tx(midi_txd | mt32_mute)
+	.midi_tx(UART_TXD | mt32_mute)
 );
 
 reg mt32_info_req;
@@ -692,10 +692,6 @@ wire [1:0] kbdtype = status[35:34];
 
 assign CLK_VIDEO = clk_vid;
 assign AUDIO_S = 1;
-
-//puu
-wire midi_txd;
-wire midi_rxd=1;
 
 wire disk_led;
 
@@ -820,12 +816,8 @@ X68K_top X68K_top
 
 	.pkbdtype(kbdtype),
 
-	//puu
-	.pMidi_in(midi_rxd),
-	.pMidi_out(midi_txd),
-
-	//.pMidi_in(UART_RXD),
-	//.pMidi_out(UART_TXD),
+	.pMidi_in(UART_RXD),
+	.pMidi_out(UART_TXD),
 
 	.pVideoR(red),
 	.pVideoG(green),
