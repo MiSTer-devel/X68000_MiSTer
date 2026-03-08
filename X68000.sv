@@ -271,6 +271,10 @@ parameter CONF_STR = {
 	"P6oS,Graph G1,On,Off;",
 	"P6oT,Graph G2,On,Off;",
 	"P6oU,Graph G3,On,Off;",
+	"P6-;",
+	"P6O[64:63],Transparency,MAME,PUU,px68k;",
+	"P6-;",
+	"P6O[65],Fast Clear,On,Off;",
 	"-;",
 	"J,Button 1,Button 2,Run,Select,Button 3,Button 4,Button 5,Button 6;",
 	"jn,A,B,Run,Select,X,Y,L,R;",
@@ -294,18 +298,18 @@ parameter CONF_STR = {
 /////////////////  CLOCKS  ////////////////////////
 
 wire clk_ram, clk_sys;
+wire clk_vid = clk_ram; // Video uses same 120 MHz clock (no CDC). Timing via polyclock.
 wire pll_locked;
 
 pll pll
 (
 	.refclk(CLK_50M),
 	.rst(0),
-	.outclk_0(clk_ram), // 80mhz
+	.outclk_0(clk_ram), // 120mhz
 	.outclk_1(clk_sys), // 40mhz
+	.outclk_2(),         // 80mhz (unused)
 	.locked(pll_locked)
 );
-
-wire clk_vid = clk_ram;
 
 // Video oscillators
 // 40.00000 - CPU/Main Oscillator
@@ -339,7 +343,7 @@ sdramclk_ddr
 
 /////////////////  HPS  ///////////////////////////
 
-wire [63:0] status;
+wire [127:0] status;
 wire  [1:0] buttons;
 
 wire        ioctl_download;
@@ -857,7 +861,9 @@ X68K_top X68K_top
 	.dVMode(status[46]),
 	.dLayers(status[57:53]),   // Debug: oL=Text, oM=Graphic, oN=Sprite, oO=BG0, oP=BG1
 	.opm_sel(status[58]),      // oQ: OPM Chip select (0=JT51, 1=IKAOPM)
-	.dGrpLayers(status[62:59]) // oR=G0, oS=G1, oT=G2, oU=G3
+	.dGrpLayers(status[62:59]), // oR=G0, oS=G1, oT=G2, oU=G3
+	.tmode(status[64:63]),       // O[64:63]: Transparency mode (0=MAME, 1=PUU, 2=px68k)
+	.gclr_dis(status[65])       // Debug: disable fast clear
 );
 
 wire ldr_ack;

@@ -96,7 +96,9 @@ signal	sp_patnolsb	:std_logic_vector(1 downto 0);
 signal	sp_patsub	:std_logic_vector(1 downto 0);
 signal	sprCOLORd	:std_logic_vector(3 downto 0);
 signal	sp1_wr,sp2_wr,sp3_wr	:std_logic;
+signal	sp_any_wr	:std_logic;
 signal	sp_wr	:std_logic;
+signal	sp1_wrdat,sp2_wrdat,sp3_wrdat	:std_logic_vector(7 downto 0);
 signal	sp_waddrsub	:std_logic_vector(9 downto 0);
 signal	sp_waddr	:std_logic_vector(9 downto 0);
 signal	sp_waddrd	:std_logic_vector(8 downto 0);
@@ -367,18 +369,16 @@ begin
 				not sp_xpos(2 downto 0);
 	sp_doty<=	sp_ypos(2 downto 0) when sprVR='0' else
 				not sp_ypos(2 downto 0);
-	sp1_wr<=	'0' when dotin="0000" else
+	sp_any_wr<=	'0' when dotin="0000" else
 				'0' when sp_wr='0' else
-				'1' when sprPRI="01" else
+				'1' when sprPRI/="00" else
 				'0';
-	sp2_wr<=	'0' when dotin="0000" else
-				'0' when sp_wr='0' else
-				'1' when sprPRI="10" else
-				'0';
-	sp3_wr<=	'0' when dotin="0000" else
-				'0' when sp_wr='0' else
-				'1' when sprPRI="11" else
-				'0';
+	sp1_wr<=sp_any_wr;
+	sp2_wr<=sp_any_wr;
+	sp3_wr<=sp_any_wr;
+	sp1_wrdat<=	sprCOLORd & dotin when sprPRI="01" else x"00";
+	sp2_wrdat<=	sprCOLORd & dotin when sprPRI="10" else x"00";
+	sp3_wrdat<=	sprCOLORd & dotin when sprPRI="11" else x"00";
 
 	sp_waddrsub<=sprxpos+("000000" & sp_xpos);
 	sp_waddr<=sp_waddrsub+"1111110000";
@@ -387,7 +387,7 @@ begin
 
 	SP1buf	:sline port map(
 		wraddr	=>sp_maddr,
-		wrdat	=>sprCOLORd & dotin,
+		wrdat	=>sp1_wrdat,
 		wr		=>sp1_wr,
 		clr		=>sp_clr,
 		change	=>hcomp,
@@ -400,7 +400,7 @@ begin
 	);
 	SP2buf	:sline port map(
 		wraddr	=>sp_maddr,
-		wrdat	=>sprCOLORd & dotin,
+		wrdat	=>sp2_wrdat,
 		wr		=>sp2_wr,
 		clr		=>sp_clr,
 		change	=>hcomp,
@@ -413,7 +413,7 @@ begin
 	);
 	SP3buf	:sline port map(
 		wraddr	=>sp_maddr,
-		wrdat	=>sprCOLORd & dotin,
+		wrdat	=>sp3_wrdat,
 		wr		=>sp3_wr,
 		clr		=>sp_clr,
 		change	=>hcomp,
@@ -445,6 +445,8 @@ begin
 		sp2rdat when sp2rdat(3 downto 0)/="0000" and debugsel(0)='1' else
 		bg1rdat	when bg1rdat(3 downto 0)/="0000" and bgen(1)='1' and debugsel(1)='1' else
 		sp1rdat when sp1rdat(3 downto 0)/="0000" and debugsel(0)='1' else
+		bg1rdat when bg1rdat(7 downto 4)/="0000" and bgen(1)='1' and debugsel(1)='1' and hres='0' else
+		bg0rdat when bg0rdat(7 downto 4)/="0000" and bgen(0)='1' and debugsel(1)='1' else
 		(others=>'0');
 
 end rtl;

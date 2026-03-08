@@ -151,6 +151,9 @@ port(
 	hblank  :in std_logic;
 	vblank  :in std_logic;
 	
+	-- Transparency mode selector: "00"=MAME, "01"=PUU, "10"=px68k
+	tmode   :in std_logic_vector(1 downto 0) := "00";
+
 	vidclk		:in std_logic;
 	vid_ce      :in std_logic := '1';
 	rstn	:in std_logic
@@ -290,7 +293,9 @@ signal	gdoten		:std_logic;
 signal	tdoten		:std_logic;
 signal	sdoten		:std_logic;
 signal	exbit,exbitd		:std_logic;
+signal	sp_exbit,sp_exbitd	:std_logic;  -- Special priority I-bit (no BP dependency, matches MAME)
 signal	vviden,lvviden	:std_logic;
+signal	vviden_int	:std_logic;
 signal	hviden,lhviden	:std_logic;
 
 signal	wdatpr0		:std_logic_vector(15 downto 0);
@@ -337,6 +342,24 @@ signal semitrans:std_logic;
 signal gpriobit:std_logic;
 signal tpriobit:std_logic;
 
+signal	tpal_pri0	:std_logic_vector(15 downto 0);
+signal	tpal_pri1	:std_logic_vector(15 downto 0);
+signal	tpal_pri2	:std_logic_vector(15 downto 0);
+signal	spal_pri0	:std_logic_vector(15 downto 0);
+signal	spal_pri1	:std_logic_vector(15 downto 0);
+signal	spal_pri2	:std_logic_vector(15 downto 0);
+signal	gmix_pri0	:std_logic_vector(15 downto 0);
+signal	gmix_pri1	:std_logic_vector(15 downto 0);
+signal	gmix_pri2	:std_logic_vector(15 downto 0);
+
+signal	tdoten_pri0,tdoten_pri1,tdoten_pri2	:std_logic;
+signal	sdoten_pri0,sdoten_pri1,sdoten_pri2	:std_logic;
+signal	gdoten_pri0,gdoten_pri1,gdoten_pri2	:std_logic;
+
+signal	pri_spm	:std_logic_vector(1 downto 0);
+signal	pri_txm	:std_logic_vector(1 downto 0);
+signal	pri_grm	:std_logic_vector(1 downto 0);
+
 signal gpal0noi_d :std_logic_vector(7 downto 0);
 signal gpal1noi_d :std_logic_vector(7 downto 0);
 
@@ -358,10 +381,34 @@ signal bg_vstart_u  :unsigned(9 downto 0);
 
 constant azero	:std_logic_vector(arange-1 downto 0)	:=(others=>'0');
 begin
-	-- g_ddaten<=	'1' when g4_ddat/=x"0" and gmode="00" else
-	-- 				'1' when g8_ddat(3 downto 0)/=x"0" and gmode="01" else
-	-- 				'1' when g16_ddat/=x"0000" and gmode(1)='1' else
-	-- 				'0';
+
+	process(pri_sp,pri_tx,pri_gr)
+	begin
+		pri_spm<=pri_sp;
+		pri_txm<=pri_tx;
+		pri_grm<=pri_gr;
+		if(pri_sp="00" and pri_tx="00" and pri_gr="00")then
+			pri_grm<="00";
+			pri_spm<="01";
+			pri_txm<="10";
+		else
+			if(pri_sp=pri_tx)then
+				pri_txm<=pri_tx-1;
+			end if;
+			if(pri_sp=pri_gr)then
+				pri_spm<=pri_sp-1;
+			end if;
+			if(pri_tx=pri_gr)then
+				pri_txm<=pri_tx-1;
+			end if;
+		end if;
+	end process;
+
+	-- Raw GFX index transparency
+	g_ddaten<=	'1' when g4_ddat/=x"0" and gmode="00" else
+					'1' when g8_ddat/=x"00" and gmode="01" else
+					'1' when g16_ddat/=x"0000" and gmode(1)='1' else
+					'0';
 
 	process(vidclk)begin
 		if rising_edge(vidclk) then
@@ -376,17 +423,18 @@ begin
 				datseld<=datsel;
 				lhviden<=hviden;
 				exbitd<=exbit;
+				sp_exbitd<=sp_exbit;
 				sprite_ind<=sprite_in;
 				t_ddatd<=t_ddat;
 				gpal0noi_d<=gpal0noi;
 				gpal1noi_d<=gpal1noi;
-				--g_ddatend<=g_ddaten;
+				g_ddatend<=g_ddaten;
 			end if;
 		end if;
 	end process;
 
 	hvbgn_px_u  <= resize(unsigned(hvbgn), 10) sll 3;
-	bg_hstart_u <= (((resize(unsigned(sp_hdisp), 10) - to_unsigned(4, 10)) sll 3) + to_unsigned(1, 10))
+	bg_hstart_u <= (((resize(unsigned(sp_hdisp), 10) - to_unsigned(4, 10)) sll 3))
 	              when (unsigned(sp_hdisp) >= to_unsigned(4, 6)) else hvbgn_px_u;
 	spr_x_adj_u <= hvbgn_px_u - bg_hstart_u;
 
@@ -475,78 +523,70 @@ begin
 	nxt_g0r1c4addrh<=g0vaddr_offset(9 downto 0);
 	cur_g0r1c4addrl<=g0haddr_offset(9 downto 2);
 	
-	nxt_g0addr<=	nxt_g0r0c4addrh & "0000000"		when memres='0' and gmode="00" else
+	nxt_g0addr<=	nxt_g0r0c16addrh & "000000000"		when memres='0' and gmode="00" else
 						nxt_g0r0c16addrh & "000000000"	when memres='0' and gmode="01" else
 						nxt_g0r0c16addrh & "000000000"	when memres='0' and gmode(1)='1' else
 						nxt_g0r1c4addrh & "00000000"	when memres='1' else
 						(others=>'0'); 
-	nxt_g1addr<=	nxt_g1r0c4addrh & "0000000"		when memres='0' and gmode="00" else
-						nxt_g0r0c16addrh & "100000000"	when memres='0' and gmode="01" else
+	nxt_g1addr<=	nxt_g1r0c16addrh & "000000000"		when memres='0' and gmode(1)='0' else
 						nxt_g0r0c16addrh & "010000000"	when memres='0' and gmode(1)='1' else
-						nxt_g0r1c4addrh & "10000000"	when memres='1' else
 						(others=>'0');
-	nxt_g2addr<=	nxt_g2r0c4addrh & "0000000"		when memres='0' and gmode="00" else
+	nxt_g2addr<=	nxt_g2r0c16addrh & "000000000"		when memres='0' and gmode="00" else
 						nxt_g2r0c16addrh & "000000000"	when memres='0' and gmode="01" else
 						nxt_g0r0c16addrh & "100000000"	when memres='0' and gmode(1)='1' else
 						(others=>'0');
-	nxt_g3addr<=	nxt_g3r0c4addrh & "0000000"		when memres='0' and gmode="00" else
-						nxt_g2r0c16addrh & "100000000"	when memres='0' and gmode="01" else
+	nxt_g3addr<=	nxt_g3r0c16addrh & "000000000"		when memres='0' and gmode(1)='0' else
 						nxt_g0r0c16addrh & "110000000"	when memres='0' and gmode(1)='1' else
 						(others=>'0');
 					
-	cur_g0addr<=	cur_g0r0c4addrh & cur_g0r0c4addrl 						when memres='0' and gmode="00" else
-						cur_g0r0c16addrh & '0' & cur_g0r0c16addrl(7 downto 0)	when memres='0' and gmode="01" else
+	cur_g0addr<=	cur_g0r0c16addrh & cur_g0r0c16addrl(8 downto 0)	when memres='0' and gmode(1)='0' else
 						cur_g0r0c16addrh & "00" & cur_g0r0c16addrl(6 downto 0)	when memres='0' and gmode(1)='1' else
-						cur_g0r1c4addrh & '0' & cur_g0r1c4addrl(6 downto 0)		when memres='1' else
+						cur_g0r1c4addrh & cur_g0r1c4addrl			when memres='1' else
 						(others=>'0');
-	cur_g1addr<=	cur_g1r0c4addrh & cur_g1r0c4addrl 						when memres='0' and gmode="00" else
-						cur_g0r0c16addrh & '1' & cur_g0r0c16addrl(7 downto 0)	when memres='0' and gmode="01" else
+	cur_g1addr<=	cur_g1r0c16addrh & cur_g1r0c16addrl(8 downto 0)	when memres='0' and gmode(1)='0' else
 						cur_g0r0c16addrh & "01" & cur_g0r0c16addrl(6 downto 0)	when memres='0' and gmode(1)='1' else
-						cur_g0r1c4addrh & '1' & cur_g0r1c4addrl(6 downto 0)		when memres='1' else
 						(others=>'0');
-	cur_g2addr<=	cur_g2r0c4addrh & cur_g2r0c4addrl 						when memres='0' and gmode="00" else
-						cur_g2r0c16addrh & '0' & cur_g2r0c16addrl(7 downto 0)	when memres='0' and gmode="01" else
+	cur_g2addr<=	cur_g2r0c16addrh & cur_g2r0c16addrl(8 downto 0)	when memres='0' and gmode(1)='0' else
 						cur_g0r0c16addrh & "10" & cur_g0r0c16addrl(6 downto 0)	when memres='0' and gmode(1)='1' else
 						(others=>'0');
-	cur_g3addr<=	cur_g3r0c4addrh & cur_g3r0c4addrl 						when memres='0' and gmode="00" else
-						cur_g2r0c16addrh & '1' & cur_g2r0c16addrl(7 downto 0)	when memres='0' and gmode="01" else
+	cur_g3addr<=	cur_g3r0c16addrh & cur_g3r0c16addrl(8 downto 0)	when memres='0' and gmode(1)='0' else
 						cur_g0r0c16addrh & "11" & cur_g0r0c16addrl(6 downto 0)	when memres='0' and gmode(1)='1' else
 						(others=>'0');
 
-	datsel<=			cur_g2r0c16addrl(8) & cur_g0r0c16addrl(8) when memres='0' and gmode="01" else
+	datsel<=			"00" when memres='0' and gmode(1)='0' else
 						cur_g0r0c16addrl(8 downto 7) when memres='0' and gmode(1)='1' else
-						'0' & cur_g0r1c4addrl(7) when memres='1' else
+						g0haddr_offset(1 downto 0) when memres='1' else
 						(others=>'0');
 	
-	g40_ddat<=	g1_rdat(15 downto 12) when g0hodly1(1 downto 0)="00" and memres='1' and datseld(0)='1' else
-					g1_rdat(11 downto  8) when g0hodly1(1 downto 0)="01" and memres='1' and datseld(0)='1' else
-					g1_rdat( 7 downto  4) when g0hodly1(1 downto 0)="10" and memres='1' and datseld(0)='1' else
-					g1_rdat( 3 downto  0) when g0hodly1(1 downto 0)="11" and memres='1' and datseld(0)='1' else
-					g0_rdat(15 downto 12) when g0hodly1(1 downto 0)="00" else
-					g0_rdat(11 downto  8) when g0hodly1(1 downto 0)="01" else
-					g0_rdat( 7 downto  4) when g0hodly1(1 downto 0)="10" else
-					g0_rdat( 3 downto  0) when g0hodly1(1 downto 0)="11" else
-					x"0";
-	g41_ddat<=	g1_rdat(15 downto 12) when g1hodly1(1 downto 0)="00" else
-					g1_rdat(11 downto  8) when g1hodly1(1 downto 0)="01" else
-					g1_rdat( 7 downto  4) when g1hodly1(1 downto 0)="10" else
-					g1_rdat( 3 downto  0) when g1hodly1(1 downto 0)="11" else
-					x"0";
-	g42_ddat<=	g2_rdat(15 downto 12) when g2hodly1(1 downto 0)="00" else
-					g2_rdat(11 downto  8) when g2hodly1(1 downto 0)="01" else
-					g2_rdat( 7 downto  4) when g2hodly1(1 downto 0)="10" else
-					g2_rdat( 3 downto  0) when g2hodly1(1 downto 0)="11" else
-					x"0";
-	g43_ddat<=	g3_rdat(15 downto 12) when g3hodly1(1 downto 0)="00" else
-					g3_rdat(11 downto  8) when g3hodly1(1 downto 0)="01" else
-					g3_rdat( 7 downto  4) when g3hodly1(1 downto 0)="10" else
-					g3_rdat( 3 downto  0) when g3hodly1(1 downto 0)="11" else
-					x"0";
+	g40_ddat<=	g0_rdat( 3 downto  0) when memres='1' and datseld="00" else
+					g0_rdat( 7 downto  4) when memres='1' and datseld="01" else
+					g0_rdat(11 downto  8) when memres='1' and datseld="10" else
+					g0_rdat(15 downto 12) when memres='1' and datseld="11" else
+					g1_rdat( 3 downto  0) when datseld(0)='1' else
+					g0_rdat( 3 downto  0);
+	g41_ddat<=	g1_rdat(15 downto 12) when g1hodly1(1 downto 0)="00" and memres='1' else
+					g1_rdat(11 downto  8) when g1hodly1(1 downto 0)="01" and memres='1' else
+					g1_rdat( 7 downto  4) when g1hodly1(1 downto 0)="10" and memres='1' else
+					g1_rdat( 3 downto  0) when g1hodly1(1 downto 0)="11" and memres='1' else
+					g1_rdat( 7 downto  4) when gmode="00" else
+					g1_rdat( 7 downto  4) when datseld(0)='1' else
+					g0_rdat( 7 downto  4);
+	g42_ddat<=	g2_rdat(15 downto 12) when g2hodly1(1 downto 0)="00" and memres='1' else
+					g2_rdat(11 downto  8) when g2hodly1(1 downto 0)="01" and memres='1' else
+					g2_rdat( 7 downto  4) when g2hodly1(1 downto 0)="10" and memres='1' else
+					g2_rdat( 3 downto  0) when g2hodly1(1 downto 0)="11" and memres='1' else
+					g3_rdat(11 downto  8) when datseld(1)='1' else
+					g2_rdat(11 downto  8);
+	g43_ddat<=	g3_rdat(15 downto 12) when g3hodly1(1 downto 0)="00" and memres='1' else
+					g3_rdat(11 downto  8) when g3hodly1(1 downto 0)="01" and memres='1' else
+					g3_rdat( 7 downto  4) when g3hodly1(1 downto 0)="10" and memres='1' else
+					g3_rdat( 3 downto  0) when g3hodly1(1 downto 0)="11" and memres='1' else
+					g3_rdat(15 downto 12) when gmode="00" else
+					g3_rdat(15 downto 12) when datseld(1)='1' else
+					g2_rdat(15 downto 12);
 	
-	g80_ddat<=	g0_rdat( 7 downto 0) when datseld(0)='0' else
-					g1_rdat( 7 downto 0);
-	g81_ddat<=	g2_rdat(15 downto 8) when datseld(1)='0' else
-					g3_rdat(15 downto 8);
+	g80_ddat<=	g1_rdat( 7 downto 4) & g0_rdat( 3 downto 0);
+	g81_ddat<=	g3_rdat(15 downto 12) & g2_rdat(11 downto 8);
 	
 	g16_ddat<=	g0_rdat when datseld="00" else
 					g1_rdat when datseld="01" else
@@ -590,22 +630,26 @@ begin
 					x"00";
 
 	g8_ddat<=	g8p1_ddat when g8p1_ddat/=x"00" and graphen(0)='1' else
-					g8p2_ddat when g8p2_ddat/=x"00" and graphen(3)='1' else
+					g8p2_ddat when g8p2_ddat/=x"00" and graphen(2)='1' else
 					x"00";
 	
 	grskel<='1' when exon='1' and hp='1' and gg='1' else '0';
 	
 	gpal0noi<=	
-				x"0" & g4p1_ddat when gmode="00" and grskel='1' and g4p1_ddat(0)='1' else
+				x"0" & g4p1_ddat(3 downto 1) & '0' when gmode="00" and grskel='1' and g4p1_ddat(0)='1' else
+				x"0" & g4_ddat(3 downto 1) & '0' when gmode="00" and bp='1' and exon='1' and g4_ddat(0)='1' else
 				x"0" & g4_ddat when gmode="00" else
-				g8p1_ddat when gmode="01" and grskel='1' and g8p1_ddat(0)='1' else
+				g8p1_ddat(7 downto 1) & '0' when gmode="01" and grskel='1' and g8p1_ddat(0)='1' else
+				g8_ddat(7 downto 1) & '0' when gmode="01" and bp='1' and exon='1' and g8_ddat(0)='1' else
 				g8_ddat when gmode="01" else
 				g16_ddat(7 downto 0);
 				
 	gpal1noi<=
-				x"0" & g4p2_ddat when gmode="00" and grskel='1' and g4p1_ddat(0)='1' else
+				x"0" & g4p2_ddat(3 downto 1) & '0' when gmode="00" and grskel='1' and g4p1_ddat(0)='1' else
+				x"0" & g4_ddat(3 downto 1) & '0' when gmode="00" and bp='1' and exon='1' and g4_ddat(0)='1' else
 				x"0" & g4_ddat when gmode="00" else
-				g8p2_ddat when gmode="01" and grskel='1' and g8p1_ddat(0)='1' else
+				g8p2_ddat(7 downto 1) & '0' when gmode="01" and grskel='1' and g8p1_ddat(0)='1' else
+				g8_ddat(7 downto 1) & '0' when gmode="01" and bp='1' and exon='1' and g8_ddat(0)='1' else
 				g8_ddat when gmode="01" else
 				g16_ddat(15 downto 8);
 	
@@ -615,8 +659,9 @@ begin
 				g4p1_ddat(0) when gmode="00" else
 				g8p1_ddat(0) when gmode="01" else
 				g16_ddat(0);
-	-- texbit<= '0' when bp='0' else
-		
+	sp_exbit<=	g4p1_ddat(0) when gmode="00" else
+				g8p1_ddat(0) when gmode="01" else
+				g16_ddat(0);
 
 	process(vidclk)
 	variable hvwidth	:std_logic_vector(10 downto 0);
@@ -651,10 +696,11 @@ begin
 				cur_g2r0c16addrh<=(others=>'0');
 				cur_g3r0c16addrh<=(others=>'0');
 				vviden<='0';
+				vviden_int<='0';
 				lvviden<='0';
 				hviden<='0';
 				gclrbusyb<='0';
-				gclrrast<=(others=>'0');
+				gclrrast<=(others=>'1');
 				gclrbgnrq<='0';
 				gclrendrq<='0';
 			elsif (vid_ce = '1') then
@@ -667,9 +713,9 @@ begin
 				end if;
 				if(hcomp='1')then
 					if(gclrbgnrq='1')then
-						gclrrast<=vaddr;
+						gclrrast<=raster;
 						gclrbgnrq<='0';
-					elsif(gclrendrq='1' or gclrrast=vaddr)then
+					elsif(gclrendrq='1' or gclrrast=raster)then
 						gclrendrq<='0';
 						gclrbusyb<='0';
 					end if;
@@ -695,6 +741,7 @@ begin
 					cur_g3rd<=	'0';
 					ramsel<=lsel; --not ramsel;
 					vviden<='1';
+					vviden_int<='1';
 					hviden<= '1';--not hblank;
 				elsif(hcomp='1')then
 					cur_taddrh<=nxt_taddr(arange-3 downto 6);
@@ -720,6 +767,9 @@ begin
 					
 					if (raster = vvend-"0000000001") then
 						vviden<='0';
+					end if;
+					if (raster = (vvend-vvbgn)-"0000000001") then
+						vviden_int<='0';
 					end if;
 					if (vblank = '0') then
 						if(early_vblank='0') then
@@ -780,19 +830,35 @@ begin
 	vlineno<=vaddr;
 
 	rastnum<=raster;
-	rint<='1' when rintline=rastnum else '0';
+	rint<='1' when vres='0' and hres(0)='1' and hfreq='1' and rintline=rastnum else
+	     '1' when (vres='1' or hres(0)='0' or hfreq='0') and rintline/="0000000000" and rintline=rastnum+"0000000001" else
+	     '1' when (vres='1' or hres(0)='0' or hfreq='0') and rintline="0000000000" and rastnum="0000000000" else '0';
 	
-	addrx<=std_logic_vector(unsigned(haddrmod(9 downto 0)) + spr_x_adj_u + 1);
-	addry<=std_logic_vector(unsigned('0' & vaddrmod(9 downto 1)) + unsigned('0' & std_logic_vector(spr_y_adj_u(9 downto 1))) + 1) when (vheight < "000111100000" and sprite_double='1') else
-	       std_logic_vector(unsigned('0' & vaddrmod(9 downto 1)) + unsigned('0' & std_logic_vector(spr_y_adj_u(9 downto 1))))     when (sprite_double='1') else
-	       std_logic_vector(unsigned(vaddrmod(9 downto 0)) + spr_y_adj_u + 1) when (vheight < "000111100000") else
+	addrx<=std_logic_vector(unsigned(haddrmod(9 downto 0)) + spr_x_adj_u);
+	addry<=std_logic_vector(unsigned('0' & vaddrmod(9 downto 1)) + unsigned('0' & std_logic_vector(spr_y_adj_u(9 downto 1)))) when (sprite_double='1') else
+	       std_logic_vector(unsigned(vaddrmod(9 downto 0)) + spr_y_adj_u + 1) when (vres='0' and hres(0)='1' and hfreq='0') else
 	       std_logic_vector(unsigned(vaddrmod(9 downto 0)) + spr_y_adj_u);
 
 	sprio<= '1' when bp='1' and hp='0' else '0';
-	tdoten<='0' when (txten='0' or tpalin=x"0000" or (t_ddatd="0000" and unsigned(pri_tx) < unsigned(pri_gr) and gdoten='1')) else '1';
-	sdoten<='0' when (spren='0' or sprite_ind(3 downto 0)=x"0" or spalin=x"0000") else '1';--or (spr_solid='0' and sprite_ind=x"00")  -- sprite_ind(3 downto 0)=x"0" or
-	gdoten<='0' when grpen='0' else
-				'0' when gpalin(15 downto 1)="000000000000000" else
+
+	tdoten<=	'0' when txten='0' else
+				'0' when tmode="00" and tpalin=x"0000" else
+				'0' when tmode="00" and t_ddatd="0000" and pri_txm/="10" else
+				'0' when tmode="01" and (t_ddatd="0000" or tpalin=x"0000") else
+				'0' when tmode(1)='1' and (t_ddatd="0000" or tpalin=x"0000") else
+				'1';
+
+	sdoten<=	'0' when spren='0' else
+				'0' when sprite_ind(3 downto 0)=x"0" else
+				'0' when tmode="00" and spalin=x"0000" else
+				'0' when tmode="01" and spalin=x"0000" and sprite_ind(3 downto 0)/=x"1" else
+				'0' when tmode(1)='1' and spalin=x"0000" else
+				'1';
+
+	gdoten<=	'0' when grpen='0' else
+				'0' when tmode="01" and gpalin=x"0000" and g_ddatend='0' else
+				'0' when tmode="00" and (g_ddatend='0' or gpalin=x"0000") else
+				'0' when tmode(1)='1' and (g_ddatend='0' or gpalin=x"0000") else
 				'1';
 	tpalno<="0000" & t_ddat;
 	spalno<=sprite_in;
@@ -800,91 +866,67 @@ begin
 	mixg<=	('0' & mixsrc(15 downto 11)) + ('0' & gpalin(15 downto 11));
 	mixr<=	('0' & mixsrc(10 downto  6)) + ('0' & gpalin(10 downto  6));
 	mixb<=	('0' & mixsrc( 5 downto  1)) + ('0' & gpalin( 5 downto  1));
-	mixdst<=	mixg(5 downto 1) & mixr(5 downto 1) & mixb(5 downto 1) & mixsrc(0);
-	gmixdat<=mixdst	when ah='1' and exbitd='1' else
+	mixdst<=	mixg(5 downto 1) & mixr(5 downto 1) & mixb(5 downto 1) & '0';
+	gmixdat<=mixdst	when ah='1' and exbit='1' else
 				mixdst	when exon='1' and hp='1' and exbitd='1' else
-				mixdst	when exon='1' and sprio='1' and gpal0in/=x"0000" else
 				gpalin;
 
-	wdatpr0<=
-		tpalin	when pri_tx="00" and txten='1' and tdoten = '1' else
-		spalin	when pri_sp="00" and spren='1' and sdoten = '1' else
-		gmixdat	when pri_gr="00" and grpen='1' and gdoten = '1' else
-		tpal0in;
-	wdatpr1<=
-		tpalin	when pri_tx="01" and txten='1' and tdoten = '1' else
-		spalin	when pri_sp="01" and spren='1' and sdoten = '1' else
-		gmixdat	when pri_gr="01" and grpen='1' and gdoten = '1' else
-		tpal0in;
+	tpal_pri0<=	tpalin when pri_txm="00" and txten='1' else (others=>'0');
+	tpal_pri1<=	tpalin when pri_txm="01" and txten='1' else (others=>'0');
+	tpal_pri2<=	tpalin when (pri_txm="10" or pri_txm="11") and txten='1' else (others=>'0');
+	spal_pri0<=	spalin when pri_spm="00" and spren='1' else (others=>'0');
+	spal_pri1<=	spalin when pri_spm="01" and spren='1' else (others=>'0');
+	spal_pri2<=	spalin when (pri_spm="10" or pri_spm="11") and spren='1' else (others=>'0');
+	gmix_pri0<=gmixdat when pri_grm="00" and grpen='1' else (others=>'0');
+	gmix_pri1<=gmixdat when pri_grm="01" and grpen='1' else (others=>'0');
+	gmix_pri2<=gmixdat when (pri_grm="10" or pri_grm="11") and grpen='1' else (others=>'0');
+
+	tdoten_pri0<=tdoten when pri_txm="00" else '0';
+	tdoten_pri1<=tdoten when pri_txm="01" else '0';
+	tdoten_pri2<=tdoten when pri_txm="10" or pri_txm="11" else '0';
+	sdoten_pri0<=sdoten when pri_spm="00" else '0';
+	sdoten_pri1<=sdoten when pri_spm="01" else '0';
+	sdoten_pri2<=sdoten when pri_spm="10" or pri_spm="11" else '0';
+	gdoten_pri0<=gdoten when pri_grm="00" else '0';
+	gdoten_pri1<=gdoten when pri_grm="01" else '0';
+	gdoten_pri2<=gdoten when pri_grm="10" or pri_grm="11" else '0';
+	
+	wdatpr0<=tpal_pri0 or spal_pri0 or gmix_pri0;
+	wdatpr1<=tpal_pri1 or spal_pri1 or gmix_pri1;
 	wdatpr2<=
-		tpalin	when (pri_tx="10" or pri_tx="11") and txten='1' and tdoten = '1' else
-		spalin	when (pri_sp="10" or pri_sp="11") and spren='1' and sdoten = '1' else
-		gmixdat	when (pri_gr="10" or pri_gr="11") and grpen='1' and gdoten = '1' else
-		tpal0in;
-	msrcpr1<=	tpalin	when pri_tx="01" and txten='1' else
-					spalin	when pri_sp="01" and spren='1' else
-					(others=>'0');
-	msrcpr2<=	tpalin	when pri_tx="10" and txten='1' else
-					spalin	when pri_sp="10" and spren='1' else
-					(others=>'0');
-	msenpr1<=	tdoten when pri_tx="01" else
-					sdoten when pri_sp="01" else
-					'0';
-	msenpr2<=	tdoten when pri_tx="10" else
-					sdoten when pri_sp="10" else
-					'0';
+		tpal_pri2 when tdoten_pri2='1' else
+		spal_pri2 when sdoten_pri2='1' else
+		gmix_pri2 when gdoten_pri2='1' else
+		(others=>'0');
+	msrcpr1<=tpal_pri1 or spal_pri1;
+	msrcpr2<=
+		tpal_pri2 when tdoten_pri2='1' else
+		spal_pri2;
+	
+	msenpr1<=tdoten_pri1 or sdoten_pri1;
+	msenpr2<=tdoten_pri2 or sdoten_pri2;
+	
 	mixsrc<=	tpal0in when ah='1' else
-				msrcpr1	when (msrcpr1/=x"0000" and msenpr1='1' and pri_gr="00") else
+				msrcpr1	when (msrcpr1/=x"0000" and msenpr1='1' and pri_grm="00") else
 				msrcpr2	when (msrcpr2/=x"0000" and msenpr2='1') else
 				tpal0in;
-	-- tx_pal_0 <= '1' when t_ddatd="0000" else '0';
-	-- sp_pal_0 <= '1' when sprite_ind=x"00" else '0';
-	-- gr_pal_0 <= '1' when g_ddatend='0' else '0';
+	
+	wenpr0<=tdoten_pri0 or sdoten_pri0 or gdoten_pri0;
+	wenpr1<=tdoten_pri1 or sdoten_pri1 or gdoten_pri1;
+	wenpr2<=tdoten_pri2 or sdoten_pri2 or gdoten_pri2;
 
-	-- addrpr0<= '1' when
-	-- 	(tx_pal_0='1' and pri_tx="00") or
-	-- 	(sp_pal_0='1' and pri_sp="00") or
-	-- 	(gr_pal_0='1' and pri_gr="00") else
-	-- 	'0';
-
-	-- addrpr1<='1' when
-	-- 	(tx_pal_0='1' and pri_tx="01") or
-	-- 	(sp_pal_0='1' and pri_sp="01") or
-	-- 	(gr_pal_0='1' and pri_gr="01") else
-	-- 	'0';
-
-	wenpr0<= '1' when
-		(tdoten='1' and pri_tx="00") or
-		(sdoten='1' and pri_sp="00") or
-		(gdoten='1'	and pri_gr="00") else
-		'0';
-
-	wenpr1<='1' when
-		(tdoten='1' and pri_tx="01") or
-		(sdoten='1' and pri_sp="01") or
-		(gdoten='1'	and pri_gr="01") else
-		'0';
-
-	wenpr2<='1' when
-		(tdoten='1' and (pri_tx="10" or pri_tx="11")) or
-		(sdoten='1' and (pri_sp="10" or pri_sp="11")) or
-		(gdoten='1'	and (pri_gr="10" or pri_gr="11")) else
-		'0';
-
-	gpriobit<='0' when bp='0' or hp='1' or exon='0' or gpalin=x"0000" else --or gpal0in/=x"0000"
+	gpriobit<='0' when bp='0' or hp='1' or exon='0' or gpalin=x"0000" else
 		exbitd;
 
 	tpriobit<='0';
 	
 	lbwdat<=(others=>'0') when lvviden='0' or lhviden='0' else
-		gpalin when gpriobit='1' else
-		tpalin when tpriobit='1' else
+		gpalin	when exon='1' and hp='0' and sp_exbitd='1' else
 		wdatpr0	when wenpr0='1' else
 		wdatpr1	when wenpr1='1' else
 		wdatpr2	when wenpr2='1' else
-		-- "Air Control" will show wrong colors unless this is 0000
-		(others=>'0'); --when (spren='0' and txten='0' and grpen='0') else
-		--tpal0in;
+		spalin	when spren='1' and sprite_ind(7 downto 4)/="0000" and spalin/=x"0000" else
+		tpal0in;
 
 	lbaddr<=hadly2;
 	
@@ -956,6 +998,7 @@ begin
 	g0en<='0' when grpen='0' else
 			'1';
 	g1en<='0' when grpen='0' else
+			'0' when memres='1' else
 			'1';
 	g2en<='0' when grpen='0' else
 			'0' when memres='1' else
@@ -967,6 +1010,6 @@ begin
 			'1';
 	
 	gclrbusy<=gclrbusyb;
-	vvideoen<=vviden;
-	
+	vvideoen<=vviden_int when unsigned(vvend) > unsigned(vtotal) else vviden;
+
 end rtl;

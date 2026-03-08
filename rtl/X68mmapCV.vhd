@@ -161,11 +161,11 @@ begin
 				m_addr(23 downto 1) when atype=addr_MRAM else
 				t_base+("00000" & m_addr(16 downto 1) & prane) when SWen='1' else
 				t_base+("00000" & m_addr(16 downto 1) & m_addr(18 downto 17)) when atype=addr_TRAM else
-				g_base+("00000" & m_addr(18 downto 10) & gppage(1) & m_addr(9 downto 2)) when gpconven='1' and vmode="01" else
+				g_base+("00000" & m_addr(18 downto 1)) when gpconven='1' and vmode="01" else
 				g_base+("00000" & m_addr(18 downto 10) & gppage & m_addr(9 downto 3)) when gpconven='1' and vmode="00" else
 				g_base+("00000" & m_addr(18 downto 1)) when atype=addr_GRAM and (gmode="10" or gmode="11") else
 				g_base+("00000" & m_addr(18 downto 1)) when atype=addr_GRAM and gmode="01" else
-				g_base+("00000" & m_addr(18 downto 10) & m_addr(20 downto 19) & m_addr(9 downto 3)) when atype=addr_GRAM and gmode="00" and gsize='0' else
+				g_base+("00000" & m_addr(18 downto 1)) when atype=addr_GRAM and gmode="00" and gsize='0' else
 				g_base+("00000" & m_addr(20 downto 3)) when atype=addr_GRAM and gmode="00" and gsize='1' else
 				(others=>'1');
 	
@@ -210,10 +210,14 @@ begin
 				SWwr when SWen='1' and MEN='1' else
 				b_wrb;
 	
-	ram_rdatq<=	ram_rdat(15 downto 12) when m_addr(2 downto 1)="00" else
-				ram_rdat(11 downto  8) when m_addr(2 downto 1)="01" else
-				ram_rdat( 7 downto  4) when m_addr(2 downto 1)="10" else
-				ram_rdat( 3 downto  0) when m_addr(2 downto 1)="11" else
+	ram_rdatq<=	ram_rdat( 3 downto  0) when gsize='1' and m_addr(2 downto 1)="00" else
+				ram_rdat( 7 downto  4) when gsize='1' and m_addr(2 downto 1)="01" else
+				ram_rdat(11 downto  8) when gsize='1' and m_addr(2 downto 1)="10" else
+				ram_rdat(15 downto 12) when gsize='1' and m_addr(2 downto 1)="11" else
+				ram_rdat( 3 downto  0) when m_addr(20 downto 19)="00" else
+				ram_rdat( 7 downto  4) when m_addr(20 downto 19)="01" else
+				ram_rdat(11 downto  8) when m_addr(20 downto 19)="10" else
+				ram_rdat(15 downto 12) when m_addr(20 downto 19)="11" else
 				"0000";
 	
 	ram_rdatb<=	ram_rdat(15 downto 8) when m_addr(19)='1' else
@@ -240,10 +244,14 @@ begin
 	
 	ram_rmwmask<=
 		not txtmask	when atype=addr_TRAM and MEN='1' else
-		x"f000" when atype=addr_GRAM and gmode="00" and m_addr(2 downto 1)="00" else
-		x"0f00" when atype=addr_GRAM and gmode="00" and m_addr(2 downto 1)="01" else
-		x"00f0" when atype=addr_GRAM and gmode="00" and m_addr(2 downto 1)="10" else
-		x"000f" when atype=addr_GRAM and gmode="00" and m_addr(2 downto 1)="11" else
+		x"000f" when atype=addr_GRAM and gmode="00" and gsize='1' and m_addr(2 downto 1)="00" else
+		x"00f0" when atype=addr_GRAM and gmode="00" and gsize='1' and m_addr(2 downto 1)="01" else
+		x"0f00" when atype=addr_GRAM and gmode="00" and gsize='1' and m_addr(2 downto 1)="10" else
+		x"f000" when atype=addr_GRAM and gmode="00" and gsize='1' and m_addr(2 downto 1)="11" else
+		x"000f" when atype=addr_GRAM and gmode="00" and m_addr(20 downto 19)="00" else
+		x"00f0" when atype=addr_GRAM and gmode="00" and m_addr(20 downto 19)="01" else
+		x"0f00" when atype=addr_GRAM and gmode="00" and m_addr(20 downto 19)="10" else
+		x"f000" when atype=addr_GRAM and gmode="00" and m_addr(20 downto 19)="11" else
 		(others=>'1');
 	
 	SWen<=	'1' when atype=addr_TRAM and SA='1' and b_wrb/="00" else '0';
@@ -342,20 +350,26 @@ begin
 			"00";
 	
 	process(sclk,rstn)
+	variable iocount	:integer range 0 to 1;
 	begin
-		if rising_edge(sclk) then
-			if(rstn='0')then
-				IO_ack<='0';
-			else
-				if(atype=addr_IO and m_as='0')then
+		if(rstn='0')then
+			IO_ack<='0';
+			iocount:=1;
+		elsif rising_edge(sclk) then
+			if(atype=addr_IO and m_as='0')then
+				if(iocount=0)then
 					if((m_rd='1' or b_wrb/="00") and iowait='0')then
 						IO_ack<='1';
 					else
 						IO_ack<='0';
 					end if;
 				else
+					iocount:=iocount-1;
 					IO_ack<='0';
 				end if;
+			else
+				iocount:=1;
+				IO_ack<='0';
 			end if;
 		end if;
 	end process;
@@ -401,22 +415,14 @@ begin
 									if(vmode="00")then
 										gprmw<="11";
 									else
-										if(m_addr(1)='0')then
-											gpwr<="10";
-										else
-											gpwr<="01";
-										end if;
+										gpwr<="01"; -- page 0 = LOW byte
 									end if;
 									gpstate<=gp_p0;
 								when "10" =>
 									if(vmode="00")then
 										gprmw<="11";
 									else
-										if(m_addr(1)='0')then
-											gpwr<="10";
-										else
-											gpwr<="01";
-										end if;
+										gpwr<="10"; -- page 1 = HIGH byte
 									end if;
 									gpstate<=gp_p2;
 								when others =>
@@ -428,7 +434,7 @@ begin
 							if(vmode="00")then
 								gp_rdat(3 downto 0)<=ram_rdatq;
 							else
-								gp_rdat(7 downto 0)<=ram_rdatb;
+								gp_rdat(7 downto 0)<=ram_rdat(7 downto 0); -- page 0 = LOW byte
 							end if;
 							gprd<='0';
 							gpwr<="00";
@@ -455,11 +461,7 @@ begin
 									gpstate<=gp_end;
 								when "11" =>
 									gpstate<=gp_p2;
-									if(m_addr(1)='0')then
-										gpwr<="10";
-									else
-										gpwr<="01";
-									end if;
+									gpwr<="10"; -- page 1 = HIGH byte
 								when others =>
 								end case;
 							end if;
@@ -493,7 +495,7 @@ begin
 							if(vmode="00")then
 								gp_rdat(11 downto 8)<=ram_rdatq;
 							else
-								gp_rdat(15 downto 8)<=ram_rdatb;
+								gp_rdat(15 downto 8)<=ram_rdat(15 downto 8); -- page 1 = HIGH byte
 							end if;
 							gprd<='0';
 							gpwr<="00";

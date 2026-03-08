@@ -6,7 +6,7 @@ LIBRARY	IEEE;
 
 entity X68K_top is
 generic(
-	RCFREQ		:integer	:=80;			--SDRAM clock MHz
+	RCFREQ		:integer	:=120;			--SDRAM clock MHz
 	SCFREQ		:integer	:=10000;		--kHz
 	FCFREQ		:integer	:=40000;		--FDC clock
 	ACFREQ		:integer	:=40000;		--Audio clock
@@ -139,7 +139,13 @@ port(
 
 	-- Per-plane graphics layer disable (active high = layer off)
 	-- bit 0 = G0, bit 1 = G1, bit 2 = G2, bit 3 = G3
-	dGrpLayers  :in std_logic_vector(3 downto 0) := "0000"
+	dGrpLayers  :in std_logic_vector(3 downto 0) := "0000";
+
+	-- Transparency mode selector: "00"=PUU, "01"=px68k, "10"=MAME
+	tmode       :in std_logic_vector(1 downto 0) := "00";
+
+	-- Debug: disable GVRAM fast-clear (1=disable)
+	gclr_dis    :in std_logic := '0'
 );
 end X68K_top;
 
@@ -492,6 +498,16 @@ signal	g3_caddr	:std_logic_vector(RAMAWIDTH-2 downto 8);
 signal	g3_clear	:std_logic;
 signal	vlineno		:std_logic_vector(9 downto 0);
 
+-- GVRAM reset clear state machine
+type gvclr_state_t is (GVC_IDLE, GVC_CLEAR, GVC_DONE);
+signal	gvclr_state		:gvclr_state_t;
+signal	gvclr_active	:std_logic;
+signal	gvclr_done		:std_logic;
+signal	gvclr_caddr		:std_logic_vector(RAMAWIDTH-2 downto 8);
+signal	gvclr_timer		:integer range 0 to 1023;
+signal	mc_g0_caddr		:std_logic_vector(RAMAWIDTH-2 downto 8);
+signal	mc_g0_clear		:std_logic;
+
 --video registers
 signal	vr_hfreq	:std_logic;
 signal	vr_htotal	:std_logic_vector(7 downto 0);
@@ -527,6 +543,7 @@ signal	vr_rcpybgn	:std_logic;
 signal	vr_rcpyend	:std_logic;
 signal	vr_rcpybusy	:std_logic;
 signal	vr_fcbgn	:std_logic;
+signal	vr_fcbgn_eff	:std_logic;
 signal	vr_fcend	:std_logic;
 signal	vr_fcbusy	:std_logic;
 signal	vr_size		:std_logic;
@@ -936,6 +953,8 @@ port(
 
 	g3_caddr	:in std_logic_vector(awidth-1 downto 8);
 	g3_clear	:in std_logic;
+	
+	gmode		:in std_logic_vector(1 downto 0)	:="00";
 	
 	fde_addr	:in std_logic_vector(awidth-1 downto 0)	:=(others=>'0');
 	fde_rdat	:out std_logic_vector(15 downto 0);
@@ -1738,6 +1757,9 @@ port(
 	hblank  :in std_logic;
 	vblank  :in std_logic;
 	
+	-- Transparency mode selector: "00"=PUU, "01"=px68k, "10"=MAME
+	tmode   :in std_logic_vector(1 downto 0) := "00";
+
 	vidclk		:in std_logic;
 	vid_ce      :in std_logic := '1';
 	rstn	:in std_logic
@@ -2578,7 +2600,7 @@ begin
 
 --	fdcclk<=pClk50M;
 	dem_rstn<=plllock and pwr_rstn;
-	srstn<=plllock and rstn and pwr_rstn and ldr_done and dem_initdone;
+	srstn<=plllock and rstn and pwr_rstn and ldr_done and dem_initdone and gvclr_done;
 	vid_rstn<=plllock and pwr_rstn and ram_inidone;
 
 	pwr	:pwrcont  port map(
@@ -2893,13 +2915,20 @@ begin
 	
 	ram_addrw<="0" & ram_addr;
 	
+	-- MUX g0_caddr/g0_clear: during reset clear, override with sweep address
+	mc_g0_caddr <= gvclr_caddr when gvclr_active='1' else g0_caddr;
+	mc_g0_clear <= '1'          when gvclr_active='1' else g0_clear;
+
+	-- Debug: gate fast-clear begin pulse (gclr_dis=1 disables fast clear entirely)
+	vr_fcbgn_eff <= '0' when gclr_dis='1' else vr_fcbgn;
+
 	RAM	:memcont generic map(
 		AWIDTH		=>24,
 		CAWIDTH		=>9,
 		BRSIZE		=>brsize,
 		BRBLOCKS		=>32,
 		CLKMHZ		=>RCFREQ,
-		REFINT		=>3,
+		REFINT		=>5,
 		REFCNT		=>64
 	) port map(
 		PMEMCKE		=>pMemCke,
@@ -2985,8 +3014,8 @@ begin
 		t1_rdat3	=>t1_rdat3,
 		--t1_ack		=>t1_ack,
 		
-		g0_caddr	=>g0_caddr,
-		g0_clear	=>g0_clear,
+		g0_caddr	=>mc_g0_caddr,
+		g0_clear	=>mc_g0_clear,
 		
 		g1_caddr	=>g1_caddr,
 		g1_clear	=>g1_clear,
@@ -2996,6 +3025,8 @@ begin
 
 		g3_caddr	=>g3_caddr,
 		g3_clear	=>g3_clear,
+
+		gmode		=>vr_GR_CMODE,
 
 		fde_addr	=>'1' & dem_fderamaddr(22 downto 0),
 		fde_rdat	=>dem_fderamrdat,
@@ -3020,6 +3051,57 @@ begin
 		rstn		=>mem_rstn
 	);
 	
+	-- GVRAM clear on reset: sweep all 1024 GVRAM pages through g0_clear
+	process(ramclk, mem_rstn)
+	begin
+		if(mem_rstn='0')then
+			gvclr_state   <= GVC_IDLE;
+			gvclr_active  <= '0';
+			gvclr_done    <= '0';
+			gvclr_caddr   <= (others=>'0');
+			gvclr_timer   <= 0;
+		elsif rising_edge(ramclk) then
+			if(rstn='0')then
+				-- User reset: restart clear
+				gvclr_state   <= GVC_IDLE;
+				gvclr_active  <= '0';
+				gvclr_done    <= '0';
+				gvclr_caddr   <= (others=>'0');
+				gvclr_timer   <= 0;
+			else
+				case gvclr_state is
+				when GVC_IDLE =>
+					if(ram_inidone='1')then
+						-- Start clear: first GVRAM page
+						gvclr_active  <= '1';
+						-- g_base(23 downto 18)="011101", offset starts at 0
+						gvclr_caddr(RAMAWIDTH-2 downto 18) <= "011101";
+						gvclr_caddr(17 downto 8)            <= (others=>'0');
+						gvclr_timer   <= 1023;
+						gvclr_state   <= GVC_CLEAR;
+					end if;
+				when GVC_CLEAR =>
+					if(gvclr_timer > 0)then
+						gvclr_timer <= gvclr_timer - 1;
+					else
+						-- Timer expired: advance to next page
+						if(gvclr_caddr(17 downto 8) = "1111111111")then
+							-- All 1024 pages done
+							gvclr_active  <= '0';
+							gvclr_done    <= '1';
+							gvclr_state   <= GVC_DONE;
+						else
+							gvclr_caddr(17 downto 8) <= gvclr_caddr(17 downto 8) + 1;
+							gvclr_timer <= 1023;
+						end if;
+					end if;
+				when GVC_DONE =>
+					null;
+				end case;
+			end if;
+		end if;
+	end process;
+
 	nvwpl	:bwlatch generic map(24,8) port map(abus(23 downto 0),b_lds and sys_ce,b_wr(0),dbus(7 downto 0),x"e8e00d",nvwp,sysclk,srstn);
 	nv_ce<='1' when abus(23 downto 14)="1110110100" else '0';
 
@@ -3423,7 +3505,7 @@ begin
 		
 --		vlineno	=>vlineno,
 	
-		gclrbgn	=>vr_fcbgn,
+		gclrbgn	=>vr_fcbgn_eff,
 		gclrend	=>vr_fcend,
 		gclrpage=>vr_rcpyplane,
 		gclrbusy=>vr_fcbusy,
@@ -3431,6 +3513,8 @@ begin
 		hblank  =>VID_HRTC,
 		vblank  =>VID_VRTC,
 		
+		tmode   =>tmode,
+
 		vidclk	=>vidclk,
 		vid_ce  =>vid_ce,
 		rstn	=>vid_rstn
