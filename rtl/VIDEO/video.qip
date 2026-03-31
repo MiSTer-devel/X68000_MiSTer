@@ -1,5 +1,4 @@
 set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) video_timing_800x600_pkg.vhd ]
-set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) video_timing_640x400_pkg.vhd ]
 set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) synccont.vhd ]
 set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) VTIMING.vhd ]
 set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) VTIMINGX68.vhd ]
@@ -7,7 +6,6 @@ set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) f
 set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) CRTCX68TXT.vhd ]
 set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) mister_sync.sv ]
 set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) textscrv.vhd ]
-set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) textscrv_mister.vhd ]
 set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) vcaddr_pkg.vhd ]
 set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) txtpal.vhd ]
 set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) txtpraml.vhd ]

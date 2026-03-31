@@ -33,6 +33,7 @@ port(
 	gmode	:in std_logic_vector(1 downto 0);
 	vmode	:in std_logic_vector(1 downto 0);
 	gsize	:in std_logic;
+	vc_gsize	:in std_logic	:='0';
 	gfxbuf	:in std_logic	:='0';
 	rcpybusy:in std_logic  :='0';
 
@@ -127,6 +128,7 @@ signal	IO_ack	:std_logic;
 begin
 	gpconven<=	'0' when gpcen='0' else
 					'0' when atype/=addr_GRAM else
+					'0' when vc_gsize='1' and vmode="00" else
 					'1' when gmode="01" and vmode="00" else
 					'1' when gmode(1)='1' and vmode(1)='0' else
 					'0';
@@ -166,7 +168,7 @@ begin
 				g_base+("00000" & m_addr(18 downto 1)) when atype=addr_GRAM and (gmode="10" or gmode="11") else
 				g_base+("00000" & m_addr(18 downto 1)) when atype=addr_GRAM and gmode="01" else
 				g_base+("00000" & m_addr(18 downto 1)) when atype=addr_GRAM and gmode="00" and gsize='0' else
-				g_base+("00000" & m_addr(20 downto 3)) when atype=addr_GRAM and gmode="00" and gsize='1' else
+				g_base+("00000" & m_addr(19 downto 11) & m_addr(9 downto 1)) when atype=addr_GRAM and gmode="00" and gsize='1' else
 				(others=>'1');
 	
 	ram_wdat<=	
@@ -210,10 +212,10 @@ begin
 				SWwr when SWen='1' and MEN='1' else
 				b_wrb;
 	
-	ram_rdatq<=	ram_rdat( 3 downto  0) when gsize='1' and m_addr(2 downto 1)="00" else
-				ram_rdat( 7 downto  4) when gsize='1' and m_addr(2 downto 1)="01" else
-				ram_rdat(11 downto  8) when gsize='1' and m_addr(2 downto 1)="10" else
-				ram_rdat(15 downto 12) when gsize='1' and m_addr(2 downto 1)="11" else
+	ram_rdatq<=	ram_rdat( 3 downto  0) when gsize='1' and m_addr(20)='0' and m_addr(10)='0' else
+				ram_rdat( 7 downto  4) when gsize='1' and m_addr(20)='0' and m_addr(10)='1' else
+				ram_rdat(11 downto  8) when gsize='1' and m_addr(20)='1' and m_addr(10)='0' else
+				ram_rdat(15 downto 12) when gsize='1' and m_addr(20)='1' and m_addr(10)='1' else
 				ram_rdat( 3 downto  0) when m_addr(20 downto 19)="00" else
 				ram_rdat( 7 downto  4) when m_addr(20 downto 19)="01" else
 				ram_rdat(11 downto  8) when m_addr(20 downto 19)="10" else
@@ -244,10 +246,10 @@ begin
 	
 	ram_rmwmask<=
 		not txtmask	when atype=addr_TRAM and MEN='1' else
-		x"000f" when atype=addr_GRAM and gmode="00" and gsize='1' and m_addr(2 downto 1)="00" else
-		x"00f0" when atype=addr_GRAM and gmode="00" and gsize='1' and m_addr(2 downto 1)="01" else
-		x"0f00" when atype=addr_GRAM and gmode="00" and gsize='1' and m_addr(2 downto 1)="10" else
-		x"f000" when atype=addr_GRAM and gmode="00" and gsize='1' and m_addr(2 downto 1)="11" else
+		x"000f" when atype=addr_GRAM and gmode="00" and gsize='1' and m_addr(20)='0' and m_addr(10)='0' else
+		x"00f0" when atype=addr_GRAM and gmode="00" and gsize='1' and m_addr(20)='0' and m_addr(10)='1' else
+		x"0f00" when atype=addr_GRAM and gmode="00" and gsize='1' and m_addr(20)='1' and m_addr(10)='0' else
+		x"f000" when atype=addr_GRAM and gmode="00" and gsize='1' and m_addr(20)='1' and m_addr(10)='1' else
 		x"000f" when atype=addr_GRAM and gmode="00" and m_addr(20 downto 19)="00" else
 		x"00f0" when atype=addr_GRAM and gmode="00" and m_addr(20 downto 19)="01" else
 		x"0f00" when atype=addr_GRAM and gmode="00" and m_addr(20 downto 19)="10" else

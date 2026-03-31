@@ -37,7 +37,7 @@ port(
 	kbrx	:out std_logic;
 	
 	LED		:out std_logic_vector(6 downto 0);
-	kbdtype	:in std_logic_vector(1 downto 0)	:="00";
+	kbdtype	:in std_logic_vector(2 downto 0)	:="000";
 	
 	clk		:in std_logic;
 	ce      :in std_logic := '1';
@@ -119,6 +119,13 @@ signal	TBLADRm	:std_logic_vector(7 downto 0);
 signal	TBLDAT	:std_logic_vector(6 downto 0);
 signal	NTBLDAT	:std_logic_vector(6 downto 0);
 signal	E0TBLDAT:std_logic_vector(6 downto 0);
+
+-- MiSTer layout signals
+signal	rom_kbdtype	:std_logic_vector(1 downto 0);
+signal	is_mister	:std_logic;
+signal	win_pressed	:std_logic;
+signal	combo_code	:std_logic_vector(6 downto 0);
+signal	effective_tbldat	:std_logic_vector(6 downto 0);
 
 type KBSTATE_T is (
 	KS_IDLE,
@@ -291,6 +298,7 @@ begin
 				KBREP<=x"3";
 				KBINT<=x"4";
 				KBEN<='0';
+				win_pressed<='0';
 			elsif(ce = '1')then
 				KB_WRn<='1';
 				RXDONE<='0';
@@ -373,6 +381,19 @@ begin
 								E1en<='1';
 							elsif(KB_RXDAT=x"f0")then
 								F0en<='1';
+							elsif(is_mister='1' and E0en='1' and (KB_RXDAT=x"1F" or KB_RXDAT=x"27"))then
+								if(F0en='0')then
+									win_pressed<='1';
+								else
+									win_pressed<='0';
+								end if;
+								E0en<='0';
+								F0en<='0';
+							elsif(is_mister='1' and E0en='1' and KB_RXDAT=x"2F")then
+								E0en<='0';
+								F0en<='0';
+							elsif(is_mister='1' and E0en='0' and E1en='0' and KB_RXDAT=x"07")then
+								F0en<='0';
 							else
 								KBSTATE<=KS_RDTBL;
 								TBLADR<=KB_RXDAT;
@@ -419,7 +440,7 @@ begin
 							end if;
 						end if;
 					when KS_RDTBL =>
-						if(TBLDAT="1111111")then
+						if(effective_tbldat="1111111")then
 							E0en<='0';
 							E1en<='0';
 							F0en<='0';
@@ -427,12 +448,12 @@ begin
 						else
 							if(F0en='1')then
 								LASTCODE<=(others=>'0');
-								KBDAT<='1' & TBLDAT;
+								KBDAT<='1' & effective_tbldat;
 								RXDONE<='1';
 								KBSTATE<=KS_WINT;
 							else
-								if(LASTCODE=TBLDAT)then
-									KBDAT<='1' & TBLDAT;
+								if(LASTCODE=effective_tbldat)then
+									KBDAT<='1' & effective_tbldat;
 									if(RXEN='1')then
 										RXDONE<='1';
 										KBSTATE<=KS_REP;
@@ -440,8 +461,8 @@ begin
 										KBSTATE<=KS_IDLE;
 									end if;
 								else
-									LASTCODE<=TBLDAT;
-									KBDAT<='0' & TBLDAT;
+									LASTCODE<=effective_tbldat;
+									KBDAT<='0' & effective_tbldat;
 									if(RXEN='1')then
 										RXDONE<='1';
 										KBSTATE<=KS_WINT;
@@ -454,7 +475,7 @@ begin
 						end if;
 					when KS_REP =>
 						if(RXRDY='0')then
-							KBDAT<='0' & TBLDAT;
+							KBDAT<='0' & effective_tbldat;
 							RXDONE<='1';
 							KBSTATE<=KS_WINT;
 						end if;
@@ -514,11 +535,38 @@ begin
 	TBLADRm(7)<='1' when E1en='1' else TBLADR(7);
 	TBLADRm(6 downto 0)<=TBLADR(6 downto 0);
 	
-	NTBL	:ktbln_m port map(kbdtype & TBLADR,clk,NTBLDAT);
-	E0TBL	:ktble0_m port map(kbdtype & TBLADRm,clk,E0TBLDAT);
+
+	is_mister <= '1' when kbdtype="000" else '0';
+	rom_kbdtype <= "10" when kbdtype="000" else
+	               kbdtype(1 downto 0) - 1 when kbdtype(2)='0' else  -- 1->00, 2->01, 3->10
+	               "11";  -- 4 (US Alt) -> 11
+	
+	NTBL	:ktbln_m port map(rom_kbdtype & TBLADR,clk,NTBLDAT);
+	E0TBL	:ktble0_m port map(rom_kbdtype & TBLADRm,clk,E0TBLDAT);
 	TBLDAT<=	E0TBLDAT when E0en='1' else
 				E0TBLDAT	when E1en='1' else
 				NTBLDAT;
+	
+	-- Win+key combo override lookup (PS2 Set 2 scancodes -> X68000 keycodes)
+	combo_code<=	"1010100" when TBLADR=x"33" else	-- Win+H -> HELP (0x54)
+					"1110010" when TBLADR=x"16" else	-- Win+1 -> OPT.1 (0x72)
+					"1110011" when TBLADR=x"1E" else	-- Win+2 -> OPT.2 (0x73)
+					"1010101" when TBLADR=x"05" else	-- Win+F1 -> XF1 (0x55)
+					"1010110" when TBLADR=x"06" else	-- Win+F2 -> XF2 (0x56)
+					"1010111" when TBLADR=x"04" else	-- Win+F3 -> XF3 (0x57)
+					"1011000" when TBLADR=x"0C" else	-- Win+F4 -> XF4 (0x58)
+					"1011001" when TBLADR=x"03" else	-- Win+F5 -> XF5 (0x59)
+					"1100000" when TBLADR=x"1A" else	-- Win+Z -> Zenkaku (0x60)
+					"1011111" when TBLADR=x"22" else	-- Win+X -> Hiragana (0x5F)
+					"1011010" when TBLADR=x"42" else	-- Win+K -> Kana (0x5A)
+					"1010010" when TBLADR=x"4C" else	-- Win+; -> Kigou (0x52)
+					"1010011" when TBLADR=x"2C" else	-- Win+T -> Touroku (0x53)
+					"1011011" when TBLADR=x"2D" else	-- Win+R -> Romaji (0x5B)
+					"0001110" when TBLADR=x"35" else	-- Win+Y -> Yen (0x0E)
+					"1111111";
+
+	effective_tbldat <=	combo_code when is_mister='1' and win_pressed='1' and E0en='0' and E1en='0' and combo_code/="1111111" else
+						TBLDAT;
 	
 	process(clk,rstn)begin
 		if rising_edge(clk) then

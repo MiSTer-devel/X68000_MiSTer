@@ -21,4 +21,5 @@ set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) clkdiv.vhd
 set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) clktx.vhd ]
 set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) datfifo.vhd ]
 set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) datlatch.vhd ]
+set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) dpssram.vhd ]
 set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) e8255.vhd ]

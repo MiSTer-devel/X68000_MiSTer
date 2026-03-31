@@ -162,7 +162,7 @@ begin
 				rg3offsety	<=(others=>'0');
 				rsiz		<='0';
 				rcol		<=(others=>'0');
-				rGFXBUF		<='0';
+				rGFXBUF		<='1';
 				rTXTBUF		<='0';
 				rHF			<='0';
 				rVD			<=(others=>'0');
