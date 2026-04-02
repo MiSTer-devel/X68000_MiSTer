@@ -101,7 +101,7 @@ module jt51_mmr(
     output          use_prev1
 );
 
-reg [7:0] selected_register, din_copy ;
+reg [7:0] reg_sel, op_din, ch_din;
 
 reg       up_rl,  up_kc,  up_kf,  up_pms,
           up_dt1, up_tl,  up_ks,  up_dt2,
@@ -130,7 +130,7 @@ reg csm;
 
 always @(posedge clk, posedge rst) begin : memory_mapped_registers
     if( rst ) begin
-        selected_register   <= 8'h0;
+        reg_sel   <= 8'h0;
         { up_rl, up_kc, up_kf, up_pms, up_dt1, up_tl,
                 up_ks, up_amsen, up_dt2, up_d1l, up_keyon } <= 11'd0;
         `ifdef TEST_SUPPORT
@@ -150,7 +150,7 @@ always @(posedge clk, posedge rst) begin : memory_mapped_registers
         lfo_w           <= 2'd0;
         { ct2, ct1 }    <= 2'd0;
         csm             <= 1'b0;
-        din_copy        <= 8'd0;
+        op_din          <= 8'd0;
         test_mode       <= 8'd0;
         `ifdef SIMULATION
         mmr_dump <= 1'b0;
@@ -158,17 +158,14 @@ always @(posedge clk, posedge rst) begin : memory_mapped_registers
     end else begin
         // WRITE IN REGISTERS
         if( write ) begin
+            up_rl  <= 0;    // channel data is written in one clock cycle
+            up_kc  <= 0;
+            up_kf  <= 0;
+            up_pms <= 0;
             if( !a0 )
-                selected_register <= din;
+                reg_sel <= din;
             else begin
-                din_copy <= din;
-                up_op    <= selected_register[4:3]; // operator to update
-                up_ch    <= selected_register[2:0]; // channel to update
-                up_rl    <= 1'b0;
-                up_kc    <= 1'b0;
-                up_kf    <= 1'b0;
-                up_pms   <= 1'b0;
-                up_dt1   <= 1'b0;
+                up_dt1   <= 1'b0;   // operator data is updated via CSR
                 up_tl    <= 1'b0;
                 up_ks    <= 1'b0;
                 up_amsen <= 1'b0;
@@ -176,14 +173,17 @@ always @(posedge clk, posedge rst) begin : memory_mapped_registers
                 up_d1l   <= 1'b0;
                 up_keyon <= 1'b0;
                 // Global registers
-                if( selected_register < 8'h20 ) begin
-                    case( selected_register)
+                if( reg_sel < 8'h20 ) begin
+                    case( reg_sel)
                     // registros especiales
                     REG_TEST:   test_mode <= din; // regardless of din
                     `ifdef TEST_SUPPORT
                     REG_TEST2:  { test_op0, test_eg } <= din[1:0];
                     `endif
-                    REG_KON:    up_keyon     <= 1'b1;
+                    REG_KON:    begin
+                        up_keyon <= 1'b1;
+                        op_din   <= din;
+                    end
                     REG_NOISE:  { ne, nfrq } <= { din[7], din[4:0] };
                     REG_CLKA1:  value_A[9:2] <= din;
                     REG_CLKA2:  value_A[1:0] <= din[1:0];
@@ -215,19 +215,21 @@ always @(posedge clk, posedge rst) begin : memory_mapped_registers
                     default:;
                     endcase
                 end else
-                // channel registers
-                if( selected_register < 8'h40 ) begin
-                    case( selected_register[4:3] )
+                if( reg_sel < 8'h40 ) begin
+                    // channel registers
+                    ch_din <= din;
+                    case( reg_sel[4:3] )
                         2'h0: up_rl <= 1'b1;
                         2'h1: up_kc <= 1'b1;
                         2'h2: up_kf <= 1'b1;
                         2'h3: up_pms<= 1'b1;
                     endcase
-                end
-                else
-                // operator registers
-                begin
-                    case( selected_register[7:5] )
+                end else begin
+                    // operator registers
+                    up_op  <= reg_sel[4:3]; // operator to update
+                    up_ch  <= reg_sel[2:0]; // channel to update
+                    op_din <= din;
+                    case( reg_sel[7:5] )
                         3'h2: up_dt1    <= 1'b1;
                         3'h3: up_tl     <= 1'b1;
                         3'h4: up_ks     <= 1'b1;
@@ -250,45 +252,43 @@ always @(posedge clk, posedge rst) begin : memory_mapped_registers
     end
 end
 
-reg [4:0] busy_cnt; // busy lasts for 32 synth clock cycles
-reg       old_write;
+reg  [4:0] busy_cnt; // busy lasts for 32 synth clock cycles
+wire [5:0] nx_busy = {1'd0,busy_cnt}+{5'd0,busy};
 
-always @(posedge clk)
+always @(posedge clk, posedge rst) begin
     if( rst ) begin
-        busy <= 1'b0;
-        busy_cnt <= 5'd0;
+        busy_cnt <= 0;
+        busy     <= 0;
+    end else if(cen) begin
+        busy <= write&a0 | (busy & ~nx_busy[5]);
+        busy_cnt <= nx_busy[4:0];
     end
-    else begin
-        old_write <= write;
-        if (!old_write && write && a0 ) begin // only set for data writes
-            busy <= 1'b1;
-            busy_cnt <= 5'd0;
-        end
-        else if(cen) begin
-            if( busy_cnt == 5'd31 ) busy <= 1'b0;
-            busy_cnt <= busy_cnt+5'd1;
-        end
-    end
+end
 
 jt51_reg u_reg(
     .rst        ( rst       ),
     .clk        ( clk       ),      // P1
     .cen        ( cen       ),      // P1
-    .din        ( din_copy  ),
 
-    .up_rl      ( up_rl     ),
-    .up_kc      ( up_kc     ),
-    .up_kf      ( up_kf     ),
-    .up_pms     ( up_pms    ),
+    // operator updates
     .up_dt1     ( up_dt1    ),
     .up_tl      ( up_tl     ),
     .up_ks      ( up_ks     ),
     .up_amsen   ( up_amsen  ),
     .up_dt2     ( up_dt2    ),
     .up_d1l     ( up_d1l    ),
-    .up_keyon   ( up_keyon  ),
     .op         ( up_op     ),      // operator to update
     .ch         ( up_ch     ),      // channel to update
+    .op_din     ( op_din    ),
+    // channel updates
+    .up_rl      ( up_rl     ),
+    .up_kc      ( up_kc     ),
+    .up_kf      ( up_kf     ),
+    .up_pms     ( up_pms    ),
+    .ch_sel     (reg_sel[2:0]),     // channel is updated directly off the bus
+    .ch_din     ( ch_din    ),
+
+    .up_keyon   ( up_keyon  ),
 
     .csm        ( csm       ),
     .overflow_A ( overflow_A),
@@ -352,7 +352,7 @@ end
 `endif
 
 
-`ifndef JT51_NODEBUG
+`ifdef JT51_DEBUG
 `ifdef SIMULATION
 /* verilator lint_off PINMISSING */
 wire [4:0] cnt_aux;

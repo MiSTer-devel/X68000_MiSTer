@@ -75,7 +75,7 @@ signal	MADDR        : std_logic_vector(12 downto 0);
 signal	MDATA        : std_logic_vector(15 downto 0);
 
 signal	clkstate     : integer range 0 to 11;
-signal	curaddr      : std_logic_vector(7 downto 0);
+signal	curaddr      : std_logic_vector(LAWIDTH-1 downto 0);
 
 constant INITR_TIMES  : integer :=20;
 signal	INITR_COUNT  : integer range 0 to INITR_TIMES;

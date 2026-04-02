@@ -174,6 +174,9 @@ signal	drqeclr:std_logic;
 signal	ldrq	:std_logic;
 signal	CONT	:std_logic;
 signal	CONT_clr:std_logic;
+signal	CCR_CNT_clr:std_logic;
+signal	BAR_clr:std_logic;
+signal	BTC_clr:std_logic;
 
 signal	TERR_SET	:std_logic;
 signal	CERR_SET	:std_logic;
@@ -211,11 +214,10 @@ begin
 	DITR	:g_srff port map(S_DITset,S_DITres,S_DIT,clk,ce,rstn);
 	PCTR	:g_srff port map(S_PCTset,S_PCTres,S_PCT,clk,ce,rstn);
 
-	S_BTCres<=CCR_CNT;
+	S_BTCres<=regwdat(14) when regaddr(5 downto 1)="00000" and regwr(1)='1' else '0';
 	S_COCset<=int_comp;
 
 	S_COCres<=regwdat(15) when regaddr(5 downto 1)="00000" and regwr(1)='1' else '0';
---	S_BTCres<=regwdat(14) when regaddr(5 downto 1)="00000" and regwr(1)='1' else '0';
 	S_NDTres<=regwdat(13) when regaddr(5 downto 1)="00000" and regwr(1)='1' else '0';
 	S_ERRres<=regwdat(12) when regaddr(5 downto 1)="00000" and regwr(1)='1' else '0';
 	S_DITres<=regwdat(10) when regaddr(5 downto 1)="00000" and regwr(1)='1' else '0';
@@ -291,6 +293,9 @@ begin
 						CCR_SAB<=regwdat(4);
 						CCR_INT<=regwdat(3);
 					end if;
+				if(CCR_CNT_clr='1')then
+					CCR_CNT<='0';
+				end if;
 				when "10010" =>
 					if(regwr(0)='1')then
 						NIV<=regwdat(7 downto 0);
@@ -445,6 +450,9 @@ begin
 				if(BTC_dec='1')then
 					BTC<=BTC-x"0001";
 				end if;
+				if(BTC_clr='1')then
+					BTC<=(others=>'0');
+				end if;
 			end if;
 		end if;
 	end process;
@@ -475,6 +483,9 @@ begin
 					BAR(15 downto 0)<=b_indatl;
 				elsif(BAR_inc='1')then
 					BAR<=BAR+x"00000006";
+				end if;
+				if(BAR_clr='1')then
+					BAR<=(others=>'0');
 				end if;
 			end if;
 		end if;
@@ -524,8 +535,19 @@ begin
 	S_ACT<='0' when STATE=ST_IDLE else '1';
 	buschk<=reqwait when STATE=ST_BUSWAIT or STATE=ST_CHAINBUSWAIT else '0';
 
-	GCR_BT <= (others => '0');
-	GCR_BR <= (others => '0');
+	process(clk,rstn)begin
+		if rising_edge(clk) then
+			if(rstn='0')then
+				GCR_BT <= (others => '0');
+				GCR_BR <= (others => '0');
+			elsif(ce = '1')then
+				if(regaddr(5 downto 1)="11111" and (regwr(0)='1' or regwr(1)='1'))then
+					GCR_BT <= regwdat(3 downto 2);
+					GCR_BR <= regwdat(1 downto 0);
+				end if;
+			end if;
+		end if;
+	end process;
 	
 	regrdatx<=
 		S_COC & S_BTC & S_NDT & S_ERR & S_ACT & S_DIT & S_PCT & S_PCS & "000" & S_CER when regaddr(5 downto 1)="00000" else
@@ -631,6 +653,9 @@ begin
 				MFC_BFC		<='0';
 
 				CONT_clr<='0';
+				CCR_CNT_clr<='0';
+				BAR_clr<='0';
+				BTC_clr<='0';
 				int_comp<='0';
 				S_BTCset<='0';
 				CONTMODE<='0';
@@ -664,6 +689,9 @@ begin
 				BAR_inc		<='0';
 				MFC_BFC		<='0';
 				CONT_clr<='0';
+				CCR_CNT_clr<='0';
+				BAR_clr<='0';
+				BTC_clr<='0';
 --puu				
 				if(is_ch3='1') then
 					ldrq<=drqx;
@@ -865,61 +893,65 @@ begin
 							STATE<=ST_NEXT;
 						end if;
 					when ST_NEXT =>
-						case SCR_MAC is
-						when "01" =>
-							if(packen='1')then
-								MAR_incw<='1';
-							else
-								case OCR_SIZE is
-								when "00" | "11" =>
-									MAR_incb<='1';
-								when "01" =>
+						-- Default: fast 9-state transfer for all modes SIZE="10" (32-bit) always uses ST_CONT needs multiple bus accesses
+						if(OCR_SIZE/="10")then
+							case SCR_MAC is
+							when "01" =>
+								if(packen='1')then
 									MAR_incw<='1';
-								when "10" =>
-									MAR_incl<='1';
-								when others =>
-								end case;
-							end if;
-						when "10" =>
-							if(packen='1')then
-								MAR_decw<='1';
-							else
-								case OCR_SIZE is
-								when "00" | "11" =>
-									MAR_decb<='1';
-								when "01" =>
+								else
+									case OCR_SIZE is
+									when "00" | "11" =>
+										MAR_incb<='1';
+									when "01" =>
+										MAR_incw<='1';
+									when "10" =>
+										MAR_incl<='1';
+									when others =>
+									end case;
+								end if;
+							when "10" =>
+								if(packen='1')then
 									MAR_decw<='1';
-								when "10" =>
-									MAR_decl<='1';
-								when others =>
-								end case;
-							end if;
-						when others =>
-						end case;
+								else
+									case OCR_SIZE is
+									when "00" | "11" =>
+										MAR_decb<='1';
+									when "01" =>
+										MAR_decw<='1';
+									when "10" =>
+										MAR_decl<='1';
+									when others =>
+									end case;
+								end if;
+							when others =>
+							end case;
 
-						case SCR_DAC is
-						when "01" =>
-							if(DCR_DPS='0')then
-								DAR_incw<='1';
-							elsif(OCR_SIZE="01" or packen='1')then
-								DAR_incw<='1';
-							elsif(OCR_SIZE="10")then
-								DAR_incl<='1';
-							else
-								DAR_incb<='1';
-							end if;
-						when "10" =>
-							if(DCR_DPS='0')then
-								DAR_decw<='1';
-							elsif(OCR_SIZE="01" or packen='1')then
-								DAR_decw<='1';
-							elsif(OCR_SIZE="10")then
-								DAR_decl<='1';
-							else
-								DAR_decb<='1';
-							end if;
-						when others =>
-						end case;
+							case SCR_DAC is
+							when "01" =>
+								if(DCR_DPS='0')then
+									DAR_incw<='1';
+								elsif(OCR_SIZE="01" or packen='1')then
+									DAR_incw<='1';
+								elsif(OCR_SIZE="10")then
+									DAR_incl<='1';
+								else
+									DAR_incb<='1';
+								end if;
+							when "10" =>
+								if(DCR_DPS='0')then
+									DAR_decw<='1';
+								elsif(OCR_SIZE="01" or packen='1')then
+									DAR_decw<='1';
+								elsif(OCR_SIZE="10")then
+									DAR_decl<='1';
+								else
+									DAR_decb<='1';
+								end if;
+							when others =>
+							end case;
+						end if;
+						-- Continue with MTC handling
 						if(DCR_DPS='1')then	--16bit
 							case OCR_SIZE is
 							when "00" | "01" | "11" =>
@@ -940,7 +972,6 @@ begin
 										STATE<=ST_IDLE;
 									end if;
 								else
-									--STATE<=ST_CONT;
 									case OCR_REQG is
 									when "00" | "01" =>
 										STATE<=ST_BUSWAIT;
@@ -958,29 +989,7 @@ begin
 									DAR_decw<='1';
 									bytecnt<=0;
 									MTC_dec<='1';
-									if(MTC=x"0001")then
-										if(CCR_CNT='1')then
-											S_BTCset<='1';
-											STATE<=ST_NBLOCK;
-										elsif(OCR_CHAIN(1)='1')then
-											STATE<=ST_NBLOCK;
-										else
-											busreq<='0';
-											int_comp<='1';
-											STATE<=ST_IDLE;
-										end if;
-									else
-										--STATE<=ST_CONT;
-										case OCR_REQG is
-										when "00" | "01" =>
-											STATE<=ST_BUSWAIT;
-											reqwait<='1';
-										when "10" | "11" =>
-											busreq<='0';
-											STATE<=ST_RQWAIT;
-										when others =>
-										end case;
-									end if;
+									STATE<=ST_CONT;
 								else
 									MAR_incw<='1';
 									DAR_incw<='1';
@@ -1006,7 +1015,6 @@ begin
 										STATE<=ST_IDLE;
 									end if;
 								else
-										--STATE<=ST_CONT;
 									case OCR_REQG is
 									when "00" | "01" =>
 										STATE<=ST_BUSWAIT;
@@ -1034,7 +1042,6 @@ begin
 											STATE<=ST_IDLE;
 										end if;
 									else
-										--STATE<=ST_CONT;
 										case OCR_REQG is
 										when "00" | "01" =>
 											STATE<=ST_BUSWAIT;
@@ -1056,20 +1063,7 @@ begin
 									DAR_dec3<='1';
 									bytecnt<=0;
 									MTC_dec<='1';
-									if(MTC=x"0001")then
-										STATE<=ST_NBLOCK;
-									else
-										--STATE<=ST_CONT;
-										case OCR_REQG is
-										when "00" | "01" =>
-											STATE<=ST_BUSWAIT;
-											reqwait<='1';
-										when "10" | "11" =>
-											busreq<='0';
-											STATE<=ST_RQWAIT;
-										when others =>
-										end case;
-									end if;
+									STATE<=ST_CONT;
 								else
 									MAR_incb<='1';
 									DAR_incb<='1';
@@ -1084,10 +1078,14 @@ begin
 					when ST_NBLOCK =>
 						case OCR_CHAIN is
 						when "00" =>
-							if(CONT='1')then
-								CONT_clr<='1';
+							if(CCR_CNT='1' and BAR/=x"00000000")then
 								MTC_BTC<='1';
 								MFC_BFC<='1';
+								MAR_BAR<='1';
+								S_BTCset<='1';
+								CCR_CNT_clr<='1';
+								BAR_clr<='1';
+								BTC_clr<='1';
 								STATE<=ST_BUSCONT;
 							else
 								int_comp<='1';
@@ -1212,16 +1210,87 @@ begin
 							b_lds<='1';
 							STATE<=ST_BUSCONT;
 						end if;
-	--				when ST_CONT =>
-	--					case OCR_REQG is
-	--					when "00" | "01" =>
-	--						STATE<=ST_BUSWAIT;
-	--						reqwait<='1';
-	--					when "10" | "11" =>
-	--						busreq<='0';
-	--						STATE<=ST_RQWAIT;
-	--					when others =>
-	--					end case;
+					when ST_CONT =>
+						case SCR_MAC is
+						when "01" =>
+							if(packen='1')then
+								MAR_incw<='1';
+							else
+								case OCR_SIZE is
+								when "00" | "11" =>
+									MAR_incb<='1';
+								when "01" =>
+									MAR_incw<='1';
+								when "10" =>
+									MAR_incl<='1';
+								when others =>
+								end case;
+							end if;
+						when "10" =>
+							if(packen='1')then
+								MAR_decw<='1';
+							else
+								case OCR_SIZE is
+								when "00" | "11" =>
+									MAR_decb<='1';
+								when "01" =>
+									MAR_decw<='1';
+								when "10" =>
+									MAR_decl<='1';
+								when others =>
+								end case;
+							end if;
+						when others =>
+						end case;
+
+						case SCR_DAC is
+						when "01" =>
+							if(DCR_DPS='0')then
+								DAR_incw<='1';
+							elsif(OCR_SIZE="01" or packen='1')then
+								DAR_incw<='1';
+							elsif(OCR_SIZE="10")then
+								DAR_incl<='1';
+							else
+								DAR_incb<='1';
+							end if;
+						when "10" =>
+							if(DCR_DPS='0')then
+								DAR_decw<='1';
+							elsif(OCR_SIZE="01" or packen='1')then
+								DAR_decw<='1';
+							elsif(OCR_SIZE="10")then
+								DAR_decl<='1';
+							else
+								DAR_decb<='1';
+							end if;
+						when others =>
+						end case;
+						if(MTC=x"0001")then
+							if(CCR_CNT='1')then
+								S_BTCset<='1';
+								STATE<=ST_NBLOCK;
+							elsif(OCR_CHAIN(1)='1')then
+								STATE<=ST_NBLOCK;
+							else
+								busreq<='0';
+								int_comp<='1';
+								STATE<=ST_IDLE;
+							end if;
+						elsif(OCR_BTD='1' and GCR_BT/="00")then
+							busreq<='0';
+							STATE<=ST_RQWAIT;
+						else
+							case OCR_REQG is
+							when "00" | "01" =>
+								STATE<=ST_BUSWAIT;
+								reqwait<='1';
+							when "10" | "11" =>
+								busreq<='0';
+								STATE<=ST_RQWAIT;
+							when others =>
+							end case;
+						end if;
 					when ST_BUSCONT =>
 						if(MAR=x"00000000")then
 							int_comp<='1';

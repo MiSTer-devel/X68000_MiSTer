@@ -18,7 +18,9 @@
     Date: 27-10-2016
     */
 
-
+`ifdef VERILATOR_KEEP_JT51
+/* verilator tracing_on */
+`endif
 module jt51(
     input               rst,    // reset
     input               clk,    // main clock
@@ -39,14 +41,8 @@ module jt51(
     output  signed  [15:0] right,
     // Full resolution output
     output  signed  [15:0] xleft,
-    output  signed  [15:0] xright,
-    // unsigned outputs for sigma delta converters, full resolution
-    output  [15:0] dacleft,
-    output  [15:0] dacright
+    output  signed  [15:0] xright
 );
-
-assign dacleft  = { ~xleft [15],  xleft[14:0] };
-assign dacright = { ~xright[15], xright[14:0] };
 
 // Timers
 wire [9:0]  value_A;
@@ -77,9 +73,6 @@ jt51_timers u_timers(
     .irq_n      ( irq_n         )
 );
 
-/*verilator tracing_on*/
-
-`ifndef JT51_ONLYTIMERS
 `define YM_TIMER_CTRL 8'h14
 
 wire    [1:0]   rl_I;
@@ -113,10 +106,16 @@ wire    [6:0]   amd, pmd;
 wire    [7:0]   test_mode;
 wire            noise;
 
+wire     [ 4:0] nfrq;
+wire     [11:0] noise_mix;
+wire            ne, op31_acc, op31_no;
+
 wire m1_enters, m2_enters, c1_enters, c2_enters;
 wire use_prevprev1,use_internal_x,use_internal_y, use_prev2,use_prev1;
 
-assign  sample = zero;
+assign  sample = zero & cen_p1; // single strobe
+
+`ifndef JT51_ONLYTIMERS
 
 jt51_lfo u_lfo(
     .rst        ( rst       ),
@@ -143,9 +142,6 @@ jt51_lfo u_lfo(
 wire    [ 4:0]  keycode_III;
 wire    [ 9:0]  ph_X;
 wire            pg_rst_III;
-
-/*verilator tracing_on*/
-
 
 jt51_pg u_pg(
     .rst        ( rst       ),
@@ -201,7 +197,6 @@ jt51_eg u_eg(
     .eg_XI      ( eg_XI )
 );
 
-/*verilator tracing_off*/
 wire signed [13:0] op_out;
 
 jt51_op u_op(
@@ -234,10 +229,6 @@ jt51_op u_op(
     .op_XVII        ( op_out            )
 );
 
-wire [ 4:0] nfrq;
-wire [11:0] noise_mix;
-wire        ne, op31_acc, op31_no;
-
 jt51_noise u_noise(
     .rst    ( rst       ),
     .clk    ( clk       ),
@@ -269,7 +260,7 @@ jt51_acc u_acc(
     .xleft      ( xleft         ),
     .xright     ( xright        )
 );
-`else
+`else // JT51_ONLYTIMERS
 assign left   = 16'd0;
 assign right  = 16'd0;
 assign xleft  = 16'd0;
@@ -280,8 +271,6 @@ wire    busy;
 wire    write = !cs_n && !wr_n;
 
 assign  dout = { busy, 5'h0, flag_B, flag_A };
-
-/*verilator tracing_on*/
 
 jt51_mmr u_mmr(
     .rst        ( rst           ),

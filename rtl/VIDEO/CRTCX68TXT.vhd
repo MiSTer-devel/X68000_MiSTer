@@ -219,7 +219,6 @@ signal	dsel	:std_logic;
 signal	ssel	:std_logic;
 
 signal T_BIT	:std_logic;
-signal X_BIT	:std_logic;
 signal T_FGCOLOR:std_logic_vector(2 downto 0);
 signal T_BGCOLOR:std_logic_vector(2 downto 0);
 

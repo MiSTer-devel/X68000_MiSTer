@@ -71,7 +71,7 @@ reg     [5:1]   rate_VI;
 // remember: { log_msb, pow_addr } <= log_val[11:0] + { tl, 5'd0 } + { eg, 2'd0 };
 
 reg     [ 1:0]  eg_cnt_base;
-reg     [14:0]  eg_cnt /*verilator public*/;
+reg     [14:0]  eg_cnt;
 
 reg     [ 9:0]  am_final_VII;
 
@@ -96,18 +96,12 @@ end
 wire            cnt_out; // = all_cnt_last[3*31-1:3*30];
 
 reg     [6:0]   pre_rate_III;
+reg     [4:0]   kshift_III;
 reg     [4:0]   cfg_III;
 
 always @(*) begin : pre_rate_calc
-    if( cfg_III == 5'd0 )
-        pre_rate_III = 7'd0;
-    else
-        case( ks_III )
-            2'd3:   pre_rate_III = { 1'b0, cfg_III, 1'b0 } + { 2'b0, keycode_III      };
-            2'd2:   pre_rate_III = { 1'b0, cfg_III, 1'b0 } + { 3'b0, keycode_III[4:1] };
-            2'd1:   pre_rate_III = { 1'b0, cfg_III, 1'b0 } + { 4'b0, keycode_III[4:2] };
-            2'd0:   pre_rate_III = { 1'b0, cfg_III, 1'b0 } + { 5'b0, keycode_III[4:3] };
-        endcase
+    kshift_III = keycode_III >> ~ks_III;
+    pre_rate_III = { 1'b0, cfg_III, 1'b0 } + { 2'b0, kshift_III };
 end
 
 
@@ -139,7 +133,7 @@ always @(*) begin : rate_step
         endcase
     end
     // a rate_IV of zero keeps the level still
-    step_V = rate_V[5:1]==5'd0 ? 1'b0 : step_idx[ cnt_V ];
+    step_V = rate_V[5:2]==4'd0 ? 1'b0 : step_idx[ cnt_V ];
 end
 
 
@@ -391,7 +385,7 @@ jt51_sh #( .width(2), .stages(32-3+2), .rstval(1'b1) ) u_statesh(
     .drop   ( state_II )
 );
 
-`ifndef JT51_NODEBUG
+`ifdef JT51_DEBUG
 `ifdef SIMULATION
 /* verilator lint_off PINMISSING */
 wire [4:0] cnt;

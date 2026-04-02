@@ -1,160 +1,134 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
-use IEEE.STD_LOGIC_UNSIGNED.ALL;
+use IEEE.NUMERIC_STD.ALL;
 
 entity calcadpcm is
 port(
-	playen	:in std_logic;
-	datin	:in std_logic_vector(3 downto 0);
-	datemp	:in std_logic;
-	datwr	:in std_logic;
+	playen	: in  std_logic;
+	datin	: in  std_logic_vector(3 downto 0);
+	datemp	: in  std_logic;
+	datwr	: in  std_logic;
 	
-	datout	:out std_logic_vector(11 downto 0);
+	datout	: out std_logic_vector(11 downto 0);
 
-	clkdiv	:in std_logic_vector(1 downto 0);
-	sft		:in std_logic;
-	clk		:in std_logic;
-	ce      :in std_logic := '1';
-	sys_ce  :in std_logic := '1';
-	rstn	:in std_logic
+	clkdiv	: in  std_logic_vector(1 downto 0);
+	sft		: in  std_logic;
+	clk		: in  std_logic;
+	ce		: in  std_logic := '1';
+	rstn	: in  std_logic
 );
-
 end calcadpcm;
 
 architecture rtl of calcadpcm is
-component tbl6258
-	PORT
-	(
-		address		: IN STD_LOGIC_VECTOR (8 DOWNTO 0);
-		clock		: IN STD_LOGIC  := '1';
-		q		: OUT STD_LOGIC_VECTOR (11 DOWNTO 0)
+
+	type step_table_t is array (0 to 48) of integer range 0 to 1552;
+	constant STEP_TABLE : step_table_t := (
+		  16,   17,   19,   21,   23,   25,   28,   31,   34,   37,
+		  41,   45,   50,   55,   60,   66,   73,   80,   88,   97,
+		 107,  118,  130,  143,  157,  173,  190,  209,  230,  253,
+		 279,  307,  337,  371,  408,  449,  494,  544,  598,  658,
+		 724,  796,  876,  963, 1060, 1166, 1282, 1411, 1552
 	);
-END  component;
 
-signal	curval	:std_logic_vector(19 downto 0);
-signal	nxtvalx	:std_logic_vector(19 downto 0);
-signal	step	:std_logic_vector(5 downto 0);
-signal	tbladdr	:std_logic_vector(8 downto 0);
-signal	diffval	:std_logic_vector(11 downto 0);
-signal	diffvalx :std_logic_vector(21 downto 0);
-signal	sign	:std_logic;
-signal	snden	:std_logic;
+	type index_shift_t is array (0 to 7) of integer range -1 to 8;
+	constant INDEX_SHIFT : index_shift_t := (-1, -1, -1, -1, 2, 4, 6, 8);
 
-type state_t is(
-	st_idle,
-	st_wait,
-	st_calc
-);
-signal	state	:state_t;
+	signal signal_acc : signed(12 downto 0);
+	signal step_idx   : integer range 0 to 48;
+	signal lplayen    : std_logic;
+	signal decay_div  : unsigned(8 downto 0);
 
 begin
 
-	diftbl	:tbl6258 port map(
-		address		=>tbladdr,
-		clock		=>clk,
-		q			=>diffval
-	);
-
-	process(clk,rstn)
-		variable nxtstep	:std_logic_vector(5 downto 0);
-		variable nxtval		:std_logic_vector(21 downto 0);
-		begin
+	process(clk)
+		variable stepval    : integer range 0 to 1552;
+		variable delta      : integer range 0 to 2910;
+		variable new_signal : integer;
+		variable new_step   : integer;
+	begin
 		if rising_edge(clk) then
-			if(rstn='0')then
-				nxtvalx<=(others=>'0');
-				step<=(others=>'0');
-				snden<='0';
-				state<=st_idle;
-			elsif(ce = '1')then
-				case state is
-				when st_idle =>
-					if(playen='0')then
-						nxtvalx<=(others=>'0');
-						step<=(others=>'0');
-						snden<='0';
-	--					if(curval>0)then
-	--						nxtvalx<=curval-1;
-	--					elsif(curval<0)then
-	--						nxtvalx<=curval+1;
-	--					end if;
-					elsif(datwr='1')then
-						if(datemp='1')then
-							step<=(others=>'0');
-							snden<='0';
-							if(curval>0)then
-								nxtvalx<=curval-1;
-							elsif(curval<0)then
-								nxtvalx<=curval+1;
-							end if;
+			if rstn = '0' then
+				signal_acc <= to_signed(0, 13);
+				step_idx   <= 0;
+				lplayen    <= '0';
+				decay_div  <= (others => '0');
+			elsif ce = '1' then
+				lplayen <= playen;
+
+				if playen = '1' and lplayen = '0' then
+					-- Play just started: init ADPCM decoder per MAME
+					signal_acc <= to_signed(-2, 13);
+					step_idx   <= 0;
+					decay_div  <= (others => '0');
+
+				elsif playen = '0' then
+					-- Not playing: slow linear ramp to zero to prevent pop
+					-- At 40MHz, counter 399 = 10μs per step
+					-- Max signal 2047 → ~20ms ramp (completely inaudible)
+					step_idx <= 0;
+					if signal_acc > 0 then
+						if decay_div = 0 then
+							decay_div <= to_unsigned(399, 9);
+							signal_acc <= signal_acc - 1;
 						else
-							tbladdr<=step & datin(2 downto 0);
-							sign<=datin(3);
-							case datin(2 downto 0) is
-							when "000" | "001" | "010" | "011" =>
-								if(step>"000000")then
-									nxtstep:=step-"000001";
-								else
-									nxtstep:=step;
-								end if;
-							when "100" =>
-								nxtstep:=step+"000010";
-							when "101" =>
-								nxtstep:=step+"000100";
-							when "110" =>
-								nxtstep:=step+"000110";
-							when "111" =>
-								nxtstep:=step+"001000";
-							when others =>
-								nxtstep:=step;
-							end case;
-							if(nxtstep>"110000")then
-								step<="110000";
-							else
-								step<=nxtstep;
-							end if;
-						snden<='1';
-						state<=st_wait;
+							decay_div <= decay_div - 1;
 						end if;
-					elsif(sft='1')then
-						if(snden='1')then
-							state<=st_calc;
-	--					else
-	--						if(curval>0)then
-	--							nxtvalx<=curval-1;
-	--						elsif(curval<0)then
-	--							nxtvalx<=curval+1;
-	--						end if;
+					elsif signal_acc < 0 then
+						if decay_div = 0 then
+							decay_div <= to_unsigned(399, 9);
+							signal_acc <= signal_acc + 1;
+						else
+							decay_div <= decay_div - 1;
 						end if;
 					end if;
-				when st_wait =>
-					state<=st_calc;
-				when st_calc =>
-					if(sign='0')then
-						nxtval:=(curval(19) & curval(19) & curval) + diffvalx;
-						if(nxtval(21)='0' and nxtval(20 downto 19)/="00")then
-							nxtval(21 downto 19):="000";
-							nxtval(18 downto 0):=(others=>'1');
-						end if;
-					else
-						nxtval:=(curval(19) & curval(19) & curval) - diffvalx;
-						if(nxtval(21)='1' and nxtval(20 downto 19)/="11")then
-							nxtval(21 downto 19):="111";
-							nxtval(18 downto 0):=(others=>'0');
-						end if;
+
+				elsif datwr = '1' and datemp = '1' then
+					-- Buffer empty: ramp signal toward zero at sample rate
+					-- This ensures signal is near 0 before STOP arrives (same as official core)
+					step_idx <= 0;
+					if signal_acc > 0 then
+						signal_acc <= signal_acc - 1;
+					elsif signal_acc < 0 then
+						signal_acc <= signal_acc + 1;
 					end if;
-					nxtvalx<=nxtval(19 downto 0);
-					state<=st_idle;
-				end case;
+
+				elsif datwr = '1' and datemp = '0' then
+						decay_div  <= (others => '0');
+						stepval := STEP_TABLE(step_idx);
+						
+						-- OKI ADPCM delta: per-bit truncated shifts (matches MAME/real hardware)
+						delta := stepval / 8;
+						if datin(0) = '1' then delta := delta + stepval / 4; end if;
+						if datin(1) = '1' then delta := delta + stepval / 2; end if;
+						if datin(2) = '1' then delta := delta + stepval;     end if;
+						
+						if datin(3) = '1' then
+							new_signal := to_integer(signal_acc) - delta;
+						else
+							new_signal := to_integer(signal_acc) + delta;
+						end if;
+						
+						if new_signal > 2047 then
+							new_signal := 2047;
+						elsif new_signal < -2048 then
+							new_signal := -2048;
+						end if;
+						
+						signal_acc <= to_signed(new_signal, 13);
+						
+						new_step := step_idx + INDEX_SHIFT(to_integer(unsigned(datin(2 downto 0))));
+						if new_step < 0 then
+							step_idx <= 0;
+						elsif new_step > 48 then
+							step_idx <= 48;
+						else
+							step_idx <= new_step;
+					end if;
+				end if;
 			end if;
 		end if;
 	end process;
-	datout<=curval(19 downto 8);
-	
-	diffvalx<=	"0000000000" & diffval		when clkdiv="00" else
-				("000000000" & diffval) + ("00000000000" & diffval(11 downto 1))	when clkdiv="01" else
-				"000000000" & diffval & '0'	when clkdiv="10" else
-				"00" & diffval & "00000000";
 
-	curval<=nxtvalx;
+	datout <= std_logic_vector(signal_acc(11 downto 0));
+
 end rtl;
-

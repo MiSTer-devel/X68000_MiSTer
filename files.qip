@@ -1,8 +1,6 @@
 set_global_assignment -name QIP_FILE  rtl/FX68K/fx68k.qip
 set_global_assignment -name QIP_FILE  rtl/cycV/cycv.qip
-set_global_assignment -name QIP_FILE  rtl/diskemu/diskemu.qip
 set_global_assignment -name QIP_FILE  rtl/DMAC/dmac.qip
-set_global_assignment -name QIP_FILE  rtl/FDC/fdc.qip
 set_global_assignment -name QIP_FILE  rtl/GPALETTE/gpalette.qip
 set_global_assignment -name QIP_FILE  rtl/LIB/lib.qip
 set_global_assignment -name QIP_FILE  rtl/MFP/mfp.qip
@@ -12,10 +10,54 @@ set_global_assignment -name QIP_FILE  rtl/SCC/scc.qip
 set_global_assignment -name QIP_FILE  rtl/rtc/rtc.qip
 set_global_assignment -name QIP_FILE  rtl/sound/sound.qip
 set_global_assignment -name QIP_FILE  rtl/sound/jt51/jt51.qip
+set_global_assignment -name QIP_FILE  rtl/sound/IKAOPM/IKAOPM.qip
 set_global_assignment -name QIP_FILE  rtl/SPRITE/sprite.qip
 set_global_assignment -name QIP_FILE  rtl/USART/usart.qip
 set_global_assignment -name QIP_FILE  rtl/VIDEO/video.qip
 set_global_assignment -name QIP_FILE  rtl/memory/memory.qip
+
+# --- Shared files (from diskemu/, identical copies in diskemu_xdf/) ---
+set_global_assignment -name HEX_FILE  rtl/diskemu/sramdefault.hex
+set_global_assignment -name VHDL_FILE rtl/diskemu/wrotecont.vhd
+set_global_assignment -name VHDL_FILE rtl/diskemu/sramram.vhd
+set_global_assignment -name VHDL_FILE rtl/diskemu/sramcont.vhd
+set_global_assignment -name VHDL_FILE rtl/diskemu/sasidev.vhd
+
+# --- D88 diskemu-specific ---
+set_global_assignment -name VHDL_FILE rtl/diskemu/tracktable.vhd
+set_global_assignment -name VHDL_FILE rtl/diskemu/sectram.vhd
+set_global_assignment -name VHDL_FILE rtl/diskemu/mkgapsync.vhd
+set_global_assignment -name VHDL_FILE rtl/diskemu/fecbuf.vhd
+set_global_assignment -name VHDL_FILE rtl/diskemu/FDemu.vhd
+set_global_assignment -name VHDL_FILE rtl/diskemu/diskemu.vhd
+
+# --- XDF diskemu-specific ---
+set_global_assignment -name VHDL_FILE rtl/diskemu_xdf/heademu.vhd
+set_global_assignment -name VHDL_FILE rtl/diskemu_xdf/fdc_calclba.vhd
+set_global_assignment -name VHDL_FILE rtl/diskemu_xdf/fdc_mister.vhd
+set_global_assignment -name VHDL_FILE rtl/diskemu_xdf/diskemu_misterFDC.vhd
+
+# --- FDC shared ---
+set_global_assignment -name VHDL_FILE rtl/FDC/FDC_sectinfo.vhd
+set_global_assignment -name VHDL_FILE rtl/FDC/FDC_timing.vhd
+
+# --- D88 FDC-specific ---
+set_global_assignment -name VHDL_FILE rtl/FDC/crctest.vhd
+set_global_assignment -name VHDL_FILE rtl/FDC/fmdem.vhd
+set_global_assignment -name VHDL_FILE rtl/FDC/fmmod.vhd
+set_global_assignment -name VHDL_FILE rtl/FDC/headseek.vhd
+set_global_assignment -name VHDL_FILE rtl/FDC/mfmdem.vhd
+set_global_assignment -name VHDL_FILE rtl/FDC/mfmmod.vhd
+set_global_assignment -name VHDL_FILE rtl/FDC/nrdet.vhd
+set_global_assignment -name VHDL_FILE rtl/FDC/dskchk.vhd
+set_global_assignment -name VHDL_FILE rtl/FDC/dskchk2d.vhd
+set_global_assignment -name VHDL_FILE rtl/FDC/FDtiming.vhd
+set_global_assignment -name VHDL_FILE rtl/FDC/FDCs.vhd
+
+# --- XDF FDC-specific ---
+set_global_assignment -name VHDL_FILE rtl/FDC_xdf/seekcont.vhd
+
+# --- Common top-level ---
 set_global_assignment -name VHDL_FILE rtl/sasiif.vhd
 set_global_assignment -name VHDL_FILE rtl/PS2IF.vhd
 set_global_assignment -name VHDL_FILE rtl/pcmclk.vhd

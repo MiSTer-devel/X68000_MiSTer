@@ -18,8 +18,6 @@
     Date: 27-10-2016
     */
 
-// altera message_off 10036
-
 module jt51_timers(
     input         rst,
     input         clk,
@@ -93,7 +91,7 @@ always@(posedge clk, posedge rst)
     else /*if(cen)*/ begin
         if( clr_flag )
             flag <= 1'b0;
-        else if(overflow) flag<=1'b1;
+        else if( cen && zero && load && overflow ) flag<=1'b1;
     end
 
 always @(*) begin
@@ -105,9 +103,7 @@ end
 
 always @(posedge clk) if(cen && zero) begin : counter
     last_load <= load;
-    if ( rst )
-        cnt <= 0;
-    else if( (load && !last_load) || overflow ) begin
+    if( (load && !last_load) || overflow ) begin
       cnt  <= start_value;
     end
     else if( last_load ) cnt <= next;
@@ -118,7 +114,7 @@ always @(posedge clk) begin
     if( rst ) begin
         free_cnt <= 4'd0;
     end else if( cen&&zero ) begin
-        free_cnt <= free_cnt+4'd1;
+        free_cnt <= free_next;
     end
 end
 

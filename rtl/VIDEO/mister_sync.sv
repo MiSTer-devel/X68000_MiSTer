@@ -150,7 +150,7 @@ module mister_sync
 			4'h4: mod_inc = v60hz ? 79862 : 86266;  // HRL:0 HF:1 H:256
 			4'h5: mod_inc = v60hz ? 39931 : 43133;  // HRL:0 HF:1 H:512
 			4'h6: mod_inc = v60hz ? 26621 : 28755;  // HRL:0 HF:1 H:768
-			4'h7: mod_inc = 39722;  // HRL:0 HF:1 H:###
+			4'h7: mod_inc = 39722;  // HRL:0 HF:1 H:### (768 alternate)			
 			4'h8: mod_inc = v60hz ? 211205 : 205848; // HRL:1 HF:0 H:256
 			4'h9: mod_inc = v60hz ? 105603 : 102924; // HRL:1 HF:0 H:512
 			4'hA: mod_inc = v60hz ? 211205 : 205848; // HRL:1 HF:0 H:768
@@ -158,7 +158,7 @@ module mister_sync
 			4'hC: mod_inc = v60hz ? 106483 : 115022; // HRL:1 HF:1 H:256
 			4'hD: mod_inc = v60hz ? 53241 : 57511;  // HRL:1 HF:1 H:512
 			4'hE: mod_inc = v60hz ? 26621 : 28755;  // HRL:1 HF:1 H:768
-			4'hF: mod_inc = 39722;  // HRL:1 HF:1 H:###
+			4'hF: mod_inc = 39722;  // HRL:1 HF:1 H:### (768 alternate)
 			default: mod_inc = 28755;
 		endcase
 	end
@@ -167,12 +167,12 @@ module mister_sync
 	assign f1 = 1'b0;//(VMODE_ovr[0] && ~hfreq_ovr) ? field : 1'd0;
 	assign vid_osc = pix_ce;
 
-	always_ff @(posedge gclk) begin // 80mhz is 12.5ns per tick
+	always_ff @(posedge gclk) begin // 120mhz is ~8.333ns per tick
 		polyclock <= 0;
-		polyclock_cnt <= polyclock_cnt + 12500;
+		polyclock_cnt <= polyclock_cnt + 8333;
 		if (polyclock_cnt >= mod_inc) begin
 			polyclock <= 1;
-			polyclock_cnt <= (polyclock_cnt - mod_inc) + 12500;
+			polyclock_cnt <= (polyclock_cnt - mod_inc) + 8333;
 		end
 
 		if(~rstn) begin
@@ -204,9 +204,9 @@ module mister_sync
 
 			if (&dotpu_cnt) begin // Horizontal Tick
 				HUCOUNT <= HUCOUNT + 1'd1;
-				if (HUCOUNT == hvbgn + 3'd4)
+				if (HUCOUNT == ((hvbgn + 3'd4 <= htotal_m) ? hvbgn + 3'd4 : hvbgn + 3'd4 - htotal_m - 1'd1))
 					HRTC <= 0;
-				else if (HUCOUNT == hvend + 3'd4)
+				else if (HUCOUNT == ((hvend + 3'd4 <= htotal_m) ? hvend + 3'd4 : hvend + 3'd4 - htotal_m - 1'd1))
 					HRTC <= 1;
 
 				if (~HRTC)
@@ -231,6 +231,8 @@ module mister_sync
 						VCOUNT <= 0;
 						VCOMPw <= 1;
 						field <= ~field;
+						if (~VRTC)
+							VRTC <= 1;
 					end
 				end
 			end

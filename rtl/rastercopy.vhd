@@ -68,6 +68,7 @@ begin
 						srcaddr(selwidth+7 downto selwidth)<=src;
 						dstaddr(selwidth+7 downto selwidth)<=dst;
 						cplane<=plane;
+						sel<=(others=>'0');
 						cpy<='1';
 						ackd <= ack;
 						STATE<=st_COPY;
@@ -88,6 +89,7 @@ begin
 				end case;
 				if(stop='1')then
 					cplane<=(others=>'0');
+					sel<=(others=>'0');
 					STATE<=st_IDLE;
 				end if;
 			end if;
@@ -96,5 +98,3 @@ begin
 	
 	busy<='0' when STATE=st_IDLE else '1';
 end rtl;
-
-			

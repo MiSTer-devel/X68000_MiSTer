@@ -44,8 +44,10 @@ end component;
 
 signal	nxtbuf0,nxtbuf1	:std_logic_vector(3 downto 0);
 signal	bufcount	:integer range 0 to 2;
-signal	sftcount	:integer range 0 to 5;
+signal	sftcount	:integer range 0 to 3;
 signal	divcount	:integer range 0 to 255;
+signal	play_start	:std_logic;
+signal	startup_wait	:std_logic;
 signal	playen	:std_logic;
 signal	recen	:std_logic;
 signal	playwr	:std_logic;
@@ -83,8 +85,14 @@ begin
 				nxtbuf0<=(others=>'0');
 				nxtbuf1<=(others=>'0');
 				drq<='0';
+				play_start<='0';
+				startup_wait<='0';
 				ldatwr:="00";
 			elsif(snd_ce = '1')then
+				play_start<='0';
+				if(datwr='1')then
+					drq<='0';
+				end if;
 				if(datuse='1')then
 					nxtbuf0<=nxtbuf1;
 					nxtbuf1<=(others=>'0');
@@ -95,22 +103,35 @@ begin
 						drq<='1';
 					end if;
 				end if;
-				if(datwr='1')then
-					drq<='0';
-				elsif(ldatwr="10")then
+				if(ldatwr="10")then
 					if(addrbuf='0')then
-						if(datinbuf(1)='1')then
-							playen<='1';
-						elsif(datinbuf(2)='1')then
-							recen<='1';
-						elsif(datinbuf(0)='1')then
+						if(datinbuf(0)='1')then
 							playen<='0';
 							recen<='0';
+							bufcount<=0;
+							nxtbuf0<=(others=>'0');
+							nxtbuf1<=(others=>'0');
+							drq<='0';
+							startup_wait<='0';
+						elsif(datinbuf(1)='1')then
+							if(playen='0')then
+								playen<='1';
+								bufcount<=0;
+								nxtbuf0<=(others=>'0');
+								nxtbuf1<=(others=>'0');
+								drq<='1';
+								play_start<='1';
+								startup_wait<='1';
+							end if;
+						elsif(datinbuf(2)='1')then
+							recen<='1';
 						end if;
 					else
+						drq<='0';
 						nxtbuf1<=datinbuf(7 downto 4);
 						nxtbuf0<=datinbuf(3 downto 0);
 						bufcount<=2;
+						startup_wait<='0';
 					end if;
 				end if;
 				ldatwr:=ldatwr(0) & datwr;
@@ -127,26 +148,26 @@ begin
 				datuse<='0';
 				calcsft<='0';
 				sftcount<=0;
+				datemp<='1';
 			elsif(snd_ce = '1')then
 				playwr<='0';
 				datuse<='0';
 				calcsft<='0';
-				if(playen='1' and sft='1')then
+				if(play_start='1')then
+					divcount<=0;
+					sftcount<=0;
+				elsif(playen='1' and sft='1' and startup_wait='0')then
 					if(sftcount>0)then
 						sftcount<=sftcount-1;
 					else
-						if(clkdiv="01")then
-							sftcount<=5;
-						else
-							sftcount<=3;
-						end if;
+						sftcount<=3;
 						calcsft<='1';
 						if(divcount=0)then
 							playdat<=nxtbuf0;
-							if(bufcount=0)then
-								datemp<='1';
-							else
+							if(bufcount>0)then
 								datemp<='0';
+							else
+								datemp<='1';
 							end if;
 							playwr<='1';
 							datuse<='1';
@@ -158,7 +179,7 @@ begin
 							when "10" =>
 								divcount<=127;
 							when others =>
-								divcount<=0;		--for debug
+								divcount<=127;
 							end case;
 						else
 							divcount<=divcount-1;

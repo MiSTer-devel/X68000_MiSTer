@@ -22,7 +22,7 @@
 module jt51_pg(
     input               rst,
     input               clk,
-    input               cen /* direct_enable */,
+    input               cen,
     input               zero,
     // Channel frequency
     input       [6:0]   kc_I,
@@ -165,6 +165,8 @@ always @(posedge clk) if(cen) begin
     phinc_addr_III  <= keycode_II[9:0];
     octave_III  <= keycode_II[13:10];
     keycode_III <=  keycode_II[12:8];
+        // Using bits 13:9 fixes Double Dragon issue #14
+        // but notes get too long in Jackal
     case( dt1_II[1:0] )
         2'd1:   dt1_kf_III  <=  keycode_II[13:8]    - (6'b1<<2);
         2'd2:   dt1_kf_III  <=  keycode_II[13:8]    + (6'b1<<2);
@@ -272,7 +274,7 @@ jt51_sh #( .width(1), .stages(4) ) u_pgrstsh(
     .drop   ( pg_rst_VII)
 );
 
-`ifndef JT51_NODEBUG
+`ifdef JT51_DEBUG
 `ifdef SIMULATION
 /* verilator lint_off PINMISSING */
 

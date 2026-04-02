@@ -88,7 +88,7 @@ port(
 	t0_rdat2	:out std_logic_vector(15 downto 0);
 	t0_rdat3	:out std_logic_vector(15 downto 0);
 	t0_ack		:out std_logic;
-	
+
 	t1_addr		:in std_logic_vector(awidth-3 downto 0);
 	t1_rd		:in std_logic;
 	t1_rdat0	:out std_logic_vector(15 downto 0);
@@ -97,24 +97,26 @@ port(
 	t1_rdat3	:out std_logic_vector(15 downto 0);
 	t1_ack		:out std_logic;
 
-	g0_caddr	:in std_logic_vector(awidth-1 downto 7);
+	g0_caddr	:in std_logic_vector(awidth-1 downto 8);
 	g0_clear	:in std_logic;
 	
-	g1_caddr	:in std_logic_vector(awidth-1 downto 7);
+	g1_caddr	:in std_logic_vector(awidth-1 downto 8);
 	g1_clear	:in std_logic;
 
-	g2_caddr	:in std_logic_vector(awidth-1 downto 7);
+	g2_caddr	:in std_logic_vector(awidth-1 downto 8);
 	g2_clear	:in std_logic;
 
-	g3_caddr	:in std_logic_vector(awidth-1 downto 7);
+	g3_caddr	:in std_logic_vector(awidth-1 downto 8);
 	g3_clear	:in std_logic;
-	
+
+	gmode		:in std_logic_vector(1 downto 0)	:="00";
+
 	fde_addr	:in std_logic_vector(awidth-1 downto 0)	:=(others=>'0');
 	fde_rdat	:out std_logic_vector(15 downto 0);
 	fde_wdat	:in std_logic_vector(15 downto 0)	:=(others=>'0');
 	fde_wr		:in std_logic	:='0';
 	fde_tlen	:in std_logic_vector(13 downto 0)	:=(others=>'1');
-	
+
 	fec_addr	:out std_logic_vector(7 downto 0);
 	fec_rdat	:out std_logic_vector(15 downto 0);
 	fec_wdat	:in std_logic_vector(15 downto 0)	:=(others=>'0');
@@ -125,7 +127,7 @@ port(
 	fec_busy	:out std_logic;
 
 	initdone	:out std_logic;
-	
+
 	sclk	:in std_logic;
 	sys_ce  :in std_logic := '1';
 	vclk	:in std_logic;
@@ -283,24 +285,26 @@ port(
 	t1_rdat3	:out std_logic_vector(15 downto 0);
 	t1_ack	:out std_logic;
 
-	g0_caddr	:in std_logic_vector(awidth-1 downto 7);
+	g0_caddr	:in std_logic_vector(awidth-1 downto 8);
 	g0_clear	:in std_logic;
-	
-	g1_caddr	:in std_logic_vector(awidth-1 downto 7);
+
+	g1_caddr	:in std_logic_vector(awidth-1 downto 8);
 	g1_clear	:in std_logic;
 
-	g2_caddr	:in std_logic_vector(awidth-1 downto 7);
+	g2_caddr	:in std_logic_vector(awidth-1 downto 8);
 	g2_clear	:in std_logic;
 
-	g3_caddr	:in std_logic_vector(awidth-1 downto 7);
+	g3_caddr	:in std_logic_vector(awidth-1 downto 8);
 	g3_clear	:in std_logic;
-	
+
+	gmode		:in std_logic_vector(1 downto 0)	:="00";
+
 	fde_addr	:in std_logic_vector(awidth-1 downto 0)	:=(others=>'0');
 	fde_rdat	:out std_logic_vector(15 downto 0);
 	fde_wdat	:in std_logic_vector(15 downto 0)	:=(others=>'0');
 	fde_wr	:in std_logic	:='0';
 	fde_tlen	:in std_logic_vector(13 downto 0)	:=(others=>'1');
-	
+
 	fec_addr		:out std_logic_vector(7 downto 0);
 	fec_rdat		:out std_logic_vector(15 downto 0);
 	fec_wdat		:in std_logic_vector(15 downto 0)	:=(others=>'0');
@@ -325,7 +329,7 @@ port(
 	ramwdat		:out std_logic_vector(15 downto 0);
 	ramwe			:out std_logic_vector(1 downto 0);
 	ramabort		:out std_logic;
-	
+
 	ini_end	:out std_logic;
 	sclk	:in std_logic;
 	sys_ce  :in std_logic := '1';
@@ -357,7 +361,7 @@ begin
 		PMEMBA0		=>PMEMBA0,
 		PMEMADR		=>PMEMADR,
 		PMEMDAT		=>PMEMDAT,
-		
+
 		addr_high	=>ramaddrh,
 		bgnaddr		=>rambgnaddr,
 		endaddr		=>ramendaddr,
@@ -373,13 +377,13 @@ begin
 		refrsh	=>ramrefrsh,
 		abort		=>ramabort,
 		busy		=>rambusy,
-		
+
 		initdone	=>ram_inidone,
 		clk			=>rclk,
 		ce          =>ram_ce,
 		rstn		=>rstn
 	);
-	
+
 	b_rd_m	<='0' when cache_inidone='0' else b_rd;
 	b_wr_m	<="00" when cache_inidone='0' else b_wr;
 
@@ -398,7 +402,7 @@ begin
 		b_cplane	=>b_cplane,
 		b_cpy	=>b_cpy,
 		b_cack	=>b_cack,
-		
+
 		g00_addr	=>g00_addr,
 		g00_rd		=>g00_rd,
 		g00_rdat	=>g00_rdat,
@@ -446,7 +450,7 @@ begin
 		t0_rdat2	=>t0_rdat2,
 		t0_rdat3	=>t0_rdat3,
 		t0_ack		=>t0_ack,
-		
+
 		t1_addr		=>t1_addr,
 		t1_rd		=>t1_rd,
 		t1_rdat0	=>t1_rdat0,
@@ -457,7 +461,7 @@ begin
 
 		g0_caddr	=>g0_caddr,
 		g0_clear	=>g0_clear,
-		
+
 		g1_caddr	=>g1_caddr,
 		g1_clear	=>g1_clear,
 
@@ -466,13 +470,15 @@ begin
 
 		g3_caddr	=>g3_caddr,
 		g3_clear	=>g3_clear,
-		
+
+		gmode		=>gmode,
+
 		fde_addr	=>fde_addr,
 		fde_rdat	=>fde_rdat,
 		fde_wdat	=>fde_wdat,
 		fde_wr		=>fde_wr,
 		fde_tlen	=>fde_tlen,
-		
+
 		fec_addr	=>fec_addr,
 		fec_rdat	=>fec_rdat,
 		fec_wdat	=>fec_wdat,
@@ -498,7 +504,7 @@ begin
 		ramrdat		=>ramrdat,
 		ramwdat		=>ramwdat,
 		ramwe		=>ramwe,
-		
+
 		ini_end	=>cache_inidone,
 		sclk	=>sclk,
 		sys_ce  =>sys_ce,
@@ -510,7 +516,7 @@ begin
 		ram_ce  =>ram_ce,
 		rstn	=>rstn
 	);
-	
+
 	initdone<=ram_inidone and cache_inidone;
-	
+
 end rtl;

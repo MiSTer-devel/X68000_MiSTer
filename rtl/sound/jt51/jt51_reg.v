@@ -18,19 +18,13 @@
     Date: 27-10-2016
     */
 
-// altera message_off 10858
-// altera message_off 10036
 
 module jt51_reg(
     input           rst,
     input           clk,
     input           cen,        // P1
-    input   [7:0]   din,
 
-    input           up_rl,
-    input           up_kc,
-    input           up_kf,
-    input           up_pms,
+    // operator updates
     input           up_dt1,
     input           up_tl,
     input           up_ks,
@@ -40,6 +34,14 @@ module jt51_reg(
     input           up_keyon,
     input   [1:0]   op,     // operator to update
     input   [2:0]   ch,     // channel to update
+    input   [7:0]   op_din,
+    // channel updates
+    input           up_rl,
+    input           up_kc,
+    input           up_kf,
+    input           up_pms,
+    input   [2:0]   ch_sel, // channel updates
+    input   [7:0]   ch_din,
 
     input           csm,
     input           overflow_A,
@@ -90,8 +92,8 @@ reg     kon, koff;
 reg [1:0] csm_state;
 reg [4:0] csm_cnt;
 
-wire csm_kon  = csm_state[0];
-wire csm_koff = csm_state[1];
+// wire csm_kon  = csm_state[0];
+// wire csm_koff = csm_state[1];
 
 always @(*) begin
     m1_enters = cur_op == 2'b00;
@@ -100,8 +102,10 @@ always @(*) begin
     c2_enters = cur_op == 2'b11;
 end
 
+`ifdef SIMULATION
 wire up =   up_rl | up_kc | up_kf | up_pms | up_dt1 | up_tl |
             up_ks | up_amsen | up_dt2 | up_d1l | up_keyon;
+`endif
 
 reg [4:0]   cur;
 
@@ -125,19 +129,10 @@ wire [4:0] req_VII = req_VI  + 5'd1;
 wire    update_op_I     = cur == req_I;
 wire    update_op_II    = cur == req_II;
 wire    update_op_III   = cur == req_III;
-wire    update_op_IV    = cur == req_IV;
-wire    update_op_V     = cur == req_V;
+// wire    update_op_IV    = cur == req_IV;
+// wire    update_op_V     = cur == req_V;
 wire    update_op_VI    = cur == req_VI;
 wire    update_op_VII   = cur == req_VII;
-
-wire up_rl_ch   = up_rl     & update_op_I;
-wire up_fb_ch   = up_rl     & update_op_II;
-wire up_con_ch  = up_rl     & update_op_I;
-
-wire up_kc_ch   = up_kc     & update_op_I;
-wire up_kf_ch   = up_kf     & update_op_I;
-wire up_pms_ch  = up_pms    & update_op_I;
-wire up_ams_ch  = up_pms    & update_op_VII;
 
 wire up_dt1_op  = up_dt1    & update_op_II; // DT1, MUL
 wire up_mul_op  = up_dt1    & update_op_VI; // DT1, MUL
@@ -167,9 +162,9 @@ always @(posedge clk, posedge rst) begin : up_counter
     end
 end
 
-wire [2:0] cur_ch =  cur[2:0];
-wire [3:0] keyon_op = din[6:3];
-wire [2:0] keyon_ch = din[2:0];
+wire [2:0] cur_ch   = cur[2:0];
+wire [3:0] keyon_op = op_din[6:3];
+wire [2:0] keyon_ch = op_din[2:0];
 
 jt51_kon u_kon (
     .rst       (rst       ),
@@ -204,7 +199,7 @@ jt51_csr_op u_csr_op(
     .rst            (  rst          ),
     .clk            (  clk          ),
     .cen            (  cen          ),  // P1
-    .din            (  din          ),
+    .din            (  op_din       ),
 
     .up_dt1_op      (  up_dt1_op    ),
     .up_mul_op      (  up_mul_op    ),
@@ -231,31 +226,30 @@ jt51_csr_op u_csr_op(
     .rrate          (  rrate_II     )
 );
 
-jt51_csr_ch u_csr_ch(
-    .rst        (  rst          ),
-    .clk        (  clk          ),
-    .cen        (  cen          ),
-    .din        (  din          ),
+jt51_reg_ch u_csr_ch(
+    .rst        ( rst           ),
+    .clk        ( clk           ),
+    .cen        ( cen           ),
+    .din        ( ch_din        ),
 
-    .up_rl_ch   (  up_rl_ch     ),
-    .up_fb_ch   (  up_fb_ch     ),
-    .up_con_ch  (  up_con_ch    ),
-    .up_kc_ch   (  up_kc_ch     ),
-    .up_kf_ch   (  up_kf_ch     ),
-    .up_ams_ch  (  up_ams_ch    ),
-    .up_pms_ch  (  up_pms_ch    ),
+    .up_ch      ( ch_sel        ),
+    .up_rl      ( up_rl         ),
+    .up_kc      ( up_kc         ),
+    .up_kf      ( up_kf         ),
+    .up_pms     ( up_pms        ),
 
-    .rl         (  rl_I         ),
-    .fb         (  fb_II        ),
-    .con        (  con_I        ),
-    .kc         (  kc_I         ),
-    .kf         (  kf_I         ),
-    .ams        (  ams_VII      ),
-    .pms        (  pms_I        )
+    .ch         ( next[2:0]     ),
+    .rl         ( rl_I          ),
+    .fb_II      ( fb_II         ),
+    .con        ( con_I         ),
+    .kc         ( kc_I          ),
+    .kf         ( kf_I          ),
+    .ams_VII    ( ams_VII       ),
+    .pms        ( pms_I         )
 );
 
 //////////////////// Debug
-`ifndef JT51_NODEBUG
+`ifdef JT51_DEBUG
 `ifdef SIMULATION
 /* verilator lint_off PINMISSING */
 wire [4:0] cnt_aux;
