@@ -4,8 +4,12 @@ This is the port of the [Sharp X68000](http://fpga8801.seesaa.net/category/24786
 
 ## Work in progress...
 
+### CPU Speed
+* Normal (10Mhz)
+* Turbo (20Mhz~)
+
 ### Supported storage
-* FDD *.d88 images
+* FDD *.d88, *.dim, *.hdm and *.xdf images are supported
 * SASI HDD *.hdf images
 
 ### Supported Controller Types - [Check here for a game compatibility list](controllers.md)
