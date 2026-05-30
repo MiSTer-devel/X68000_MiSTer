@@ -173,6 +173,9 @@ localparam RST_WAIT  = 2'd0,
 
 always_ff @(posedge clk) begin
 
+	rst_n_s0 <= rst_n;
+	rst_n_s  <= rst_n_s0;
+
 	if (!rst_n_s && !rst_pending) begin
 		rst_pending  <= 1'b1;
 		rst_phase    <= RST_WAIT;
