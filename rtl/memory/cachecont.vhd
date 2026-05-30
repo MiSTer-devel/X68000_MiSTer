@@ -174,6 +174,8 @@ signal	waddrmin	:std_logic_vector(brsize-1 downto 0);
 signal	waddrmax	:std_logic_vector(brsize-1 downto 0);
 signal	wminmaxclr	:std_logic;
 signal	wminmaxall	:std_logic;
+signal	bwcache_dirty	:std_logic;
+signal	vid_hazard	:std_logic;
 type	brdat_t	is array(brblocks-1 downto 0) of std_logic_vector(7 downto 0);
 signal	brdath	:brdat_t;
 signal	brdatl	:brdat_t;
@@ -465,15 +467,31 @@ end component;
 begin
 
 	braddr_sel<=braddr(brcache_sel);
-	--brcache_exts<=brcache_ext(brcache_sel);
 
 	bwaddr_sel<=bwaddr0 when bwcache_sel='0' else bwaddr1;
-	--bwaddr_nsel<=bwaddr1 when bwcache_sel='0' else bwaddr0;
+	bwcache_dirty <= '1' when waddrmin<=waddrmax else '0';
+	vid_hazard <= '1' when bwcache_dirty='1' and brsize<9 and (
+		(g00_rd='1' and g00_addr(awidth-1 downto 9)/=g00addrh and
+		 bwaddr_sel(awidth-brsize-1 downto 9-brsize)=g00_addr(awidth-1 downto 9)) or
+		(g01_rd='1' and g01_addr(awidth-1 downto 9)/=g01addrh and
+		 bwaddr_sel(awidth-brsize-1 downto 9-brsize)=g01_addr(awidth-1 downto 9)) or
+		(g02_rd='1' and g02_addr(awidth-1 downto 9)/=g02addrh and
+		 bwaddr_sel(awidth-brsize-1 downto 9-brsize)=g02_addr(awidth-1 downto 9)) or
+		(g03_rd='1' and g03_addr(awidth-1 downto 9)/=g03addrh and
+		 bwaddr_sel(awidth-brsize-1 downto 9-brsize)=g03_addr(awidth-1 downto 9)) or
+		(g10_rd='1' and g10_addr(awidth-1 downto 9)/=g10addrh and
+		 bwaddr_sel(awidth-brsize-1 downto 9-brsize)=g10_addr(awidth-1 downto 9)) or
+		(g11_rd='1' and g11_addr(awidth-1 downto 9)/=g11addrh and
+		 bwaddr_sel(awidth-brsize-1 downto 9-brsize)=g11_addr(awidth-1 downto 9)) or
+		(g12_rd='1' and g12_addr(awidth-1 downto 9)/=g12addrh and
+		 bwaddr_sel(awidth-brsize-1 downto 9-brsize)=g12_addr(awidth-1 downto 9)) or
+		(g13_rd='1' and g13_addr(awidth-1 downto 9)/=g13addrh and
+		 bwaddr_sel(awidth-brsize-1 downto 9-brsize)=g13_addr(awidth-1 downto 9))
+	) else '0';
 	
 	b_wdatm<=	b_wdat when b_wr/="00" else
 				(rmw_rdat and (not b_rmwmsk)) or (b_wdat and b_rmwmsk) when b_rmw/="00" else
 				(others=>'0');
---	b_wdatm<=	b_wdat;
 
 	rambwidth<=	brsize	when RAM_STATE=ST_BREAD else
 				brsize	when RAM_STATE=ST_BWRITE else
@@ -685,6 +703,42 @@ begin
 						refcount<=refint-1;
 						RAM_STATE<=ST_REFRSH;
 						vidcount<=0;
+					elsif(braddrnone='1' and (sb_rd='1' or sb_rmw/="00") and rambusy='0' and brcache_busy='0' and sb_addr(22 downto 17)="000000")then
+						ramaddrh<=sb_addr(awidth-1 downto 8);
+						rambgnaddr<=sb_addr(7 downto 0);
+						ramendaddr<=sb_addr(7 downto 0);
+						if(aborted='1')then
+							aborted<='0';
+							braddr(brcache_sel)<='0' & b_addr(awidth-1 downto brsize);
+						else
+							brcache_sel<=bcnext;
+							braddr(bcnext)<='0' & b_addr(awidth-1 downto brsize);
+							brcache_clr(bcnext)<='1';
+							bcget<='1';
+						end if;
+						ramrd<='1';
+						vidcount<=0;
+						RAM_STATE<=ST_BREAD;
+					elsif(vid_hazard='1' and rambusy='0' and bwcache_busy='0')then
+						ramaddrh<=bwaddr_sel(awidth-brsize-1 downto 8-brsize);
+						if(bwcache_sel='0')then
+							bwaddr1<=sb_addr(awidth-1 downto brsize);
+							bwcache_clr1<='1';
+						else
+							bwaddr0<=sb_addr(awidth-1 downto brsize);
+							bwcache_clr0<='1';
+						end if;
+						rambgnaddr(brsize-1 downto 0)<=waddrmin;
+						ramendaddr(brsize-1 downto 0)<=waddrmax;
+						if(brsize<8)then
+							rambgnaddr(7 downto brsize)<=bwaddr_sel(7-brsize downto 0);
+							ramendaddr(7 downto brsize)<=bwaddr_sel(7-brsize downto 0);
+						end if;
+						bwcache_sel<=not bwcache_sel;
+						wminmaxclr<='1';
+						ramwr<='1';
+						vidcount<=0;
+						RAM_STATE<=ST_BWRITE;
 					elsif(g00_addr(awidth-1 downto 9)/=g00addrh and g00_rd='1' and vidcount<1 and rambusy='0')then
 						g00addrh<=g00_addr(awidth-1 downto 9);
 						if(g00_addr(awidth-1 downto 9)=g01_addr(awidth-1 downto 9))then
@@ -797,17 +851,12 @@ begin
 						ramendaddr<=(others=>'0');
 						ramrd<='1';
 						vidcount<=vidcount+1;
-					-- CPU write flush
 					elsif(bcpend='1' and rambusy='0' and bwcache_busy='0')then
 						if(cpbusy='0')then
 							if(bwcache_sel='0')then
 								bwaddr1<=(others=>'1');		--ROM area
-	--							bwaddr1<=b_cdaddr;
-	--							bwcache_clr1<='1';
 							else
 								bwaddr0<=(others=>'1');		--ROM area
-	--							bwaddr0<=b_cdaddr;
-	--							bwcache_clr0<='1';
 							end if;
 							ramaddrh<=bwaddr_sel(awidth-brsize-1 downto 8-brsize);
 							rambgnaddr(brsize-1 downto 0)<=waddrmin;
@@ -820,7 +869,6 @@ begin
 							ramwr<='1';
 							vidcount<=0;
 							RAM_STATE<=ST_BWRITE;
-	--						wminmaxclr<='1';
 							cpbusy<='1';
 						else
 							bcmask<=b_cplane;
@@ -950,7 +998,6 @@ begin
 						if(refcount<refcnt-1)then
 							refcount<=refcount+1;
 						end if;
-						vidcount<=0;
 						RAM_STATE<=ST_REFRSH;
 					end if;
 				when ST_G00READ | ST_G01READ | ST_G02READ | ST_G03READ | ST_G10READ | ST_G11READ | ST_G12READ | ST_G13READ =>
@@ -1116,7 +1163,6 @@ begin
 	bfaddr<=b_addr(brsize-1 downto 0);
 
 	bcgen	:for i in 0 to brblocks-1 generate
-	--FIXME: is ram clock supposed to be used as wclk, and sys clk as rclk?
 		brcache_extF0	:cacheext generic map(brsize) port map(ramaddrrc(brsize-1 downto 0),brcache_extwr(i),brcache_clr(i),brcache_busyv(i),bfaddr,brcache_ext(i),'1',rclk, ram_ce, sclk, sys_ce, rstn);
 		BRcache0h:CACHEMEMN generic map(brsize,8)port map(ramaddrrc(brsize-1 downto 0),b_addr(brsize-1 downto 0),rclk,sclk,brwdath,b_wdatm(15 downto 8),brwr(i),brwrb(i)(1) and ram_ce,open,brdath(i));
 		BRcache0l:CACHEMEMN generic map(brsize,8)port map(ramaddrrc(brsize-1 downto 0),b_addr(brsize-1 downto 0),rclk,sclk,brwdatl,b_wdatm(7 downto 0),brwr(i),brwrb(i)(0) and ram_ce,open,brdatl(i));
@@ -1165,11 +1211,9 @@ begin
 	process(sclk,rstn)begin
 		if(rstn='0')then
 			b_ack<='0';
---			b_cack<='0';
 		elsif rising_edge(sclk) then
 			if (sys_ce = '1') then
 				b_ack<=backx;
-	--			b_cack<=bcackx;
 			end if;
 		end if;
 	end process;
@@ -1329,11 +1373,11 @@ begin
 
 	g00rwdath<=	
 				(others=>'0') when RAM_STATE=ST_G0CLR else
-				bwwdat(15 downto 8) when g00_addr(awidth-1 downto 8)=bwaddr_sel and bwwes(1)='1' else
+				bwwdat(15 downto 8) when (g00_addr(awidth-1 downto 8) & ramaddrrc(7 downto brsize))=bwaddr_sel and bwwes(1)='1' else
 				ramrdat(15 downto 8);
 	g00rwdatl<=	
 				(others=>'0') when RAM_STATE=ST_G0CLR else
-				bwwdat( 7 downto 0) when g00_addr(awidth-1 downto 8)=bwaddr_sel and bwwes(0)='1' else
+				bwwdat( 7 downto 0) when (g00_addr(awidth-1 downto 8) & ramaddrrc(7 downto brsize))=bwaddr_sel and bwwes(0)='1' else
 				ramrdat( 7 downto 0);
 
 	g00rwr<=	'1' when RAM_STATE=ST_G0CLR else
@@ -1347,11 +1391,11 @@ begin
 
 	g01rwdath<=	
 				(others=>'0') when RAM_STATE=ST_G1CLR else
-				bwwdat(15 downto 8) when g01_addr(awidth-1 downto 8)=bwaddr_sel and bwwes(1)='1' else
+				bwwdat(15 downto 8) when (g01_addr(awidth-1 downto 8) & ramaddrrc(7 downto brsize))=bwaddr_sel and bwwes(1)='1' else
 				ramrdat(15 downto 8);
 	g01rwdatl<=	
 				(others=>'0') when RAM_STATE=ST_G1CLR else
-				bwwdat( 7 downto 0) when g01_addr(awidth-1 downto 8)=bwaddr_sel and bwwes(0)='1' else
+				bwwdat( 7 downto 0) when (g01_addr(awidth-1 downto 8) & ramaddrrc(7 downto brsize))=bwaddr_sel and bwwes(0)='1' else
 				ramrdat( 7 downto 0);
 
 	g01rwr<=	'1' when RAM_STATE=ST_G1CLR else
@@ -1366,11 +1410,11 @@ begin
 
 	g02rwdath<=	
 				(others=>'0') when RAM_STATE=ST_G2CLR else
-				bwwdat(15 downto 8) when g02_addr(awidth-1 downto 8)=bwaddr_sel and bwwes(1)='1' else
+				bwwdat(15 downto 8) when (g02_addr(awidth-1 downto 8) & ramaddrrc(7 downto brsize))=bwaddr_sel and bwwes(1)='1' else
 				ramrdat(15 downto 8);
 	g02rwdatl<=	
 				(others=>'0') when RAM_STATE=ST_G2CLR else
-				bwwdat( 7 downto 0) when g02_addr(awidth-1 downto 8)=bwaddr_sel and bwwes(0)='1' else
+				bwwdat( 7 downto 0) when (g02_addr(awidth-1 downto 8) & ramaddrrc(7 downto brsize))=bwaddr_sel and bwwes(0)='1' else
 				ramrdat( 7 downto 0);
 
 	g02rwr<=	'1' when RAM_STATE=ST_G2CLR else
@@ -1385,11 +1429,11 @@ begin
 
 	g03rwdath<=	
 				(others=>'0') when RAM_STATE=ST_G3CLR else
-				bwwdat(15 downto 8) when g03_addr(awidth-1 downto 8)=bwaddr_sel and bwwes(1)='1' else
+				bwwdat(15 downto 8) when (g03_addr(awidth-1 downto 8) & ramaddrrc(7 downto brsize))=bwaddr_sel and bwwes(1)='1' else
 				ramrdat(15 downto 8);
 	g03rwdatl<=	
 				(others=>'0') when RAM_STATE=ST_G3CLR else
-				bwwdat( 7 downto 0) when g03_addr(awidth-1 downto 8)=bwaddr_sel and bwwes(0)='1' else
+				bwwdat( 7 downto 0) when (g03_addr(awidth-1 downto 8) & ramaddrrc(7 downto brsize))=bwaddr_sel and bwwes(0)='1' else
 				ramrdat( 7 downto 0);
 
 	g03rwr<=	'1' when RAM_STATE=ST_G3CLR else
@@ -1403,9 +1447,9 @@ begin
 	g03ack	:vrcack generic map(awidth,9)port map(g03_rd,g03_addr,g03addrh,dual_phase & ramaddrrc(7 downto 0),g03rwr,g03_ack,vclk,vid_ce,rstn);
 
 
-	t0rwdath<=	bwwdat(15 downto 8) when t0_addr(19 downto 6)=bwaddr_sel and bwwes(1)='1' else
+	t0rwdath<=	bwwdat(15 downto 8) when (t0_addr(awidth-3 downto 6) & ramaddrrc(7 downto brsize))=bwaddr_sel and bwwes(1)='1' else
 				ramrdat(15 downto 8);
-	t0rwdatl<=	bwwdat( 7 downto 0) when t0_addr(19 downto 6)=bwaddr_sel and bwwes(0)='1' else
+	t0rwdatl<=	bwwdat( 7 downto 0) when (t0_addr(awidth-3 downto 6) & ramaddrrc(7 downto brsize))=bwaddr_sel and bwwes(0)='1' else
 				ramrdat( 7 downto 0);
 
 	t0rwr<=	'0' when RAM_STATE/=ST_T0READ else
@@ -1427,11 +1471,11 @@ begin
 
 	g10rwdath<=	
 				(others=>'0') when RAM_STATE=ST_G0CLR else
-				bwwdat(15 downto 8) when g10_addr(awidth-1 downto 8)=bwaddr_sel and bwwes(1)='1' else
+				bwwdat(15 downto 8) when (g10_addr(awidth-1 downto 8) & ramaddrrc(7 downto brsize))=bwaddr_sel and bwwes(1)='1' else
 				ramrdat(15 downto 8);
 	g10rwdatl<=	
 				(others=>'0') when RAM_STATE=ST_G0CLR else
-				bwwdat( 7 downto 0) when g10_addr(awidth-1 downto 8)=bwaddr_sel and bwwes(0)='1' else
+				bwwdat( 7 downto 0) when (g10_addr(awidth-1 downto 8) & ramaddrrc(7 downto brsize))=bwaddr_sel and bwwes(0)='1' else
 				ramrdat( 7 downto 0);
 
 	g10rwr<=	'1' when RAM_STATE=ST_G0CLR else
@@ -1445,11 +1489,11 @@ begin
 
 	g11rwdath<=	
 				(others=>'0') when RAM_STATE=ST_G1CLR else
-				bwwdat(15 downto 8) when g11_addr(awidth-1 downto 8)=bwaddr_sel and bwwes(1)='1' else
+				bwwdat(15 downto 8) when (g11_addr(awidth-1 downto 8) & ramaddrrc(7 downto brsize))=bwaddr_sel and bwwes(1)='1' else
 				ramrdat(15 downto 8);
 	g11rwdatl<=	
 				(others=>'0') when RAM_STATE=ST_G1CLR else
-				bwwdat( 7 downto 0) when g11_addr(awidth-1 downto 8)=bwaddr_sel and bwwes(0)='1' else
+				bwwdat( 7 downto 0) when (g11_addr(awidth-1 downto 8) & ramaddrrc(7 downto brsize))=bwaddr_sel and bwwes(0)='1' else
 				ramrdat( 7 downto 0);
 
 	g11rwr<=	'1' when RAM_STATE=ST_G1CLR else
@@ -1464,11 +1508,11 @@ begin
 
 	g12rwdath<=	
 				(others=>'0') when RAM_STATE=ST_G2CLR else
-				bwwdat(15 downto 8) when g12_addr(awidth-1 downto 8)=bwaddr_sel and bwwes(1)='1' else
+				bwwdat(15 downto 8) when (g12_addr(awidth-1 downto 8) & ramaddrrc(7 downto brsize))=bwaddr_sel and bwwes(1)='1' else
 				ramrdat(15 downto 8);
 	g12rwdatl<=	
 				(others=>'0') when RAM_STATE=ST_G2CLR else
-				bwwdat( 7 downto 0) when g12_addr(awidth-1 downto 8)=bwaddr_sel and bwwes(0)='1' else
+				bwwdat( 7 downto 0) when (g12_addr(awidth-1 downto 8) & ramaddrrc(7 downto brsize))=bwaddr_sel and bwwes(0)='1' else
 				ramrdat( 7 downto 0);
 
 	g12rwr<=	'1' when RAM_STATE=ST_G2CLR else
@@ -1483,11 +1527,11 @@ begin
 
 	g13rwdath<=	
 				(others=>'0') when RAM_STATE=ST_G3CLR else
-				bwwdat(15 downto 8) when g13_addr(awidth-1 downto 8)=bwaddr_sel and bwwes(1)='1' else
+				bwwdat(15 downto 8) when (g13_addr(awidth-1 downto 8) & ramaddrrc(7 downto brsize))=bwaddr_sel and bwwes(1)='1' else
 				ramrdat(15 downto 8);
 	g13rwdatl<=	
 				(others=>'0') when RAM_STATE=ST_G3CLR else
-				bwwdat( 7 downto 0) when g13_addr(awidth-1 downto 8)=bwaddr_sel and bwwes(0)='1' else
+				bwwdat( 7 downto 0) when (g13_addr(awidth-1 downto 8) & ramaddrrc(7 downto brsize))=bwaddr_sel and bwwes(0)='1' else
 				ramrdat( 7 downto 0);
 
 	g13rwr<=	'1' when RAM_STATE=ST_G3CLR else
@@ -1501,9 +1545,9 @@ begin
 	g13ack	:vrcack generic map(awidth,9)port map(g13_rd,g13_addr,g13addrh,dual_phase & ramaddrrc(7 downto 0),g13rwr,g13_ack,vclk,vid_ce,rstn);
 
 
-	t1rwdath<=	bwwdat(15 downto 8) when t1_addr(19 downto 6)=bwaddr_sel and bwwes(1)='1' else
+	t1rwdath<=	bwwdat(15 downto 8) when (t1_addr(awidth-3 downto 6) & ramaddrrc(7 downto brsize))=bwaddr_sel and bwwes(1)='1' else
 				ramrdat(15 downto 8);
-	t1rwdatl<=	bwwdat( 7 downto 0) when t1_addr(19 downto 6)=bwaddr_sel and bwwes(0)='1' else
+	t1rwdatl<=	bwwdat( 7 downto 0) when (t1_addr(awidth-3 downto 6) & ramaddrrc(7 downto brsize))=bwaddr_sel and bwwes(0)='1' else
 				ramrdat( 7 downto 0);
 
 	t1rwr<=	'0' when RAM_STATE/=ST_T1READ else

@@ -492,6 +492,8 @@ begin
 		x"000" & '0' & rGR_SIZE & rGR_CMODE when addr(23 downto 1)=VC_R0(23 downto 1) else
 		"00" & rPRI_SP & rPRI_TX & rPRI_GR & rGR_PRI when addr(23 downto 1)=VC_R1(23 downto 1) else
 		rYS & rAH & rVHT & rEXON & rHP & rBP & rGG & rGT & '0' & rSPREN & rTXTEN & rGRPEN when addr(23 downto 1)=VC_R2(23 downto 1) else
+		x"00" & "1111" & '1' & '0' & rDC & '0' when addr(23 downto 1)=SYS_DC(23 downto 1) else
+		(others=>'1') when addr(23 downto 4)=x"e8e00" and addr(3 downto 1)/="000" else
 		(others=>'1');
 	
 	doe<=	'0' when rd='0' else
@@ -522,5 +524,7 @@ begin
 			'1' when addr(23 downto 1)=VC_R0(23 downto 1) else
 			'1' when addr(23 downto 1)=VC_R1(23 downto 1) else
 			'1' when addr(23 downto 1)=VC_R2(23 downto 1) else
+			'1' when addr(23 downto 1)=SYS_DC(23 downto 1) else
+			'1' when addr(23 downto 4)=x"e8e00" and addr(3 downto 1)/="000" else
 			'0';
 end rtl;

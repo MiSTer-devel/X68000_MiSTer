@@ -71,6 +71,7 @@ set_global_assignment -name VHDL_FILE rtl/bwlatch.vhd
 set_global_assignment -name VHDL_FILE rtl/pwrcont.vhd
 set_global_assignment -name VHDL_FILE rtl/IOcont.vhd
 set_global_assignment -name VHDL_FILE rtl/X68K_top.vhd
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/ddram.sv
 set_global_assignment -name VERILOG_FILE xe1ap.v
 set_global_assignment -name SDC_FILE  X68000.sdc
 set_global_assignment -name SYSTEMVERILOG_FILE X68000.sv

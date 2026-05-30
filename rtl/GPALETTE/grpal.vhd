@@ -18,6 +18,9 @@ port(
 	palnoh	:in std_logic_vector(7 downto 0);
 	palnol	:in std_logic_vector(7 downto 0);
 	palout	:out std_logic_vector(15 downto 0);
+	palnoh2	:in std_logic_vector(7 downto 0) := (others=>'0');
+	palnol2	:in std_logic_vector(7 downto 0) := (others=>'0');
+	palout2	:out std_logic_vector(15 downto 0);
 	
 	sclk	:in std_logic;
 	sys_ce  :in std_logic := '1';
@@ -32,8 +35,11 @@ signal	wr3,wr2,wr1,wr0	:std_logic;
 signal	rdat3,rdat2,rdat1,rdat0	:std_logic_vector(7 downto 0);
 signal	pdat3,pdat2,pdat1,pdat0	:std_logic_vector(7 downto 0);
 signal	psel	:std_logic_vector(1 downto 0);
+signal	psel2	:std_logic_vector(1 downto 0);
 signal	red,grn,blu	:std_logic_vector(5 downto 0);
 signal	palp,pals	:std_logic_vector(15 downto 0);
+signal	palp2	:std_logic_vector(15 downto 0);
+signal	pdat3m,pdat2m,pdat1m,pdat0m	:std_logic_vector(7 downto 0);
 signal	ssel	:std_logic;
 component gpram
 	PORT
@@ -67,6 +73,10 @@ begin
 	ram2	:gpram port map(addr(7 downto 1),palnoh(7 downto 1),sclk,vclk,wdat( 7 downto 0),(others=>'0'),wr2 and sys_ce,'0',rdat2,pdat2);
 	ram1	:gpram port map(addr(7 downto 1),palnol(7 downto 1),sclk,vclk,wdat(15 downto 8),(others=>'0'),wr1 and sys_ce,'0',rdat1,pdat1);
 	ram0	:gpram port map(addr(7 downto 1),palnol(7 downto 1),sclk,vclk,wdat( 7 downto 0),(others=>'0'),wr0 and sys_ce,'0',rdat0,pdat0);
+	ram3m	:gpram port map(addr(7 downto 1),palnoh2(7 downto 1),sclk,vclk,wdat(15 downto 8),(others=>'0'),wr3 and sys_ce,'0',open,pdat3m);
+	ram2m	:gpram port map(addr(7 downto 1),palnoh2(7 downto 1),sclk,vclk,wdat( 7 downto 0),(others=>'0'),wr2 and sys_ce,'0',open,pdat2m);
+	ram1m	:gpram port map(addr(7 downto 1),palnol2(7 downto 1),sclk,vclk,wdat(15 downto 8),(others=>'0'),wr1 and sys_ce,'0',open,pdat1m);
+	ram0m	:gpram port map(addr(7 downto 1),palnol2(7 downto 1),sclk,vclk,wdat( 7 downto 0),(others=>'0'),wr0 and sys_ce,'0',open,pdat0m);
 
 	rdat(15 downto 8)<=	rdat3 when cs3='1' else
 						rdat1 when cs1='1' else
@@ -78,6 +88,7 @@ begin
 		if rising_edge(vclk) then
 			if(vid_ce = '1')then
 				psel<=palnoh(0) & palnol(0);
+				psel2<=palnoh2(0) & palnol2(0);
 			end if;
 		end if;
 	end process;
@@ -98,5 +109,17 @@ begin
 	
 	pals<=grn(5 downto 1) & red(5 downto 1) & blu(5 downto 1) & '0';
 	palout<=palp when skel='0' or psel(0)='0' else pals;
-	
+
+	palp2(15 downto 8)<=	pdat1m when gmode='0' and psel2(1)='0' else
+							pdat3m when gmode='0' and psel2(1)='1' else
+							pdat2m when gmode='1' and psel2(1)='1' else
+							pdat3m when gmode='1' and psel2(1)='0' else
+							(others=>'0');
+	palp2(7 downto 0)<=	pdat0m when gmode='0' and psel2(0)='0' else
+							pdat2m when gmode='0' and psel2(0)='1' else
+							pdat0m when gmode='1' and psel2(0)='1' else
+							pdat1m when gmode='1' and psel2(0)='0' else
+							(others=>'0');
+	palout2<=palp2;
+
 end rtl;

@@ -8,7 +8,7 @@ generic(
 	AWIDTH  :integer :=25;
 	CAWIDTH :integer :=10;
 	LAWIDTH :integer :=8;
-	CLKMHZ  :integer :=120		--MHz
+	CLKMHZ  :integer :=80		--MHz
 );
 port(
 	-- SDRAM PORTS
@@ -230,7 +230,7 @@ begin
 						when 0 =>
 							COMMAND<=cmd_MRS;
 							BA<="00";
-							MADDR<="0000000110111";		--CAS3, full page burst
+							MADDR<="0000000100111";		--CAS2, full page burst
 							clkstate<=clkstate+1;
 						when 2 =>
 							COMMAND<=cmd_NOP;
@@ -252,13 +252,13 @@ begin
 							BA<=BADDR;
 							MADDR<=RADDR;
 							clkstate<=clkstate+1;
-						when 3 =>
+						when 2 =>
 							COMMAND<=cmd_READ;
 							BA<=BADDR;
 							MADDR<="00" & '0' & CBADDR(9 downto 0);
 							curaddr<=bgnaddr;
 							clkstate<=clkstate+1;
-						when 4 =>
+						when 3 =>
 							tmpaddr:=curaddr(LAWIDTH-1 downto 0);
 							BA<=BADDR;
 							if((tmpaddr or blkmask)=lastlow)then
@@ -269,7 +269,7 @@ begin
 								MADDR<=(others=>'0');
 							end if;
 							clkstate<=clkstate+1;
-						when 5 =>
+						when 4 =>
 							BA<=BADDR;
 							tmpaddr:=curaddr(LAWIDTH-1 downto 0)+addr1;
 							if((tmpaddr or blkmask)=lastlow)then
@@ -280,20 +280,9 @@ begin
 								MADDR<=(others=>'0');
 							end if;
 							clkstate<=clkstate+1;
-						when 6 =>
+						when 5 =>
 							BA<=BADDR;
 							tmpaddr:=curaddr(LAWIDTH-1 downto 0)+addr2;
-							if((tmpaddr or blkmask)=lastlow)then
-								COMMAND<=cmd_READ;
-								MADDR<="00" & '0' & CZADDR(9 downto 0);
-							else
-								COMMAND<=cmd_NOP;
-								MADDR<=(others=>'0');
-							end if;
-							clkstate<=clkstate+1;
-						when 7 =>
-							BA<=BADDR;
-							tmpaddr:=curaddr(LAWIDTH-1 downto 0)+addr3;
 							if((tmpaddr or blkmask)=lastlow)then
 								COMMAND<=cmd_READ;
 								MADDR<="00" & '0' & CZADDR(9 downto 0);
@@ -308,13 +297,13 @@ begin
 								clkstate<=clkstate+1;
 							end if;
 							de<='1';
-						when 8 =>
+						when 6 =>
 							COMMAND<=cmd_PALL;
 							BA<="00";
 							MADDR<=(others=>'1');
 							curaddr<=curaddr+addr1;
 							clkstate<=clkstate+1;
-						when 10  =>
+						when 7  =>
 							COMMAND<=cmd_NOP;
 							BA<="00";
 							de<='0';

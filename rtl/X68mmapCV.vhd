@@ -126,12 +126,12 @@ signal	IO_ack	:std_logic;
 	
 
 begin
-	gpconven<=	'0' when gpcen='0' else
-					'0' when atype/=addr_GRAM else
-					'0' when vc_gsize='1' and vmode="00" else
-					'1' when gmode="01" and vmode="00" else
-					'1' when gmode(1)='1' and vmode(1)='0' else
-					'0';
+	gpconven <= '0' when gpcen='0' else
+            '0' when atype/=addr_GRAM else
+            '0' when gmode(1)='1' else              -- 65K: siempre raw, sin conversión
+            '0' when vc_gsize='1' and vmode="00" else
+            '1' when gmode="01" and vmode="00" else
+            '0';
 	m_rd<='1' when m_rw='1' and m_as='0' else '0';
 	m_wr<='0' when atype=addr_ROM else '1' when m_rw='0' and m_as='0' else '0';
 	b_rd<=m_rd;
@@ -164,7 +164,7 @@ begin
 				t_base+("00000" & m_addr(16 downto 1) & prane) when SWen='1' else
 				t_base+("00000" & m_addr(16 downto 1) & m_addr(18 downto 17)) when atype=addr_TRAM else
 				g_base+("00000" & m_addr(18 downto 1)) when gpconven='1' and vmode="01" else
-				g_base+("00000" & m_addr(18 downto 10) & gppage & m_addr(9 downto 3)) when gpconven='1' and vmode="00" else
+				g_base+("00000" & m_addr(18 downto 1)) when gpconven='1' and vmode="00" else
 				g_base+("00000" & m_addr(18 downto 1)) when atype=addr_GRAM and (gmode="10" or gmode="11") else
 				g_base+("00000" & m_addr(18 downto 1)) when atype=addr_GRAM and gmode="01" else
 				g_base+("00000" & m_addr(18 downto 1)) when atype=addr_GRAM and gmode="00" and gsize='0' else
@@ -246,6 +246,10 @@ begin
 	
 	ram_rmwmask<=
 		not txtmask	when atype=addr_TRAM and MEN='1' else
+		x"000f" when gpconven='1' and vmode="00" and (gpstate=gp_p0 or gpstate=gp_p0w) else
+		x"00f0" when gpconven='1' and vmode="00" and (gpstate=gp_p1 or gpstate=gp_p1w) else
+		x"0f00" when gpconven='1' and vmode="00" and (gpstate=gp_p2 or gpstate=gp_p2w) else
+		x"f000" when gpconven='1' and vmode="00" and (gpstate=gp_p3 or gpstate=gp_p3w) else
 		x"000f" when atype=addr_GRAM and gmode="00" and gsize='1' and m_addr(20)='0' and m_addr(10)='0' else
 		x"00f0" when atype=addr_GRAM and gmode="00" and gsize='1' and m_addr(20)='0' and m_addr(10)='1' else
 		x"0f00" when atype=addr_GRAM and gmode="00" and gsize='1' and m_addr(20)='1' and m_addr(10)='0' else

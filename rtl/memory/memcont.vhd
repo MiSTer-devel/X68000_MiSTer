@@ -8,7 +8,7 @@ generic(
 	CAWIDTH		:integer	:=10;
 	BRSIZE		:integer	:=8;
 	BRBLOCKS		:integer	:=4;
-	CLKMHZ		:integer 	:=120;		--SDRAM clk MHz
+	CLKMHZ		:integer 	:=80;		--SDRAM clk MHz
 	REFINT	:integer	:=3;
 	REFCNT	:integer	:=64
 );
@@ -166,7 +166,7 @@ generic(
 	AWIDTH		:integer	:=25;
 	CAWIDTH		:integer	:=10;
 	LAWIDTH		:integer	:=8;
-	CLKMHZ		:integer	:=120		--MHz
+	CLKMHZ		:integer	:=80		--MHz
 );
 port(
 	-- SDRAM PORTS

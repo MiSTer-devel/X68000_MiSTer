@@ -15,3 +15,6 @@ set_multicycle_path -to   {emu|X68K_top|MPU|*} -setup 2
 set_multicycle_path -to   {emu|X68K_top|MPU|*} -hold 1
 
 set_false_path -from {emu:emu|X68K_top:X68K_top|contcont:cont|contval*}
+#port-B is read-only
+set_false_path -from {*~portb_we_reg} -to {*VLBUF*}
+set_false_path -from {*~PORT_B_WRITE_ENABLE_REG} -to {*VLBUF*}

@@ -6,7 +6,7 @@ LIBRARY	IEEE;
 
 entity X68K_top is
 generic(
-	RCFREQ		:integer	:=120;			--SDRAM clock MHz
+	RCFREQ		:integer	:=80;			--SDRAM clock MHz
 	SCFREQ		:integer	:=10000;		--kHz
 	FCFREQ		:integer	:=40000;		--FDC clock
 	ACFREQ		:integer	:=40000;		--Audio clock
@@ -108,6 +108,7 @@ port(
 
 	pMidi_in		:in std_logic;
 	pMidi_out	:out std_logic;
+	pMidi_en		:in std_logic := '1';
 
 	pVideoClk	:out std_logic;
 	pVideoR		:out std_logic_vector(7 downto 0);
@@ -130,6 +131,7 @@ port(
 	pSndPCMR		:out std_logic_vector(15 downto 0);
 	
 	rstn		:in std_logic;
+	vid_mode    :in std_logic_vector(1 downto 0) := "00";
 	dHMode      :in std_logic_vector(1 downto 0) := "11";
 	dVMode      :in std_logic := '1';
 	-- Debug: layer enable bits (directly active low from OSD, active high enables layer)
@@ -146,9 +148,6 @@ port(
 	-- bit 0 = G0, bit 1 = G1, bit 2 = G2, bit 3 = G3
 	dGrpLayers  :in std_logic_vector(3 downto 0) := "0000";
 
-	-- Transparency mode selector: "00"=PUU, "01"=px68k, "10"=MAME
-	tmode       :in std_logic_vector(1 downto 0) := "00";
-
 	-- Debug: disable GVRAM fast-clear (1=disable)
 	gclr_dis    :in std_logic := '0';
 
@@ -156,7 +155,22 @@ port(
 	mix_fix     :in std_logic := '0';
 
 	-- Disk format runtime selector: '0'=D88, '1'=XDF/DIM
-	disk_mode   :in std_logic := '0'
+	disk_mode   :in std_logic := '0';
+
+	-- DDR3 CPU main-RAM interface
+	ddr_addr    :out std_logic_vector(22 downto 0);
+	ddr_din     :out std_logic_vector(15 downto 0);
+	ddr_dout    :in std_logic_vector(15 downto 0) := (others=>'0');
+	ddr_rd      :out std_logic;
+	ddr_wr      :out std_logic_vector(1 downto 0);
+	ddr_ack     :in std_logic := '0';
+	ddr_ready   :in std_logic := '1';
+
+	-- Debug: route CPU main-RAM to DDR3 (1) or SDRAM (0)
+	use_ddr3    :in std_logic := '1';
+
+	-- Debug: enable interrupt level 4 (1=enable, default)
+	e_ln4       :in std_logic := '1'
 );
 end X68K_top;
 
@@ -196,6 +210,7 @@ signal	mpu_od		:std_logic_vector(15 downto 0);
 signal	mpu_oe		:std_logic;
 signal	mpu_ipl			:std_logic_vector(2 downto 0);
 signal	mpu_dtack		:std_logic;
+signal	mpu_berr_n		:std_logic;
 signal	mpu_as			:std_logic;
 signal	mpu_udsn			:std_logic;
 signal	mpu_ldsn			:std_logic;
@@ -212,12 +227,20 @@ signal	m_ack	:std_logic;
 signal	ram_addr:std_logic_vector(22 downto 0);
 signal	ram_addrw:std_logic_vector(RAMAWIDTH-2 downto 0);
 signal	ram_rdat:std_logic_vector(15 downto 0);
+signal	mem_ram_rdat:std_logic_vector(15 downto 0);
 signal	ram_wdat:std_logic_vector(15 downto 0);
 signal	ram_rd	:std_logic;
 signal	ram_wr	:std_logic_vector(1 downto 0);
 signal	ram_rmw	:std_logic_vector(1 downto 0);
 signal	ram_rmwmask	:std_logic_vector(15 downto 0);
 signal	ram_ack	:std_logic;
+signal	mem_ram_ack	:std_logic;
+signal	is_mram	:std_logic;
+signal	is_mram_r	:std_logic;
+signal	sdram_ram_rd	:std_logic;
+signal	sdram_ram_wr	:std_logic_vector(1 downto 0);
+signal	sdram_ram_rmw	:std_logic_vector(1 downto 0);
+
 constant trambase	:std_logic_vector(RAMAWIDTH-1 downto 0)	:="0"& x"e00000";
 signal	ram_cpys:std_logic_vector(RAMAWIDTH-brsize-2 downto 0);
 signal	ram_cpyd:std_logic_vector(RAMAWIDTH-brsize-2 downto 0);
@@ -279,8 +302,11 @@ signal	VID_HRTC	:std_logic;
 signal	VID_HRTCd	:std_logic;
 signal	VID_HRTCi	:std_logic;
 signal	VID_VRTC	:std_logic;
+signal	VID_HRTCb	:std_logic;
+signal	VID_VRTCb	:std_logic;
 signal	VID_RINT	:std_logic;
 signal	VID_VVIDEN	:std_logic;
+signal	vid_is_24khz	:std_logic;
 --sprite
 signal	spr_x		:std_logic_vector(9 downto 0);
 signal	spr_y		:std_logic_vector(9 downto 0);
@@ -525,6 +551,14 @@ signal	t0_rdat3	:std_logic_vector(15 downto 0);
 signal	g10_addr	:std_logic_vector(RAMAWIDTH-2 downto 0);
 signal	g10_rd		:std_logic;
 signal	g10_rdat	:std_logic_vector(15 downto 0);
+signal	bram_g00_rdat	:std_logic_vector(15 downto 0);
+signal	bram_g10_rdat	:std_logic_vector(15 downto 0);
+signal	bram_g01_rdat	:std_logic_vector(15 downto 0);
+signal	bram_g11_rdat	:std_logic_vector(15 downto 0);
+signal	sdram_g00_rdat	:std_logic_vector(15 downto 0);
+signal	sdram_g10_rdat	:std_logic_vector(15 downto 0);
+signal	sdram_g01_rdat	:std_logic_vector(15 downto 0);
+signal	sdram_g11_rdat	:std_logic_vector(15 downto 0);
 signal	g11_addr	:std_logic_vector(RAMAWIDTH-2 downto 0);
 signal	g11_rd		:std_logic;
 signal	g11_rdat	:std_logic_vector(15 downto 0);
@@ -561,9 +595,28 @@ signal	gvclr_timer		:integer range 0 to 1023;
 signal	mc_g0_caddr		:std_logic_vector(RAMAWIDTH-2 downto 8);
 signal	mc_g0_clear		:std_logic;
 
+-- GVRAM BRAM controller signals (chips 0,1 in BRAM)
+signal	gv_is_gvram : std_logic;
+signal	gv_is_bram_page : std_logic;
+signal	gv_br_cpu_wr : std_logic;
+signal	gv_cpu_ack  : std_logic;
+signal	gv_cpu_rdat : std_logic_vector(15 downto 0);
+signal	gv_use_sdram : std_logic;
+
 --video registers
 signal	vr_hfreq	:std_logic;
 signal	vr_htotal	:std_logic_vector(7 downto 0);
+
+--640x400 24kHz auto-detect overrides
+signal	fix_mode_active	:std_logic := '0';
+signal	eff_htotal	:std_logic_vector(7 downto 0);
+signal	eff_hsync	:std_logic_vector(7 downto 0);
+signal	eff_hvbgn	:std_logic_vector(7 downto 0);
+signal	eff_hvend	:std_logic_vector(7 downto 0);
+signal	eff_vtotal	:std_logic_vector(9 downto 0);
+signal	eff_vsync	:std_logic_vector(9 downto 0);
+signal	eff_vvbgn	:std_logic_vector(9 downto 0);
+signal	eff_vvend	:std_logic_vector(9 downto 0);
 signal	vr_hsync	:std_logic_vector(7 downto 0);
 signal	vr_hvbgn	:std_logic_vector(7 downto 0);
 signal	vr_hvend	:std_logic_vector(7 downto 0);
@@ -643,6 +696,9 @@ signal	gpal_skel	:std_logic;
 signal	gpal_pnoh	:std_logic_vector(7 downto 0);
 signal	gpal_pnol	:std_logic_vector(7 downto 0);
 signal	gpal_pdat	:std_logic_vector(15 downto 0);
+signal	gpal_pnoh2	:std_logic_vector(7 downto 0);
+signal	gpal_pnol2	:std_logic_vector(7 downto 0);
+signal	gpal_pdat2	:std_logic_vector(15 downto 0);
 
 signal	dclk	:std_logic;
 signal	vidRF	:std_logic_vector(5 downto 0);
@@ -967,6 +1023,50 @@ port(
 );
 end component;
 
+component gvram_ctrl
+generic(
+	awidth	: integer := 24
+);
+port(
+	g00_addr : in  std_logic_vector(awidth-1 downto 0);
+	g00_rd   : in  std_logic;
+	g00_rdat : out std_logic_vector(15 downto 0);
+	g00_ack  : out std_logic;
+	g01_addr : in  std_logic_vector(awidth-1 downto 0);
+	g01_rd   : in  std_logic;
+	g01_rdat : out std_logic_vector(15 downto 0);
+	g01_ack  : out std_logic;
+	g10_addr : in  std_logic_vector(awidth-1 downto 0);
+	g10_rd   : in  std_logic;
+	g10_rdat : out std_logic_vector(15 downto 0);
+	g10_ack  : out std_logic;
+	g11_addr : in  std_logic_vector(awidth-1 downto 0);
+	g11_rd   : in  std_logic;
+	g11_rdat : out std_logic_vector(15 downto 0);
+	g11_ack  : out std_logic;
+	g0_caddr : in  std_logic_vector(awidth-1 downto 8);
+	g0_clear : in  std_logic;
+	g1_caddr : in  std_logic_vector(awidth-1 downto 8);
+	g1_clear : in  std_logic;
+	cpu_addr    : in  std_logic_vector(17 downto 0);
+	cpu_wdat    : in  std_logic_vector(15 downto 0);
+	cpu_rdat    : out std_logic_vector(15 downto 0);
+	cpu_wr      : in  std_logic;
+	cpu_rd      : in  std_logic;
+	cpu_rmw     : in  std_logic_vector(1 downto 0);
+	cpu_rmwmask : in  std_logic_vector(15 downto 0);
+	cpu_ack     : out std_logic;
+	gmode    : in  std_logic_vector(1 downto 0);
+	rclk     : in  std_logic;
+	ram_ce   : in  std_logic := '1';
+	vclk     : in  std_logic;
+	vid_ce   : in  std_logic := '1';
+	sclk     : in  std_logic;
+	sys_ce   : in  std_logic := '1';
+	rstn     : in  std_logic
+);
+end component;
+
 component INTcont
 port(
 	int7	:in std_logic	:='0';
@@ -1191,6 +1291,8 @@ port(
 
 	VRTC		:out std_logic;
 	HRTC		:out std_logic;
+	VRTC_b		:out std_logic;
+	HRTC_b		:out std_logic;
 	VIDEN		:out std_logic;
 	
 	HCOMP		:out std_logic;
@@ -1200,6 +1302,7 @@ port(
 	pix_ce		:out std_logic;
 	v60hz       :in std_logic;
 	f1          :out std_logic;
+	out_is_24khz :out std_logic;
 
 	gclk		:in std_logic;
 	rstn		:in std_logic
@@ -1754,6 +1857,9 @@ port(
 	gpal0no	:out std_logic_vector(7 downto 0);
 	gpal1no	:out std_logic_vector(7 downto 0);
 	gpalin	:in std_logic_vector(15 downto 0);
+	gpal0no2	:out std_logic_vector(7 downto 0);
+	gpal1no2	:out std_logic_vector(7 downto 0);
+	gpalin2	:in std_logic_vector(15 downto 0);
 	
 	vvideoen	:out std_logic;
 	rintline:in std_logic_vector(9 downto 0);
@@ -1768,10 +1874,8 @@ port(
 	
 	hblank  :in std_logic;
 	vblank  :in std_logic;
+	is_24khz :in std_logic := '0';
 	
-	-- Transparency mode selector: "00"=PUU, "01"=px68k, "10"=MAME
-	tmode   :in std_logic_vector(1 downto 0) := "00";
-
 	-- Blend Fix: '1'=MAME formula (gpalin>>2), '0'=default (gpalin>>1)
 	mix_fix :in std_logic := '0';
 
@@ -1952,7 +2056,7 @@ port(
 	COLOR	:out std_logic_vector(3 downto 0);
 	PATNO	:out std_logic_vector(7 downto 0);
 	PRI		:out std_logic_vector(1 downto 0);
-	
+
 	BG0Xpos	:out std_logic_vector(9 downto 0);
 	BG0Ypos	:out std_logic_vector(9 downto 0);
 	BG1Xpos	:out std_logic_vector(9 downto 0);
@@ -1967,7 +2071,7 @@ port(
 	LH		:out std_logic;
 	VRES	:out std_logic_vector(1 downto 0);
 	HRES	:out std_logic_vector(1 downto 0);
-	
+
 	sclk	:in std_logic;
 	sys_ce  :in std_logic := '1';
 	vclk	:in std_logic;
@@ -2313,6 +2417,9 @@ port(
 	palnoh	:in std_logic_vector(7 downto 0);
 	palnol	:in std_logic_vector(7 downto 0);
 	palout	:out std_logic_vector(15 downto 0);
+	palnoh2	:in std_logic_vector(7 downto 0) := (others=>'0');
+	palnol2	:in std_logic_vector(7 downto 0) := (others=>'0');
+	palout2	:out std_logic_vector(15 downto 0);
 	
 	sclk	:in std_logic;
 	sys_ce  :in std_logic := '1';
@@ -2537,7 +2644,7 @@ begin
 
 --	fdcclk<=pClk50M;
 	dem_rstn<=plllock and pwr_rstn;
-	srstn<=plllock and rstn and pwr_rstn and ldr_done and dem_initdone;
+	srstn<=plllock and rstn and pwr_rstn and ldr_done and dem_initdone and ddr_ready;
 	vid_rstn<=plllock and pwr_rstn and ram_inidone;
 
 	pwr	:pwrcont  port map(
@@ -2574,7 +2681,7 @@ begin
 		FC2      => mpu_fc(2),
 		DTACKn   => mpu_dtack,
 		VPAn     => not (mpu_fc(0) and mpu_fc(1) and mpu_fc(2)),
-		BERRn    => '1',
+		BERRn    => mpu_berr_n,
 		BRn      => '1',
 		BGACKn   => '1',
 		IPL0n    => mpu_ipl(0),
@@ -2663,7 +2770,7 @@ begin
 		int4	=>INT4,
 		vect4	=>IVECT4,
 		iack4	=>IACK4,
-		e_ln4	=>'1',
+		e_ln4	=>e_ln4,
 		
 		int3	=>INT3,
 		vect3	=>IVECT3,
@@ -2852,21 +2959,84 @@ begin
 
 	
 	ram_addrw<="0" & ram_addr;
+
+	-- DDR3 CPU main-RAM routing:
+	--   $000000-$01FFFF (vectors/stack/sysvars) -> SDRAM
+	--   $020000-$BFFFFF (main RAM, non-graphics) -> DDR3 (when use_ddr3='1')
+	--   $C00000-$FFFFFF (GVRAM/TVRAM/ROM) -> SDRAM
+	is_mram <= '1' when use_ddr3 = '1'
+	                and ram_addr(22 downto 21) /= "11"
+	                and ram_addr(22 downto 17) /= "000000"
+	            else '0';
+
+	process(sysclk)
+	begin
+		if rising_edge(sysclk) then
+			is_mram_r <= is_mram;
+		end if;
+	end process;
+
+	ddr_addr <= ram_addr;
+	ddr_din  <= ram_wdat;
+	ddr_rd   <= ram_rd  when is_mram = '1' else '0';
+	ddr_wr   <= ram_wr  when is_mram = '1' else "00";
+
+	sdram_ram_rd  <= ram_rd  when is_mram = '0' else '0';
+	sdram_ram_wr  <= ram_wr  when is_mram = '0' else "00";
+	sdram_ram_rmw <= ram_rmw when is_mram = '0' else "00";
 	
-	-- MUX g0_caddr/g0_clear: during reset clear, override with sweep address
+	-- GVRAM address decode: ram_addr(22:18) = "11101" = g_base upper bits
+	gv_is_gvram <= '1' when ram_addr(22 downto 18) = "11101" else '0';
+	gv_is_bram_page <= '1' when gv_is_gvram = '1' and vr_col = "01" and m_addr(20 downto 19) = "00" else
+	                   '1' when gv_is_gvram = '1' and vr_col /= "01" and m_addr(20) = '0' else
+	                   '0';
+	gv_br_cpu_wr <= ram_wr(0) when vr_col = "01" else
+	                (ram_wr(0) or ram_wr(1));
+	ram_rdat <= ddr_dout     when is_mram = '1' else
+	            gv_cpu_rdat when gv_is_bram_page = '1' else
+	            mem_ram_rdat;
+	ram_ack  <= ddr_ack      when is_mram_r = '1' else
+	            gv_cpu_ack  when gv_is_bram_page = '1' else
+	            mem_ram_ack;
+
+	gv_use_sdram <= vr_GR_SIZE or vr_GR_CMODE(1);
+
 	mc_g0_caddr <= gvclr_caddr when gvclr_active='1' else g0_caddr;
 	mc_g0_clear <= '1'          when gvclr_active='1' else g0_clear;
 
 	-- Debug: gate fast-clear begin pulse (gclr_dis=1 disables fast clear entirely)
 	vr_fcbgn_eff <= '0' when gclr_dis='1' else vr_fcbgn;
 
+	process(sysclk) begin
+		if rising_edge(sysclk) then
+			if srstn='0' then
+				fix_mode_active <= '0';
+			elsif abus=x"E80028" and (b_wr(0)='1' or b_wr(1)='1') and sys_ce='1' then
+				if dbus=x"0415" then
+					fix_mode_active <= '1';
+				else
+					fix_mode_active <= '0';
+				end if;
+			end if;
+		end if;
+	end process;
+
+	eff_htotal <= x"73"        when fix_mode_active='1' else vr_htotal;
+	eff_hsync  <= x"0A"        when fix_mode_active='1' else vr_hsync;
+	eff_hvbgn  <= x"13"        when fix_mode_active='1' else vr_hvbgn;
+	eff_hvend  <= x"63"        when fix_mode_active='1' else vr_hvend;
+	eff_vtotal <= "0110111110" when fix_mode_active='1' else vr_vtotal;  -- 446
+	eff_vsync  <= vr_vsync;
+	eff_vvbgn  <= "0000100100" when fix_mode_active='1' else vr_vvbgn;   -- 36
+	eff_vvend  <= "0110110100" when fix_mode_active='1' else vr_vvend;   -- 436
+
 	RAM	:memcont generic map(
 		AWIDTH		=>24,
 		CAWIDTH		=>9,
 		BRSIZE		=>brsize,
-		BRBLOCKS		=>32,
+		BRBLOCKS		=>16,
 		CLKMHZ		=>RCFREQ,
-		REFINT		=>5,
+		REFINT			=>10,
 		REFCNT		=>64
 	) port map(
 		PMEMCKE		=>pMemCke,
@@ -2883,58 +3053,54 @@ begin
 
 		b_addr		=>ram_addrw,
 		b_wdat		=>ram_wdat,
-		b_rdat		=>ram_rdat,
-		b_rd		=>ram_rd,
-		b_wr		=>ram_wr,
-		b_rmw		=>ram_rmw,
+		b_rdat		=>mem_ram_rdat,
+		b_rd		=>sdram_ram_rd,
+		b_wr		=>sdram_ram_wr,
+		b_rmw		=>sdram_ram_rmw,
 		b_rmwmsk	=>ram_rmwmask,
-		b_ack		=>ram_ack,
+		b_ack		=>mem_ram_ack,
 		
 		b_csaddr	=>ram_cpys,
 		b_cdaddr	=>ram_cpyd,
 		b_cplane	=>ram_cplane,
 		b_cpy		=>ram_cpy,
 		b_cack		=>ram_cpya,
-	
+
 		g00_addr	=>g00_addr,
-		g00_rd		=>g00_rd,
-		g00_rdat	=>g00_rdat,
+		g00_rd		=>g00_rd and gv_use_sdram,
+		g00_rdat	=>sdram_g00_rdat,
 		--g00_ack		=>g00_ack,
 
 		g01_addr	=>g01_addr,
-		g01_rd		=>g01_rd,
-		g01_rdat	=>g01_rdat,
+		g01_rd		=>g01_rd and gv_use_sdram,
+		g01_rdat	=>sdram_g01_rdat,
 		--g01_ack		=>g01_ack,
 
 		g02_addr	=>g02_addr,
 		g02_rd		=>g02_rd,
 		g02_rdat	=>g02_rdat,
-		--g02_ack		=>g02_ack,
 
 		g03_addr	=>g03_addr,
 		g03_rd		=>g03_rd,
 		g03_rdat	=>g03_rdat,
-		--g03_ack		=>g03_ack,
 
 		g10_addr	=>g10_addr,
-		g10_rd		=>g10_rd,
-		g10_rdat	=>g10_rdat,
+		g10_rd		=>g10_rd and gv_use_sdram,
+		g10_rdat	=>sdram_g10_rdat,
 		--g10_ack		=>g10_ack,
 
 		g11_addr	=>g11_addr,
-		g11_rd		=>g11_rd,
-		g11_rdat	=>g11_rdat,
+		g11_rd		=>g11_rd and gv_use_sdram,
+		g11_rdat	=>sdram_g11_rdat,
 		--g11_ack		=>g11_ack,
 
 		g12_addr	=>g12_addr,
 		g12_rd		=>g12_rd,
 		g12_rdat	=>g12_rdat,
-		--g12_ack		=>g12_ack,
 
 		g13_addr	=>g13_addr,
 		g13_rd		=>g13_rd,
 		g13_rdat	=>g13_rdat,
-		--g13_ack		=>g13_ack,
 
 		t0_addr		=>t0_addr,
 		t0_rd		=>t0_rd,
@@ -2951,10 +3117,10 @@ begin
 		t1_rdat2	=>t1_rdat2,
 		t1_rdat3	=>t1_rdat3,
 		--t1_ack		=>t1_ack,
-		
+
 		g0_caddr	=>mc_g0_caddr,
 		g0_clear	=>mc_g0_clear,
-		
+
 		g1_caddr	=>g1_caddr,
 		g1_clear	=>g1_clear,
 
@@ -2988,7 +3154,55 @@ begin
 		rclk		=>ramclk,
 		rstn		=>mem_rstn
 	);
-	
+
+	-- GVRAM BRAM controller: chips 0,1 in BRAM (chips 2,3 stay in SDRAM via cachecont)
+	GVRAM_CTRL_I : gvram_ctrl generic map(RAMAWIDTH-1) port map(
+		g00_addr  => g00_addr,
+		g00_rd    => g00_rd and (not gv_use_sdram),
+		g00_rdat  => bram_g00_rdat,
+		g00_ack   => open,
+		g01_addr  => g01_addr,
+		g01_rd    => g01_rd and (not gv_use_sdram),
+		g01_rdat  => bram_g01_rdat,
+		g01_ack   => open,
+		g10_addr  => g10_addr,
+		g10_rd    => g10_rd and (not gv_use_sdram),
+		g10_rdat  => bram_g10_rdat,
+		g10_ack   => open,
+		g11_addr  => g11_addr,
+		g11_rd    => g11_rd and (not gv_use_sdram),
+		g11_rdat  => bram_g11_rdat,
+		g11_ack   => open,
+		g0_caddr  => mc_g0_caddr,
+		g0_clear  => mc_g0_clear,
+		g1_caddr  => g1_caddr,
+		g1_clear  => g1_clear,
+		cpu_addr    => ram_addr(17 downto 0),
+		cpu_wdat    => ram_wdat,
+		cpu_rdat    => gv_cpu_rdat,
+		cpu_wr      => gv_br_cpu_wr and gv_is_gvram,
+		cpu_rd      => ram_rd and gv_is_gvram,
+		cpu_rmw     => ram_rmw and (gv_is_gvram & gv_is_gvram),
+		cpu_rmwmask => ram_rmwmask,
+		cpu_ack     => gv_cpu_ack,
+		gmode    => vr_col,
+		rclk     => ramclk,
+		ram_ce   => ram_ce,
+		vclk     => vidclk,
+		vid_ce   => vid_ce,
+		sclk     => sysclk,
+		sys_ce   => sys_ce,
+		rstn     => mem_rstn
+	);
+
+	-- Video read data mux: use SDRAM when in 16x1 mode (full packed word needed)
+	-- or when cross-mode detected (BRAM address layout incompatible between modes).
+	-- In normal same-mode operation, use BRAM (saves SDRAM bandwidth).
+	g00_rdat <= sdram_g00_rdat when gv_use_sdram = '1' else bram_g00_rdat;
+	g01_rdat <= sdram_g01_rdat when gv_use_sdram = '1' else bram_g01_rdat;
+	g10_rdat <= sdram_g10_rdat when gv_use_sdram = '1' else bram_g10_rdat;
+	g11_rdat <= sdram_g11_rdat when gv_use_sdram = '1' else bram_g11_rdat;
+
 	-- GVRAM clear on reset: sweep all 1024 GVRAM pages through g0_clear
 	process(ramclk, mem_rstn)
 	begin
@@ -3000,7 +3214,6 @@ begin
 			gvclr_timer   <= 0;
 		elsif rising_edge(ramclk) then
 			if(rstn='0')then
-				-- User reset: restart clear
 				gvclr_state   <= GVC_IDLE;
 				gvclr_active  <= '0';
 				gvclr_done    <= '0';
@@ -3010,9 +3223,7 @@ begin
 				case gvclr_state is
 				when GVC_IDLE =>
 					if(ram_inidone='1')then
-						-- Start clear: first GVRAM page
 						gvclr_active  <= '1';
-						-- g_base(23 downto 18)="011101", offset starts at 0
 						gvclr_caddr(RAMAWIDTH-2 downto 18) <= "011101";
 						gvclr_caddr(17 downto 8)            <= (others=>'0');
 						gvclr_timer   <= 1023;
@@ -3022,9 +3233,7 @@ begin
 					if(gvclr_timer > 0)then
 						gvclr_timer <= gvclr_timer - 1;
 					else
-						-- Timer expired: advance to next page
 						if(gvclr_caddr(17 downto 8) = "1111111111")then
-							-- All 1024 pages done
 							gvclr_active  <= '0';
 							gvclr_done    <= '1';
 							gvclr_state   <= GVC_DONE;
@@ -3119,14 +3328,14 @@ begin
 	
 		hrl         =>vr_DC,
 		hfreq       =>vr_hfreq,
-		htotal      =>vr_htotal,
-		hsynl       =>vr_hsync,
-		hvbgn       =>vr_hvbgn,
-		hvend       =>vr_hvend,
-		vtotal      =>vr_vtotal,
-		vsynl       =>vr_vsync,
-		vvbgn       =>vr_vvbgn,
-		vvend       =>vr_vvend,
+		htotal      =>eff_htotal,
+		hsynl       =>eff_hsync,
+		hvbgn       =>eff_hvbgn,
+		hvend       =>eff_hvend,
+		vtotal      =>eff_vtotal,
+		vsynl       =>eff_vsync,
+		vvbgn       =>eff_vvbgn,
+		vvend       =>eff_vvend,
 		rintl       =>vr_rintline,
 		hadj        =>vr_hadj,
 		
@@ -3145,6 +3354,8 @@ begin
 
 		VRTC        =>VID_VRTC,
 		HRTC        =>VID_HRTC,
+		VRTC_b      =>VID_VRTCb,
+		HRTC_b      =>VID_HRTCb,
 		VIDEN       =>vidEN,
 
 		HCOMP       =>HCOMP,
@@ -3154,6 +3365,7 @@ begin
 		pix_ce      =>dclk,
 		v60hz       =>vid_hz,
 		f1          =>pVideoF1,
+		out_is_24khz=>vid_is_24khz,
 		
 		gclk        =>vidclk,
 		rstn        =>vid_rstn
@@ -3191,8 +3403,10 @@ begin
 	pVideoVS<=vidVS;
 	
 
-	pVideoHB<= VID_HRTC;
-	pVideoVB<= VID_VRTC;
+	pVideoHB <= vidHS    when vid_mode="10" else
+	            VID_HRTCb when vid_mode="01" else VID_HRTC;
+	pVideoVB <= vidVS    when vid_mode="10" else
+	            VID_VRTCb when vid_mode="01" else VID_VRTC;
 
 
 	LBUFWR0<=LBUFWR and LRAMSEL;
@@ -3297,15 +3511,11 @@ begin
 		rstn	=>srstn
 	);
 
-	-- px68k-style sprite doubling: computed inside vidcont by comparing
-	-- CRTC resolution (vr_hfreq, vr_VD) vs sprite controller resolution (spreg_VRES, spreg_LH)
-	-- gfx_double_scan is no longer used for sprite scaling decisions
 
 	vr_GREN<=	vr_GRPEN(4) when vr_GR_SIZE='1' else
 					'0' when vr_GRPEN(3 downto 0)="0000" else
 					'1';
 
-	-- Apply per-plane OSD mask to graphen (active high = disable plane)
 	vr_GRPEN_masked(0) <= vr_GRPEN(0) and not dGrpLayers(0);
 	vr_GRPEN_masked(1) <= vr_GRPEN(1) and not dGrpLayers(1);
 	vr_GRPEN_masked(2) <= vr_GRPEN(2) and not dGrpLayers(2);
@@ -3387,7 +3597,7 @@ begin
 		sp_vres	=>spreg_VRES(0),
 		sp_lh	=>spreg_LH,
 		txten	=>vr_TXTEN and not dLayers(0) and not vr_TXTBUF,
-		grpen	=>vr_GREN and not dLayers(1) and not vr_GFXBUF and not (vr_HD(1) and vr_GR_CMODE(1) and not (vr_VD(1) and vr_VD(0))),
+		grpen	=>vr_GREN and not dLayers(1) and not vr_GFXBUF,
 		spren	=>vr_SPREN and not dLayers(2) and not vr_HD(1),
 --		txten	=>'1',
 --		grpen	=>'1',
@@ -3437,6 +3647,9 @@ begin
 		gpal0no	=>gpal_pnol,
 		gpal1no	=>gpal_pnoh,
 		gpalin	=>gpal_pdat,
+		gpal0no2=>gpal_pnol2,
+		gpal1no2=>gpal_pnoh2,
+		gpalin2	=>gpal_pdat2,
 	
 		vvideoen	=>VID_VVIDEN,
 		rintline=>out_rintl,
@@ -3451,8 +3664,8 @@ begin
 		
 		hblank  =>VID_HRTC,
 		vblank  =>VID_VRTC,
+		is_24khz=>vid_is_24khz,
 		
-		tmode   =>tmode,
 		mix_fix =>mix_fix,
 
 		vidclk	=>vidclk,
@@ -3505,7 +3718,7 @@ begin
 		hfreq	=>vr_hfreq,
 		
 		hcomp	=>HCOMP,
-		linenum	=>spr_y(8 downto 0),
+		linenum =>spr_y(8 downto 0),
 		bg0hoff	=>spreg_BG0Xpos,
 		bg0voff	=>spreg_BG0Ypos,
 		bg1hoff	=>spreg_BG1Xpos,
@@ -3572,7 +3785,7 @@ begin
 		LH      =>spreg_LH,
 		VRES	=>spreg_VRES,
 		HRES	=>spreg_HRES,
-		
+
 		sclk	=>sysclk,
 		sys_ce  =>sys_ce,
 		vclk	=>vidclk,
@@ -3688,6 +3901,9 @@ begin
 		palnoh	=>gpal_pnoh,
 		palnol	=>gpal_pnol,
 		palout	=>gpal_pdat,
+		palnoh2	=>gpal_pnoh2,
+		palnol2	=>gpal_pnol2,
+		palout2	=>gpal_pdat2,
 		
 		sclk	=>sysclk,
 		sys_ce  =>sys_ce,
@@ -3700,9 +3916,6 @@ begin
 	FDC_DACKn<=not FDC_DACK;
 	FDC_CSn<=not FDC_CS;
 
-	-- ============================================================
-	-- D88 FDC path: FDtiming + external FDCs (track-level FDC)
-	-- ============================================================
 	FDT	:FDtiming generic map(FCFREQ) port map(
 		drv0sel		=>'0',	--0:300rpm 1:360rpm
 		drv1sel		=>'0',
@@ -3790,9 +4003,6 @@ begin
 				"1111";
 	FDC_MOTORn<=not FD_MOTOR & not FD_MOTOR & not FD_MOTOR & not FD_MOTOR;
 
-	-- ============================================================
-	-- XDF FDC path: FDC_READYn from fdc_usel + indisk
-	-- ============================================================
 	process(FD_MOTOR,xdf_fdc_usel,xdf_fdc_indisk)begin
 		case xdf_fdc_usel is
 		when "00" =>
@@ -3812,14 +4022,11 @@ begin
 		end case;
 	end process;
 
-	-- ============================================================
-	-- FDC output routing: select based on disk_mode
-	-- ============================================================
-		FDC_WD   <= xdf_FDC_WD   when disk_mode='1' else d88_FDC_WD;
-		FDC_OE   <= xdf_FDC_OE   when disk_mode='1' else d88_FDC_OE;
-		FDC_DRQ  <= xdf_FDC_DRQ  when disk_mode='1' else d88_FDC_DRQ;
-		FDC_INTn <= xdf_FDC_INTn when disk_mode='1' else d88_FDC_INTn;
-		FDC_READYn <= xdf_FDC_READYn when disk_mode='1' else d88_FDC_READYn;
+	FDC_WD   <= xdf_FDC_WD   when disk_mode='1' else d88_FDC_WD;
+	FDC_OE   <= xdf_FDC_OE   when disk_mode='1' else d88_FDC_OE;
+	FDC_DRQ  <= xdf_FDC_DRQ  when disk_mode='1' else d88_FDC_DRQ;
+	FDC_INTn <= xdf_FDC_INTn when disk_mode='1' else d88_FDC_INTn;
+	FDC_READYn <= xdf_FDC_READYn when disk_mode='1' else d88_FDC_READYn;
 
 	FDC_INT<=not FDC_INTn;
 	FDC_READYm<=FDC_READYn and (not opm_ct2);
@@ -4118,8 +4325,8 @@ begin
 	-- Mux OPM outputs based on selector
 	opm_odat     <= jt51_odat    when opm_sel='0' else ikaopm_odat;
 	opm_intn     <= jt51_intn    when opm_sel='0' else ikaopm_intn;
-	pcm_clkmode  <= jt51_ct1     when opm_sel='0' else ikaopm_ct1;
-	opm_ct2      <= jt51_ct2     when opm_sel='0' else ikaopm_ct2;
+	pcm_clkmode  <= jt51_ct2     when opm_sel='0' else ikaopm_ct2;
+	opm_ct2      <= jt51_ct1     when opm_sel='0' else ikaopm_ct1;
 	opm_sndl     <= jt51_sndl    when opm_sel='0' else ikaopm_sndl;
 	opm_sndr     <= jt51_sndr    when opm_sel='0' else ikaopm_sndr;
 
@@ -4296,16 +4503,18 @@ begin
 	);
 
 	INT2<='0';
-	INT4<=midi_int;
+	INT4<=midi_int and pMidi_en;
 	IVECT2<=(others=>'0');
 	IVECT4<=midi_ivect;
 
 	INT7<=not pPsw(1);
 
 	midi_cs<='1' when abus(23 downto 4)=x"eafa0" else '0';
-	midi_rd<=b_rd when midi_cs='1' else '0';
-	midi_wr<=b_wr(0) when midi_cs='1' else '0';
+	midi_rd<=b_rd when midi_cs='1' and pMidi_en='1' else '0';
+	midi_wr<=b_wr(0) when midi_cs='1' and pMidi_en='1' else '0';
 	midi_doe<=midi_rd;
+
+	mpu_berr_n <= '0' when midi_cs='1' and pMidi_en='0' and b_as='0' else '1';
 	
 	midi	:em3802 generic map(
 		sysclk	=>SCFREQ,
@@ -4408,9 +4617,6 @@ begin
 	SASI_MSGf <= SASI_MSG;
 	SASI_RSTf <= SASI_RST;
 	
-	-- ============================================================
-	-- D88 disk emulator path (track-level, SDRAM-based)
-	-- ============================================================
 	DISKE_D88	:diskemu generic map(FCFREQ,SCFREQ,10) port map(
 
 	--SASI
@@ -4608,40 +4814,33 @@ begin
 
 	xdf_pFDMOTOR <= FD_MOTOR;
 
-	-- ============================================================
-	-- DISKE mounted/ack signal routing
-	-- ============================================================
-		d88_mist_mounted <= mist_mounted when disk_mode='0' else (others=>'0');
-		d88_mist_ack     <= mist_ack     when disk_mode='0' else (others=>'0');
-		xdf_mist_mounted <= mist_mounted when disk_mode='1' else (others=>'0');
-		xdf_mist_ack     <= mist_ack     when disk_mode='1' else (others=>'0');
+	d88_mist_mounted <= mist_mounted when disk_mode='0' else (others=>'0');
+	d88_mist_ack     <= mist_ack     when disk_mode='0' else (others=>'0');
+	xdf_mist_mounted <= mist_mounted when disk_mode='1' else (others=>'0');
+	xdf_mist_ack     <= mist_ack     when disk_mode='1' else (others=>'0');
 
-	-- ============================================================
-	-- DISKE output routing: select based on disk_mode
-	-- ============================================================
-		SASI_C2H     <= xdf_SASI_C2H     when disk_mode='1' else d88_SASI_C2H;
-		SASI_BSY     <= xdf_SASI_BSY     when disk_mode='1' else d88_SASI_BSY;
-		SASI_REQ     <= xdf_SASI_REQ     when disk_mode='1' else d88_SASI_REQ;
-		SASI_IO      <= xdf_SASI_IO      when disk_mode='1' else d88_SASI_IO;
-		SASI_CD      <= xdf_SASI_CD      when disk_mode='1' else d88_SASI_CD;
-		SASI_MSG     <= xdf_SASI_MSG     when disk_mode='1' else d88_SASI_MSG;
-		FDC_indisk   <= xdf_fdc_indisk   when disk_mode='1' else d88_FDC_indisk;
-		nv_rdat      <= xdf_nv_rdat      when disk_mode='1' else d88_nv_rdat;
-		mist_lba     <= xdf_mist_lba     when disk_mode='1' else d88_mist_lba;
-		mist_rd      <= xdf_mist_rd      when disk_mode='1' else d88_mist_rd;
-		mist_wr      <= xdf_mist_wr      when disk_mode='1' else d88_mist_wr;
-		mist_buffdin <= xdf_mist_buffdin when disk_mode='1' else d88_mist_buffdin;
-		dem_initdone <= xdf_initdone     when disk_mode='1' else d88_initdone;
-		pLed         <= xdf_busy         when disk_mode='1' else d88_busy;
-		pFDMOTOR     <= xdf_pFDMOTOR     when disk_mode='1' else d88_pFDMOTOR;
-		-- SDRAM: D88 uses fde/fec signals, XDF ties to safe defaults
-		dem_fderamaddr  <= d88_fderamaddr  when disk_mode='0' else (others=>'1');
-		dem_fderamwdat  <= d88_fderamwdat  when disk_mode='0' else (others=>'1');
-		dem_fderamwr    <= d88_fderamwr    when disk_mode='0' else '0';
-		dem_fdetracklen <= d88_fdetracklen when disk_mode='0' else (others=>'0');
-		dem_fecramaddrh <= d88_fecramaddrh when disk_mode='0' else (others=>'1');
-		dem_fecramrd    <= d88_fecramrd    when disk_mode='0' else '0';
-		dem_fecramwr    <= d88_fecramwr    when disk_mode='0' else '0';
+	SASI_C2H     <= xdf_SASI_C2H     when disk_mode='1' else d88_SASI_C2H;
+	SASI_BSY     <= xdf_SASI_BSY     when disk_mode='1' else d88_SASI_BSY;
+	SASI_REQ     <= xdf_SASI_REQ     when disk_mode='1' else d88_SASI_REQ;
+	SASI_IO      <= xdf_SASI_IO      when disk_mode='1' else d88_SASI_IO;
+	SASI_CD      <= xdf_SASI_CD      when disk_mode='1' else d88_SASI_CD;
+	SASI_MSG     <= xdf_SASI_MSG     when disk_mode='1' else d88_SASI_MSG;
+	FDC_indisk   <= xdf_fdc_indisk   when disk_mode='1' else d88_FDC_indisk;
+	nv_rdat      <= xdf_nv_rdat      when disk_mode='1' else d88_nv_rdat;
+	mist_lba     <= xdf_mist_lba     when disk_mode='1' else d88_mist_lba;
+	mist_rd      <= xdf_mist_rd      when disk_mode='1' else d88_mist_rd;
+	mist_wr      <= xdf_mist_wr      when disk_mode='1' else d88_mist_wr;
+	mist_buffdin <= xdf_mist_buffdin when disk_mode='1' else d88_mist_buffdin;
+	dem_initdone <= xdf_initdone     when disk_mode='1' else d88_initdone;
+	pLed         <= xdf_busy         when disk_mode='1' else d88_busy;
+	pFDMOTOR     <= xdf_pFDMOTOR     when disk_mode='1' else d88_pFDMOTOR;
+	dem_fderamaddr  <= d88_fderamaddr  when disk_mode='0' else (others=>'1');
+	dem_fderamwdat  <= d88_fderamwdat  when disk_mode='0' else (others=>'1');
+	dem_fderamwr    <= d88_fderamwr    when disk_mode='0' else '0';
+	dem_fdetracklen <= d88_fdetracklen when disk_mode='0' else (others=>'0');
+	dem_fecramaddrh <= d88_fecramaddrh when disk_mode='0' else (others=>'1');
+	dem_fecramrd    <= d88_fecramrd    when disk_mode='0' else '0';
+	dem_fecramwr    <= d88_fecramwr    when disk_mode='0' else '0';
 	
 	nv_wren<=	'0' when nvwp/=x"31" else
 				'0' when nv_ce='0' else

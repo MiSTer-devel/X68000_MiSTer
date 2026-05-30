@@ -6,3 +6,5 @@ set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) SDRAMC.vhd
 set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) nvram.vhd ]
 set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) cereg.vhd ]
 set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) vrcack.vhd ]
+set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) gvram_bram.vhd ]
+set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) gvram_ctrl.vhd ]
