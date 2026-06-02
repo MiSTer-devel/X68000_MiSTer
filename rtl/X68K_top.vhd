@@ -823,6 +823,8 @@ signal	midi_ivect	:std_logic_vector(7 downto 0);
 --puu
 signal	midi_sft		:std_logic;
 constant midis_div	:integer	:=(SCFREQ/1000)-1;
+signal midi_msft       :std_logic;
+constant midim_div     :integer        :=(SCFREQ/250)-1;  -- 250 kHz
 signal	midi_csft	:std_logic;
 
 --Contrast controller
@@ -4539,9 +4541,9 @@ begin
 		GPIN	=>(others=>'1'),
 		GPOE	=>open,
 		
-		gcountsft	=>midi_Sft,		--typo???
+		gcountsft       =>midi_sft,		--typo???
 		ccountsft	=>midi_csft,
-		mcountsft	=>midi_sft,
+		mcountsft       =>midi_msft,
 		
 		clk	=>sysclk,
 		ce  =>sys_ce,
@@ -4555,6 +4557,14 @@ begin
 		clk		=>sysclk,
 		ce  		=>sys_ce,
 		rstn		=>srstn
+	);
+	midim	: sftgen generic map(midim_div) port map(
+		len		=>midim_div,
+		sft		=>midi_msft,
+
+		clk		=>sysclk,
+		ce		=>sys_ce,
+		rstn	=>srstn
 	);
 
 	midics	:sftnpn generic map(5) port map(
