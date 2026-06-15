@@ -4329,8 +4329,8 @@ begin
 	opm_intn     <= jt51_intn    when opm_sel='0' else ikaopm_intn;
 	pcm_clkmode  <= jt51_ct2     when opm_sel='0' else ikaopm_ct2;
 	opm_ct2      <= jt51_ct1     when opm_sel='0' else ikaopm_ct1;
-	opm_sndl     <= jt51_sndl    when opm_sel='0' else ikaopm_sndl;
-	opm_sndr     <= jt51_sndr    when opm_sel='0' else ikaopm_sndr;
+	opm_sndl     <= jt51_sndr    when opm_sel='0' else ikaopm_sndr;
+	opm_sndr     <= jt51_sndl    when opm_sel='0' else ikaopm_sndl;
 
 	pcm_ce<='1' when abus(23 downto 2)="1110100100100000000000" else '0';
 	pcm_wr<=b_wr(0) when pcm_ce='1' else '0';
