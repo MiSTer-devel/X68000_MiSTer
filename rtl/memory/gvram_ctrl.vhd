@@ -100,7 +100,8 @@ end component;
 
 component CACHEMEMWN
 generic(
-	awidth : integer := 8
+	awidth : integer := 8;
+	ramtype : string  := "AUTO"
 );
 port(
 	data      : in  std_logic_vector(15 downto 0);
@@ -135,13 +136,8 @@ signal c1_q_b     : std_logic_vector(15 downto 0);
 type fill_state_t is (FS_IDLE, FS_FILL, FS_LAST, FS_DONE);
 signal fill_state : fill_state_t;
 
-type fill_tgt_t is (FT_G00, FT_G01, FT_G10, FT_G11, FT_NONE);
-signal fill_tgt : fill_tgt_t;
-
 signal fill_row     : std_logic_vector(8 downto 0);
 signal fill_cnt     : std_logic_vector(8 downto 0);   -- 0-511 = full page
-signal fill_de      : std_logic;
-signal fill_chip    : std_logic;  -- '0'=chip0, '1'=chip1
 
 signal cache_wraddr_d : std_logic_vector(8 downto 0);
 
@@ -474,10 +470,7 @@ begin
 	process(rclk, rstn) begin
 		if rstn = '0' then
 			fill_state <= FS_IDLE;
-			fill_tgt   <= FT_NONE;
 			fill_cnt   <= (others => '0');
-			fill_de    <= '0';
-			fill_chip  <= '0';
 			bfill_g00  <= '0';
 			bfill_g01  <= '0';
 			bfill_g10  <= '0';
@@ -488,15 +481,11 @@ begin
 			g11addrh   <= (others => '1');
 		elsif rising_edge(rclk) then
 		  if ram_ce = '1' then
-			fill_de <= '0';
-
 			case fill_state is
 			when FS_IDLE =>
 				if g00_addr(awidth-1 downto 9) /= g00addrh and g00_rd = '1' then
 					g00addrh   <= g00_addr(awidth-1 downto 9);
 					fill_row   <= g00_addr(17 downto 9);
-					fill_tgt   <= FT_G00;
-					fill_chip  <= '0';
 					fill_cnt   <= (others => '0');
 					fill_state <= FS_FILL;
 					bfill_g00  <= '1';
@@ -511,8 +500,6 @@ begin
 				elsif g01_addr(awidth-1 downto 9) /= g01addrh and g01_rd = '1' then
 					g01addrh   <= g01_addr(awidth-1 downto 9);
 					fill_row   <= g01_addr(17 downto 9);
-					fill_tgt   <= FT_G01;
-					fill_chip  <= '1';
 					fill_cnt   <= (others => '0');
 					fill_state <= FS_FILL;
 					bfill_g01  <= '1';
@@ -527,8 +514,6 @@ begin
 				elsif g10_addr(awidth-1 downto 9) /= g10addrh and g10_rd = '1' then
 					g10addrh   <= g10_addr(awidth-1 downto 9);
 					fill_row   <= g10_addr(17 downto 9);
-					fill_tgt   <= FT_G10;
-					fill_chip  <= '0';
 					fill_cnt   <= (others => '0');
 					fill_state <= FS_FILL;
 					bfill_g10  <= '1';
@@ -543,8 +528,6 @@ begin
 				elsif g11_addr(awidth-1 downto 9) /= g11addrh and g11_rd = '1' then
 					g11addrh   <= g11_addr(awidth-1 downto 9);
 					fill_row   <= g11_addr(17 downto 9);
-					fill_tgt   <= FT_G11;
-					fill_chip  <= '1';
 					fill_cnt   <= (others => '0');
 					fill_state <= FS_FILL;
 					bfill_g11  <= '1';
@@ -559,7 +542,6 @@ begin
 				end if;
 
 			when FS_FILL =>
-				fill_de <= '1';
 				if fill_cnt = "111111111" then  -- 511
 					fill_state <= FS_LAST;
 				else
@@ -567,11 +549,9 @@ begin
 				end if;
 
 			when FS_LAST =>
-				fill_de    <= '0';
 				fill_state <= FS_DONE;
 
 			when FS_DONE =>
-				fill_tgt   <= FT_NONE;
 				fill_state <= FS_IDLE;
 			end case;
 

@@ -20,7 +20,26 @@ port(
 	sasi_io	:out std_logic;
 	sasi_cd	:out std_logic;
 	sasi_msg	:out std_logic;
+	sasi_scsi	:out std_logic						:='0';
+	-- SXSI-only bus (IDs 2-5, excludes SASI ID1) — for XDF mode coexistence
+	sxsi_bsy	:out std_logic						:='0';
+	sxsi_req	:out std_logic						:='0';
+	sxsi_io		:out std_logic						:='0';
+	sxsi_cd		:out std_logic						:='0';
+	sxsi_msg	:out std_logic						:='0';
+	sxsi_dout	:out std_logic_vector(7 downto 0)	:=(others=>'0');
 	sasi_rst	:in std_logic						:='0';
+	disk_mode	:in std_logic						:='0';
+	sxs0_idsel	:in std_logic_vector(7 downto 0)	:=(others=>'0');
+	sxs0_cap	:in std_logic_vector(63 downto 0)	:=(others=>'0');
+	sxs0_lba	:out std_logic_vector(31 downto 0);
+	sxs0_rdreq	:out std_logic;
+	sxs0_wrreq	:out std_logic;
+	sxs0_syncreq	:out std_logic;
+	sxs0_sectaddr	:out std_logic_vector(8 downto 0);
+	sxs0_rddat	:in std_logic_vector(7 downto 0)	:=(others=>'0');
+	sxs0_wrdat	:out std_logic_vector(7 downto 0);
+	sxs0_bufbusy	:in std_logic						:='0';
 
 --FDD
 	fdc_useln	:in std_logic_vector(1 downto 0)	:=(others=>'1');
@@ -41,7 +60,6 @@ port(
 	fdc_dencity	:in std_logic						:='1';	--1:2HD 0:2DD/2D
 	fdc_rpm		:in std_logic						:='0';	--1:360rpm 0:300rpm
 	fdc_mfm		:in std_logic						:='1';
-
 --FD emulator
 	fde_tracklen:out std_logic_vector(13 downto 0);
 	fde_ramaddr	:out std_logic_vector(22 downto 0);
@@ -71,15 +89,25 @@ port(
 	sram_ld		:in std_logic;
 	sram_st		:in std_logic;
 
+	sram_ram_addr_a		:out std_logic_vector(12 downto 0);
+	sram_ram_addr_b		:out std_logic_vector(13 downto 0);
+	sram_ram_byteena_a	:out std_logic_vector(1 downto 0);
+	sram_ram_data_a		:out std_logic_vector(15 downto 0);
+	sram_ram_data_b		:out std_logic_vector(7 downto 0);
+	sram_ram_wren_a		:out std_logic;
+	sram_ram_wren_b		:out std_logic;
+	sram_ram_q_a		:in std_logic_vector(15 downto 0)	:=(others=>'0');
+	sram_ram_q_b		:in std_logic_vector(7 downto 0)	:=(others=>'0');
+
 --MiSTer diskimage
-	mist_mounted	:in std_logic_vector(3 downto 0);	--SRAM & HDD & FDD1 &FDD0
-	mist_readonly	:in std_logic_vector(3 downto 0);
+	mist_mounted	:in std_logic_vector(7 downto 0);	--SxSI4..2 & SRAM & HDD & FDD1 & FDD0
+	mist_readonly	:in std_logic_vector(7 downto 0);
 	mist_imgsize	:in std_logic_vector(63 downto 0);
 
 	mist_lba		:out std_logic_vector(31 downto 0);
-	mist_rd		:out std_logic_vector(3 downto 0);
-	mist_wr		:out std_logic_vector(3 downto 0);
-	mist_ack		:in std_logic_vector(3 downto 0);
+	mist_rd		:out std_logic_vector(7 downto 0);
+	mist_wr		:out std_logic_vector(7 downto 0);
+	mist_ack		:in std_logic_vector(7 downto 0);
 
 	mist_buffaddr	:in std_logic_vector(8 downto 0);
 	mist_buffdout	:in std_logic_vector(7 downto 0);
@@ -108,6 +136,10 @@ type emustate_t is (
 	es_fsave0,
 	es_fsave1,
 	es_sasi,
+	es_sasi2,
+	es_sasi3,
+	es_sasi4,
+	es_sasi5,
 	es_sload,
 	es_ssave
 );
@@ -183,12 +215,15 @@ signal	proc_begin	:std_logic;
 
 signal	lba_fdd	:std_logic_vector(31 downto 0);
 
-signal	fec_curaddr	:std_logic_vector(31 downto 0);
 
 constant bit_fd0	:integer	:=0;
 constant bit_fd1	:integer	:=1;
 constant bit_sasi	:integer	:=2;
 constant bit_sram	:integer	:=3;
+constant bit_sasi2	:integer	:=4;
+constant bit_sasi3	:integer	:=5;
+constant bit_sasi4	:integer	:=6;
+constant bit_sasi5	:integer	:=7;
 
 signal	wrprot	:std_logic_vector(1 downto 0);
 signal	diskmode0	:std_logic_vector(1 downto 0);
@@ -205,7 +240,6 @@ signal	tblramsel	:std_logic;
 signal	tbladdr	:std_logic_vector(7 downto 0);
 signal	haddr	:std_logic_vector(31 downto 0);
 
-signal	sectwr		:std_logic;
 
 signal	sbufaddr	:std_logic_vector(8 downto 0);
 signal	sbufwr		:std_logic;
@@ -215,7 +249,6 @@ signal	track_curaddr	:std_logic_vector(13 downto 0);
 signal	tracklen	:std_logic_vector(31 downto 0);
 signal	tracks		:std_logic_Vector(7 downto 0);
 
-signal	img_curaddr	:std_logic_vector(31 downto 0);
 signal	img_unit	:std_logic;
 signal	img_addr	:std_logic_vector(31 downto 0);
 signal	img_rd		:std_logic;
@@ -255,7 +288,6 @@ signal	crcwr		:std_logic;
 signal	crcclr		:std_logic;
 signal	crcdat		:std_logic_vector(15 downto 0);
 signal	crcbusy		:std_logic;
-signal	sectrd		:std_logic;
 signal	sectstatus	:std_logic_vector(7 downto 0);
 signal	sbuf_odat	:std_logic_vector(7 downto 0);
 
@@ -271,7 +303,6 @@ signal	fdc_usel		:std_logic_vector(1 downto 0);
 signal	fdc_indiskb	:std_logic_vector(1 downto 0);
 signal	fdc_motoren	:std_logic;
 signal	trackwrote	:std_logic;
-signal	statusaddr	:std_logic_vector(13 downto 0);
 
 signal	sramen		:std_logic;
 signal	fstore		:std_logic_vector(1 downto 0);
@@ -292,13 +323,138 @@ type sbufstate_t is (
 signal	sbufstate	:sbufstate_t;
 signal	fbufstate	:sbufstate_t;
 signal	sasibufstate:sbufstate_t;
+signal	sasidone2	:std_logic;
+signal	sasidone3	:std_logic;
+signal	sasidone4	:std_logic;
+signal	sasidone5	:std_logic;
+
+type sxsi_lba_array_t is array (0 to 3) of std_logic_vector(31 downto 0);
+signal	sxsibufstate	:sbufstate_t;
+signal	sxsi_drive	:integer range 0 to 3;
+signal	sxsi_new_lba	:std_logic_vector(31 downto 0);
+signal	sxsi_cur_slba	:sxsi_lba_array_t;
+signal	sxsi_mist_lba	:sxsi_lba_array_t;
+signal	sxsi_dirty	:std_logic_vector(3 downto 0);
+signal	sxsi_bufwr	:std_logic_vector(3 downto 0);
+signal	sxsi_done	:std_logic_vector(3 downto 0);
+signal	sxsi_mist_rd	:std_logic_vector(3 downto 0);
+signal	sxsi_mist_wr	:std_logic_vector(3 downto 0);
+signal	sasibufstate2, sasibufstate3, sasibufstate4, sasibufstate5 :sbufstate_t;
+signal	cur_slba2, cur_slba3, cur_slba4, cur_slba5 :std_logic_vector(31 downto 0);
+
+signal	sasi1_bsy	:std_logic;
+signal	sasi1_req	:std_logic;
+signal	sasi1_io	:std_logic;
+signal	sasi1_cd	:std_logic;
+signal	sasi1_msg	:std_logic;
+signal	sasi1_dout	:std_logic_vector(7 downto 0);
+
+signal	sasien2		:std_logic;
+signal	sasi2_cap		:std_logic_vector(63 downto 0);
+signal	sasi2_lba		:std_logic_vector(31 downto 0);
+signal	sasi2_sectaddr	:std_logic_vector(8 downto 0);
+signal	sasi2sectwr	:std_logic;
+signal	sasi2bufwr	:std_logic;
+signal	sasi2_rdreq	:std_logic;
+signal	sasi2_wrreq	:std_logic;
+signal	sasi2_syncreq	:std_logic;
+signal	sasi2_bufbusy	:std_logic;
+signal	sasi2_sectwrdat	:std_logic_vector(7 downto 0);
+signal	sasi2_sectrddat	:std_logic_vector(7 downto 0);
+signal	sasi2_rdreq2	:std_logic;
+signal	sasi2_wrreq2	:std_logic;
+signal	sasi2_syreq2	:std_logic;
+signal	sasi2_bufodat	:std_logic_vector(7 downto 0);
+signal	lba_sasi2		:std_logic_vector(31 downto 0);
+
+signal	sasien3		:std_logic;
+signal	sasi3_cap		:std_logic_vector(63 downto 0);
+signal	sasi3_lba		:std_logic_vector(31 downto 0);
+signal	sasi3_sectaddr	:std_logic_vector(8 downto 0);
+signal	sasi3sectwr	:std_logic;
+signal	sasi3bufwr	:std_logic;
+signal	sasi3_rdreq	:std_logic;
+signal	sasi3_wrreq	:std_logic;
+signal	sasi3_syncreq	:std_logic;
+signal	sasi3_bufbusy	:std_logic;
+signal	sasi3_sectwrdat	:std_logic_vector(7 downto 0);
+signal	sasi3_sectrddat	:std_logic_vector(7 downto 0);
+signal	sasi3_rdreq2	:std_logic;
+signal	sasi3_wrreq2	:std_logic;
+signal	sasi3_syreq2	:std_logic;
+signal	sasi3_bufodat	:std_logic_vector(7 downto 0);
+signal	lba_sasi3		:std_logic_vector(31 downto 0);
+
+signal	sasien4		:std_logic;
+signal	sasi4_cap		:std_logic_vector(63 downto 0);
+signal	sasi4_lba		:std_logic_vector(31 downto 0);
+signal	sasi4_sectaddr	:std_logic_vector(8 downto 0);
+signal	sasi4sectwr	:std_logic;
+signal	sasi4bufwr	:std_logic;
+signal	sasi4_rdreq	:std_logic;
+signal	sasi4_wrreq	:std_logic;
+signal	sasi4_syncreq	:std_logic;
+signal	sasi4_bufbusy	:std_logic;
+signal	sasi4_sectwrdat	:std_logic_vector(7 downto 0);
+signal	sasi4_sectrddat	:std_logic_vector(7 downto 0);
+signal	sasi4_rdreq2	:std_logic;
+signal	sasi4_wrreq2	:std_logic;
+signal	sasi4_syreq2	:std_logic;
+signal	sasi4_bufodat	:std_logic_vector(7 downto 0);
+signal	lba_sasi4		:std_logic_vector(31 downto 0);
+
+signal	sasien5		:std_logic;
+signal	sasi5_cap		:std_logic_vector(63 downto 0);
+signal	sasi5_lba		:std_logic_vector(31 downto 0);
+signal	sasi5_sectaddr	:std_logic_vector(8 downto 0);
+signal	sasi5sectwr	:std_logic;
+signal	sasi5bufwr	:std_logic;
+signal	sasi5_rdreq	:std_logic;
+signal	sasi5_wrreq	:std_logic;
+signal	sasi5_syncreq	:std_logic;
+signal	sasi5_bufbusy	:std_logic;
+signal	sasi5_sectwrdat	:std_logic_vector(7 downto 0);
+signal	sasi5_sectrddat	:std_logic_vector(7 downto 0);
+signal	sasi5_rdreq2	:std_logic;
+signal	sasi5_wrreq2	:std_logic;
+signal	sasi5_syreq2	:std_logic;
+signal	sasi5_bufodat	:std_logic_vector(7 downto 0);
+signal	lba_sasi5		:std_logic_vector(31 downto 0);
 
 --SASI
 signal	sasien		:std_logic;
 signal	sasi_idsel	:std_logic_vector(7 downto 0);
 signal	sasi_cap		:std_logic_vector(63 downto 0);
-signal	sasi_lba		:std_logic_vector(20 downto 0);
-signal	sasi_sectaddr	:std_logic_vector(7 downto 0);
+signal	sasi_lba		:std_logic_vector(31 downto 0);
+signal	sasi_sectaddr	:std_logic_vector(8 downto 0);
+signal	s0_idsel	:std_logic_vector(7 downto 0);
+signal	s0_cap		:std_logic_vector(63 downto 0);
+signal	s0_lba		:std_logic_vector(31 downto 0);
+signal	s0_sectaddr	:std_logic_vector(8 downto 0);
+signal	s0_rdreq	:std_logic;
+signal	s0_wrreq	:std_logic;
+signal	s0_syncreq	:std_logic;
+signal	s0_bufbusy	:std_logic;
+signal	s0_rddat	:std_logic_vector(7 downto 0);
+signal	s0_wrdat	:std_logic_vector(7 downto 0);
+signal	stgt_idsel	:std_logic_vector(7 downto 0);
+signal	stgt_id		:std_logic_vector(2 downto 0);
+signal	stgt_mode_scsi	:std_logic;
+signal	stgt_cap		:std_logic_vector(63 downto 0);
+signal	stgt_lba		:std_logic_vector(31 downto 0);
+signal	stgt_sectaddr	:std_logic_vector(8 downto 0);
+signal	stgt_rdreq	:std_logic;
+signal	stgt_wrreq	:std_logic;
+signal	stgt_syncreq	:std_logic;
+signal	stgt_bufbusy	:std_logic;
+signal	stgt_rddat	:std_logic_vector(7 downto 0);
+signal	stgt_wrdat	:std_logic_vector(7 downto 0);
+signal	x68magic_ok	:std_logic;
+signal	mist_bufpat	:std_logic_vector(7 downto 0);
+signal	patch_sel	:std_logic;
+signal	patch_dat	:std_logic_vector(7 downto 0);
+signal	cap_blk_m1	:std_logic_vector(31 downto 0);
+signal	lba0_fetch	:std_logic;
 signal	sasisectwr	:std_logic;
 signal	sasibufwr	:std_logic;
 signal	sasi_rdreq	:std_logic;
@@ -448,14 +604,16 @@ port(
 	id			:out std_logic_vector(2 downto 0);
 	unit		:out std_logic_vector(2 downto 0);
 	capacity	:in std_logic_vector(63 downto 0);
-	lba		:out std_logic_vector(20 downto 0);
+	lba		:out std_logic_vector(31 downto 0);
 	rdreq		:out std_logic;
 	wrreq		:out std_logic;
 	syncreq	:out std_logic;
-	sectaddr	:out std_logic_vector(7 downto 0);
+	sectaddr	:out std_logic_vector(8 downto 0);
 	rddat		:in std_logic_vector(7 downto 0);
 	wrdat		:out std_logic_vector(7 downto 0);
 	sectbusy	:in std_logic;
+
+	mode_scsi	:in std_logic := '0';
 
 	clk		:in std_logic;
 	ce      :in std_logic := '1';
@@ -503,6 +661,16 @@ port(
 	mist_rdat	:out std_logic_vector(7 downto 0);
 	mist_we		:in std_logic;
 
+	ram_addr_a		:out std_logic_vector(12 downto 0);
+	ram_addr_b		:out std_logic_vector(13 downto 0);
+	ram_byteena_a	:out std_logic_vector(1 downto 0);
+	ram_data_a		:out std_logic_vector(15 downto 0);
+	ram_data_b		:out std_logic_vector(7 downto 0);
+	ram_wren_a		:out std_logic;
+	ram_wren_b		:out std_logic;
+	ram_q_a			:in std_logic_vector(15 downto 0)	:=(others=>'0');
+	ram_q_b			:in std_logic_vector(7 downto 0)	:=(others=>'0');
+
 	clk		:in std_logic;
 	ce      :in std_logic := '1';
 	rstn	:in std_logic
@@ -530,7 +698,7 @@ begin
 	storef1<=fec_fdsync(1) or fstore(1);
 
 	process(sclk,rstn)
-	variable lmount	:std_logic_vector(3 downto 0);
+	variable lmount	:std_logic_vector(7 downto 0);
 	variable fdload	:std_logic_vector(1 downto 0);
 	variable fdstore :std_logic_vector(1 downto 0);
 	variable sstore	:std_logic;
@@ -538,6 +706,18 @@ begin
 	variable sasiwpend	:std_logic;
 	variable sasirpend	:std_logic;
 	variable sasispend	:std_logic;
+	variable sasirpend2	:std_logic;
+	variable sasiwpend2	:std_logic;
+	variable sasispend2	:std_logic;
+	variable sasirpend3	:std_logic;
+	variable sasiwpend3	:std_logic;
+	variable sasispend3	:std_logic;
+	variable sasirpend4	:std_logic;
+	variable sasiwpend4	:std_logic;
+	variable sasispend4	:std_logic;
+	variable sasirpend5	:std_logic;
+	variable sasiwpend5	:std_logic;
+	variable sasispend5	:std_logic;
 	begin
 		if rising_edge(sclk) then
 			if(rstn='0')then
@@ -552,19 +732,63 @@ begin
 				sasiwpend:='0';
 				sasirpend:='0';
 				sasispend:='0';
+				sasirpend2:='0';
+				sasiwpend2:='0';
+				sasispend2:='0';
+				sasirpend3:='0';
+				sasiwpend3:='0';
+				sasispend3:='0';
+				sasirpend4:='0';
+				sasiwpend4:='0';
+				sasispend4:='0';
+				sasirpend5:='0';
+				sasiwpend5:='0';
+				sasispend5:='0';
 				sasi_bufbusy<='0';
 				sasi_rdreq2<='0';
 				sasi_wrreq2<='0';
 				sasi_syreq2<='0';
+				sasi2_bufbusy<='0';
+				sasi2_rdreq2<='0';
+				sasi2_wrreq2<='0';
+				sasi2_syreq2<='0';
+				sasi3_bufbusy<='0';
+				sasi3_rdreq2<='0';
+				sasi3_wrreq2<='0';
+				sasi3_syreq2<='0';
+				sasi4_bufbusy<='0';
+				sasi4_rdreq2<='0';
+				sasi4_wrreq2<='0';
+				sasi4_syreq2<='0';
+				sasi5_bufbusy<='0';
+				sasi5_rdreq2<='0';
+				sasi5_wrreq2<='0';
+				sasi5_syreq2<='0';
 				sram_ldreq<='0';
 				sram_streq<='0';
 				sramen<='0';
 				sasien<='0';
+				sasien2<='0';
+				sasien3<='0';
+				sasien4<='0';
+				sasien5<='0';
 			elsif(sys_ce = '1')then
 				proc_begin<='0';
 				sasi_rdreq2<='0';
 				sasi_wrreq2<='0';
 				sasi_syreq2<='0';
+				sasi2_rdreq2<='0';
+				sasi2_wrreq2<='0';
+				sasi2_syreq2<='0';
+				sasi3_rdreq2<='0';
+				sasi3_wrreq2<='0';
+				sasi3_syreq2<='0';
+				sasi4_rdreq2<='0';
+				sasi4_wrreq2<='0';
+				sasi4_syreq2<='0';
+				sasi5_rdreq2<='0';
+				sasi5_wrreq2<='0';
+				sasi5_syreq2<='0';
 				sram_ldreq<='0';
 				sram_streq<='0';
 				if(mist_mounted(bit_fd0)='1' and lmount(bit_fd0)='0')then
@@ -590,7 +814,43 @@ begin
 					else
 						sasien<='1';
 					end if;
-					sasi_cap<=mist_imgsize;
+					sasi_cap<=x"00000000" & mist_imgsize(31 downto 0);
+				end if;
+
+				if(mist_mounted(bit_sasi2)='1' and lmount(bit_sasi2)='0')then
+					if(mist_imgsize=x"00000000")then
+						sasien2<='0';
+					else
+						sasien2<='1';
+					end if;
+					sasi2_cap<=x"00000000" & mist_imgsize(31 downto 0);
+				end if;
+
+				if(mist_mounted(bit_sasi3)='1' and lmount(bit_sasi3)='0')then
+					if(mist_imgsize=x"00000000")then
+						sasien3<='0';
+					else
+						sasien3<='1';
+					end if;
+					sasi3_cap<=x"00000000" & mist_imgsize(31 downto 0);
+				end if;
+
+				if(mist_mounted(bit_sasi4)='1' and lmount(bit_sasi4)='0')then
+					if(mist_imgsize=x"00000000")then
+						sasien4<='0';
+					else
+						sasien4<='1';
+					end if;
+					sasi4_cap<=x"00000000" & mist_imgsize(31 downto 0);
+				end if;
+
+				if(mist_mounted(bit_sasi5)='1' and lmount(bit_sasi5)='0')then
+					if(mist_imgsize=x"00000000")then
+						sasien5<='0';
+					else
+						sasien5<='1';
+					end if;
+					sasi5_cap<=x"00000000" & mist_imgsize(31 downto 0);
 				end if;
 
 				if(mist_mounted(bit_sram)='1' and lmount(bit_sram)='0')then
@@ -630,8 +890,53 @@ begin
 				elsif(sasi_wrreq='1')then
 					sasiwpend:='1';
 					sasi_bufbusy<='1';
-				--elsif(sasi_syncreq='1')then
-				--	sasispend:='1';
+				elsif(sasi_syncreq='1')then
+					sasispend:='1';
+					sasi_bufbusy<='1';
+				end if;
+
+				if(sasi2_rdreq='1')then
+					sasirpend2:='1';
+					sasi2_bufbusy<='1';
+				elsif(sasi2_wrreq='1')then
+					sasiwpend2:='1';
+					sasi2_bufbusy<='1';
+				elsif(sasi2_syncreq='1')then
+					sasispend2:='1';
+					sasi2_bufbusy<='1';
+				end if;
+
+				if(sasi3_rdreq='1')then
+					sasirpend3:='1';
+					sasi3_bufbusy<='1';
+				elsif(sasi3_wrreq='1')then
+					sasiwpend3:='1';
+					sasi3_bufbusy<='1';
+				elsif(sasi3_syncreq='1')then
+					sasispend3:='1';
+					sasi3_bufbusy<='1';
+				end if;
+
+				if(sasi4_rdreq='1')then
+					sasirpend4:='1';
+					sasi4_bufbusy<='1';
+				elsif(sasi4_wrreq='1')then
+					sasiwpend4:='1';
+					sasi4_bufbusy<='1';
+				elsif(sasi4_syncreq='1')then
+					sasispend4:='1';
+					sasi4_bufbusy<='1';
+				end if;
+
+				if(sasi5_rdreq='1')then
+					sasirpend5:='1';
+					sasi5_bufbusy<='1';
+				elsif(sasi5_wrreq='1')then
+					sasiwpend5:='1';
+					sasi5_bufbusy<='1';
+				elsif(sasi5_syncreq='1')then
+					sasispend5:='1';
+					sasi5_bufbusy<='1';
 				end if;
 
 				lmount:=mist_mounted;
@@ -641,14 +946,77 @@ begin
 						sasirpend:='0';
 						emustate<=es_sasi;
 						sasi_rdreq2<='1';
+						sasi_bufbusy<='1';
 					elsif(sasiwpend='1')then
 						sasiwpend:='0';
 						emustate<=es_sasi;
 						sasi_wrreq2<='1';
+						sasi_bufbusy<='1';
 					elsif(sasispend='1')then
 						sasispend:='0';
 						emustate<=es_sasi;
 						sasi_syreq2<='1';
+						sasi_bufbusy<='1';
+					elsif(sasirpend2='1')then
+						sasirpend2:='0';
+						emustate<=es_sasi2;
+						sasi2_rdreq2<='1';
+						sasi2_bufbusy<='1';
+					elsif(sasiwpend2='1')then
+						sasiwpend2:='0';
+						emustate<=es_sasi2;
+						sasi2_wrreq2<='1';
+						sasi2_bufbusy<='1';
+					elsif(sasispend2='1')then
+						sasispend2:='0';
+						emustate<=es_sasi2;
+						sasi2_syreq2<='1';
+						sasi2_bufbusy<='1';
+					elsif(sasirpend3='1')then
+						sasirpend3:='0';
+						emustate<=es_sasi3;
+						sasi3_rdreq2<='1';
+						sasi3_bufbusy<='1';
+					elsif(sasiwpend3='1')then
+						sasiwpend3:='0';
+						emustate<=es_sasi3;
+						sasi3_wrreq2<='1';
+						sasi3_bufbusy<='1';
+					elsif(sasispend3='1')then
+						sasispend3:='0';
+						emustate<=es_sasi3;
+						sasi3_syreq2<='1';
+						sasi3_bufbusy<='1';
+					elsif(sasirpend4='1')then
+						sasirpend4:='0';
+						emustate<=es_sasi4;
+						sasi4_rdreq2<='1';
+						sasi4_bufbusy<='1';
+					elsif(sasiwpend4='1')then
+						sasiwpend4:='0';
+						emustate<=es_sasi4;
+						sasi4_wrreq2<='1';
+						sasi4_bufbusy<='1';
+					elsif(sasispend4='1')then
+						sasispend4:='0';
+						emustate<=es_sasi4;
+						sasi4_syreq2<='1';
+						sasi4_bufbusy<='1';
+					elsif(sasirpend5='1')then
+						sasirpend5:='0';
+						emustate<=es_sasi5;
+						sasi5_rdreq2<='1';
+						sasi5_bufbusy<='1';
+					elsif(sasiwpend5='1')then
+						sasiwpend5:='0';
+						emustate<=es_sasi5;
+						sasi5_wrreq2<='1';
+						sasi5_bufbusy<='1';
+					elsif(sasispend5='1')then
+						sasispend5:='0';
+						emustate<=es_sasi5;
+						sasi5_syreq2<='1';
+						sasi5_bufbusy<='1';
 					elsif(fdload(0)='1')then
 						emustate<=es_fload0;
 						proc_begin<='1';
@@ -690,6 +1058,26 @@ begin
 						sasi_bufbusy<='0';
 						emustate<=es_IDLE;
 					end if;
+				when es_sasi2 =>
+					if(sasidone2='1')then
+						sasi2_bufbusy<='0';
+						emustate<=es_IDLE;
+					end if;
+				when es_sasi3 =>
+					if(sasidone3='1')then
+						sasi3_bufbusy<='0';
+						emustate<=es_IDLE;
+					end if;
+				when es_sasi4 =>
+					if(sasidone4='1')then
+						sasi4_bufbusy<='0';
+						emustate<=es_IDLE;
+					end if;
+				when es_sasi5 =>
+					if(sasidone5='1')then
+						sasi5_bufbusy<='0';
+						emustate<=es_IDLE;
+					end if;
 				when es_sload | es_ssave =>
 					if(sramdone='1')then
 						emustate<=es_IDLE;
@@ -706,6 +1094,10 @@ begin
 				lba_fdd when emustate=es_fsave0 else
 				lba_fdd when emustate=es_fsave1 else
 				lba_sasi when emustate=es_sasi else
+				lba_sasi2 when emustate=es_sasi2 else
+				lba_sasi3 when emustate=es_sasi3 else
+				lba_sasi4 when emustate=es_sasi4 else
+				lba_sasi5 when emustate=es_sasi5 else
 				lba_sram when emustate=es_sload else
 				lba_sram when emustate=es_ssave else
 				(others=>'0');
@@ -2024,41 +2416,136 @@ begin
 	sasi_idsel<=	"00000001" when sasien='1' else
 						"00000000";
 
+	s0_idsel	<=sasi_idsel     when disk_mode='0' else sxs0_idsel;
+	s0_cap		<=sasi_cap       when disk_mode='0' else sxs0_cap;
+	s0_rddat	<=sasi_sectrddat when disk_mode='0' else sxs0_rddat;
+	s0_bufbusy	<=sasi_bufbusy   when disk_mode='0' else sxs0_bufbusy;
+
+	stgt_idsel	<= "00" & sasien5 & sasien4 & sasien3 & sasien2 & '0' & s0_idsel(0);
+	stgt_mode_scsi	<= '0' when stgt_id="000" else '1';
+	stgt_cap	<= s0_cap    when stgt_id="000" else
+				   sasi2_cap when stgt_id="010" else
+				   sasi3_cap when stgt_id="011" else
+				   sasi4_cap when stgt_id="100" else
+				   sasi5_cap when stgt_id="101" else
+				   (others=>'0');
+	stgt_rddat	<= s0_rddat          when stgt_id="000" else
+				   sasi2_sectrddat when stgt_id="010" else
+				   sasi3_sectrddat when stgt_id="011" else
+				   sasi4_sectrddat when stgt_id="100" else
+				   sasi5_sectrddat when stgt_id="101" else
+				   (others=>'0');
+	stgt_bufbusy	<= s0_bufbusy    when stgt_id="000" else
+				     sasi2_bufbusy when stgt_id="010" else
+				     sasi3_bufbusy when stgt_id="011" else
+				     sasi4_bufbusy when stgt_id="100" else
+				     sasi5_bufbusy when stgt_id="101" else
+				     '0';
+
+	s0_lba		<=stgt_lba;
+	s0_sectaddr	<=stgt_sectaddr;
+	s0_wrdat	<=stgt_wrdat;
+	s0_rdreq	<=stgt_rdreq   when stgt_id="000" else '0';
+	s0_wrreq	<=stgt_wrreq   when stgt_id="000" else '0';
+	s0_syncreq	<=stgt_syncreq when stgt_id="000" else '0';
+
+	sasi2_lba	<=stgt_lba;
+	sasi2_sectaddr	<=stgt_sectaddr;
+	sasi2_sectwrdat	<=stgt_wrdat;
+	sasi2_rdreq	<=stgt_rdreq   when stgt_id="010" else '0';
+	sasi2_wrreq	<=stgt_wrreq   when stgt_id="010" else '0';
+	sasi2_syncreq	<=stgt_syncreq when stgt_id="010" else '0';
+
+	sasi3_lba	<=stgt_lba;
+	sasi3_sectaddr	<=stgt_sectaddr;
+	sasi3_sectwrdat	<=stgt_wrdat;
+	sasi3_rdreq	<=stgt_rdreq   when stgt_id="011" else '0';
+	sasi3_wrreq	<=stgt_wrreq   when stgt_id="011" else '0';
+	sasi3_syncreq	<=stgt_syncreq when stgt_id="011" else '0';
+
+	sasi4_lba	<=stgt_lba;
+	sasi4_sectaddr	<=stgt_sectaddr;
+	sasi4_sectwrdat	<=stgt_wrdat;
+	sasi4_rdreq	<=stgt_rdreq   when stgt_id="100" else '0';
+	sasi4_wrreq	<=stgt_wrreq   when stgt_id="100" else '0';
+	sasi4_syncreq	<=stgt_syncreq when stgt_id="100" else '0';
+
+	sasi5_lba	<=stgt_lba;
+	sasi5_sectaddr	<=stgt_sectaddr;
+	sasi5_sectwrdat	<=stgt_wrdat;
+	sasi5_rdreq	<=stgt_rdreq   when stgt_id="101" else '0';
+	sasi5_wrreq	<=stgt_wrreq   when stgt_id="101" else '0';
+	sasi5_syncreq	<=stgt_syncreq when stgt_id="101" else '0';
+
+	sasi_lba	<=s0_lba;
+	sasi_sectaddr	<=s0_sectaddr;
+	sasi_sectwrdat	<=s0_wrdat;
+	sasi_rdreq	<=s0_rdreq   when disk_mode='0' else '0';
+	sasi_wrreq	<=s0_wrreq   when disk_mode='0' else '0';
+	sasi_syncreq	<=s0_syncreq when disk_mode='0' else '0';
+
+	sxs0_lba	<=s0_lba;
+	sxs0_sectaddr	<=s0_sectaddr;
+	sxs0_wrdat	<=s0_wrdat;
+	sxs0_rdreq	<=s0_rdreq   when disk_mode='1' else '0';
+	sxs0_wrreq	<=s0_wrreq   when disk_mode='1' else '0';
+	sxs0_syncreq	<=s0_syncreq when disk_mode='1' else '0';
+
 	sasi	:sasidev port map(
 		IDAT	=>sasi_din,
-		ODAT	=>sasi_dout,
+		ODAT	=>sasi1_dout,
 		SEL	=>sasi_sel,
-		BSY	=>sasi_bsy,
-		REQ	=>sasi_req,
+		BSY	=>sasi1_bsy,
+		REQ	=>sasi1_req,
 		ACK	=>sasi_ack,
-		IO		=>sasi_io,
-		CD		=>sasi_cd,
-		MSG	=>sasi_msg,
+		IO		=>sasi1_io,
+		CD		=>sasi1_cd,
+		MSG	=>sasi1_msg,
 		RST	=>sasi_rst,
 
-		idsel	=>sasi_idsel,
+		idsel	=>stgt_idsel,
 
-		id		=>open,
+		id		=>stgt_id,
 		unit	=>open,
-		capacity	=>sasi_cap,
-		lba		=>sasi_lba,
-		rdreq		=>sasi_rdreq,
-		wrreq		=>sasi_wrreq,
-		sectaddr	=>sasi_sectaddr,
-		rddat		=>sasi_sectrddat,
-		wrdat		=>sasi_sectwrdat,
-		sectbusy	=>sasi_bufbusy,
+		capacity	=>stgt_cap,
+		lba		=>stgt_lba,
+		rdreq		=>stgt_rdreq,
+		wrreq		=>stgt_wrreq,
+		syncreq	=>stgt_syncreq,
+		sectaddr	=>stgt_sectaddr,
+		rddat		=>stgt_rddat,
+		wrdat		=>stgt_wrdat,
+		sectbusy	=>stgt_bufbusy,
+		mode_scsi	=>stgt_mode_scsi,
 
 		clk		=>sclk,
 		ce      =>sys_ce,
 		rstn		=>rstn
 	);
 
+	sasi_bsy	<= sasi1_bsy;
+	sasi_req	<= sasi1_req;
+	sasi_io		<= sasi1_io;
+	sasi_cd		<= sasi1_cd;
+	sasi_msg	<= sasi1_msg;
+	sasi_dout	<= sasi1_dout;
+	sasi_scsi	<= sasi1_bsy when stgt_mode_scsi='1' else '0';
+	sxsi_bsy	<= sasi1_bsy when stgt_mode_scsi='1' else '0';
+	sxsi_req	<= sasi1_req when stgt_mode_scsi='1' else '0';
+	sxsi_io		<= sasi1_io  when stgt_mode_scsi='1' else '0';
+	sxsi_cd		<= sasi1_cd  when stgt_mode_scsi='1' else '0';
+	sxsi_msg	<= sasi1_msg when stgt_mode_scsi='1' else '0';
+	sxsi_dout	<= sasi1_dout when stgt_mode_scsi='1' else (others=>'0');
+
 	sasisectwr<=	mist_buffwr when emustate=es_sasi else '0';
+	sasi2sectwr<=	mist_buffwr when emustate=es_sasi2 else '0';
+	sasi3sectwr<=	mist_buffwr when emustate=es_sasi3 else '0';
+	sasi4sectwr<=	mist_buffwr when emustate=es_sasi4 else '0';
+	sasi5sectwr<=	mist_buffwr when emustate=es_sasi5 else '0';
 
 	sasibuf	:sectram port map(
 		address_a		=>mist_buffaddr,
-		address_b		=>sasi_lba(0) & sasi_sectaddr,
+		address_b		=>sasi_lba(0) & sasi_sectaddr(7 downto 0),
 		clock				=>sclk,
 		data_a			=>mist_buffdout,
 		data_b			=>sasi_sectwrdat,
@@ -2068,11 +2555,108 @@ begin
 		q_b				=>sasi_sectrddat
 	);
 
+	process(sclk,rstn)begin
+		if rising_edge(sclk) then
+			if(rstn='0')then
+				x68magic_ok<='0';
+			elsif(mist_buffwr='1')then
+				case mist_buffaddr is
+				when "000000000" => if(mist_buffdout=x"58")then x68magic_ok<='1'; else x68magic_ok<='0'; end if;	-- 'X'
+				when "000000001" => if(mist_buffdout/=x"36")then x68magic_ok<='0'; end if;	-- '6'
+				when "000000010" => if(mist_buffdout/=x"38")then x68magic_ok<='0'; end if;	-- '8'
+				when "000000011" => if(mist_buffdout/=x"53")then x68magic_ok<='0'; end if;	-- 'S'
+				when "000000100" => if(mist_buffdout/=x"43")then x68magic_ok<='0'; end if;	-- 'C'
+				when "000000101" => if(mist_buffdout/=x"53")then x68magic_ok<='0'; end if;	-- 'S'
+				when "000000110" => if(mist_buffdout/=x"49")then x68magic_ok<='0'; end if;	-- 'I'
+				when "000000111" => if(mist_buffdout/=x"31")then x68magic_ok<='0'; end if;	-- '1'
+				when others => null;
+				end case;
+			end if;
+		end if;
+	end process;
+
+	-- (imgsize/512)-1 del canal SXSI activo
+	cap_blk_m1<=	(("000000000" & sasi2_cap(31 downto 9)) - 1) when emustate=es_sasi2 else
+					(("000000000" & sasi3_cap(31 downto 9)) - 1) when emustate=es_sasi3 else
+					(("000000000" & sasi4_cap(31 downto 9)) - 1) when emustate=es_sasi4 else
+					(("000000000" & sasi5_cap(31 downto 9)) - 1);
+
+	lba0_fetch<=	'1' when emustate=es_sasi2 and lba_sasi2=x"00000000" else
+					'1' when emustate=es_sasi3 and lba_sasi3=x"00000000" else
+					'1' when emustate=es_sasi4 and lba_sasi4=x"00000000" else
+					'1' when emustate=es_sasi5 and lba_sasi5=x"00000000" else
+					'0';
+
+	-- bytes 0x0A..0x0D del sector
+	patch_sel<=	'1' when x68magic_ok='1' and lba0_fetch='1' and mist_buffaddr(8 downto 4)="00000" and
+					(mist_buffaddr(3 downto 0)=x"A" or mist_buffaddr(3 downto 0)=x"B" or
+					 mist_buffaddr(3 downto 0)=x"C" or mist_buffaddr(3 downto 0)=x"D") else
+				'0';
+
+	patch_dat<=	cap_blk_m1(31 downto 24) when mist_buffaddr(1 downto 0)="10" else	-- 0x0A
+				cap_blk_m1(23 downto 16) when mist_buffaddr(1 downto 0)="11" else	-- 0x0B
+				cap_blk_m1(15 downto 8)  when mist_buffaddr(1 downto 0)="00" else	-- 0x0C
+				cap_blk_m1(7 downto 0);												-- 0x0D
+
+	mist_bufpat<=	patch_dat when patch_sel='1' else mist_buffdout;
+
+	sasibuf2	:sectram port map(
+		address_a		=>mist_buffaddr,
+		address_b		=>sasi2_sectaddr,
+		clock				=>sclk,
+		data_a			=>mist_bufpat,
+		data_b			=>sasi2_sectwrdat,
+		wren_a			=>sasi2sectwr,
+		wren_b			=>sasi2bufwr and sys_ce,
+		q_a				=>sasi2_bufodat,
+		q_b				=>sasi2_sectrddat
+	);
+
+	sasibuf3	:sectram port map(
+		address_a		=>mist_buffaddr,
+		address_b		=>sasi3_sectaddr,
+		clock				=>sclk,
+		data_a			=>mist_bufpat,
+		data_b			=>sasi3_sectwrdat,
+		wren_a			=>sasi3sectwr,
+		wren_b			=>sasi3bufwr and sys_ce,
+		q_a				=>sasi3_bufodat,
+		q_b				=>sasi3_sectrddat
+	);
+
+	sasibuf4	:sectram port map(
+		address_a		=>mist_buffaddr,
+		address_b		=>sasi4_sectaddr,
+		clock				=>sclk,
+		data_a			=>mist_bufpat,
+		data_b			=>sasi4_sectwrdat,
+		wren_a			=>sasi4sectwr,
+		wren_b			=>sasi4bufwr and sys_ce,
+		q_a				=>sasi4_bufodat,
+		q_b				=>sasi4_sectrddat
+	);
+
+	sasibuf5	:sectram port map(
+		address_a		=>mist_buffaddr,
+		address_b		=>sasi5_sectaddr,
+		clock				=>sclk,
+		data_a			=>mist_bufpat,
+		data_b			=>sasi5_sectwrdat,
+		wren_a			=>sasi5sectwr,
+		wren_b			=>sasi5bufwr and sys_ce,
+		q_a				=>sasi5_bufodat,
+		q_b				=>sasi5_sectrddat
+	);
+
 	mist_buffdin<=	sbuf_odat		when emustate=es_fload0 else
 						sbuf_odat		when emustate=es_fload1 else
 						sbuf_odat		when emustate=es_fsave0 else
 						sbuf_odat		when emustate=es_fsave1 else
 						sasi_bufodat	when emustate=es_sasi else
+						sasi2_bufodat	when emustate=es_sasi2 else
+						sasi3_bufodat	when emustate=es_sasi3 else
+						sasi4_bufodat	when emustate=es_sasi4 else
+						sasi5_bufodat	when emustate=es_sasi5 else
 						sram_bufout		when emustate=es_sload else
 						sram_bufout		when emustate=es_ssave else
 						(others=>'0');
@@ -2101,13 +2685,13 @@ begin
 					case sasibufstate is
 					when ss_idle =>
 						if(sasi_rdreq2='1')then
-							if(sasi_lba(20 downto 1)/=cur_slba(19 downto 0))then
+							if(sasi_lba(31 downto 1)/=cur_slba(30 downto 0))then
 								if(wrote='1')then
 									mist_wr(bit_sasi)<='1';
 									sasibufstate<=ss_rwrite;
 								else
-									cur_slba<=allzero(31 downto 20) & sasi_lba(20 downto 1);
-									lba_sasi<=allzero(31 downto 20) & sasi_lba(20 downto 1);
+									cur_slba<='0' & sasi_lba(31 downto 1);
+									lba_sasi<='0' & sasi_lba(31 downto 1);
 									mist_rd(bit_sasi)<='1';
 									sasibufstate<=ss_read;
 								end if;
@@ -2115,7 +2699,7 @@ begin
 								sasidone<='1';
 							end if;
 						elsif(sasi_wrreq2='1')then
-							if(sasi_lba(20 downto 1)=cur_slba(19 downto 0))then
+							if(sasi_lba(31 downto 1)=cur_slba(30 downto 0))then
 								sasibufwr<='1';
 								sasidone<='1';
 							else
@@ -2123,8 +2707,8 @@ begin
 									mist_wr(bit_sasi)<='1';
 									sasibufstate<=ss_write;
 								else
-									cur_slba<=allzero(31 downto 20) & sasi_lba(20 downto 1);
-									lba_sasi<=allzero(31 downto 20) & sasi_lba(20 downto 1);
+									cur_slba<='0' & sasi_lba(31 downto 1);
+									lba_sasi<='0' & sasi_lba(31 downto 1);
 									mist_rd(bit_sasi)<='1';
 									sasibufstate<=ss_wread;
 								end if;
@@ -2145,8 +2729,8 @@ begin
 					when ss_rwrite2 =>
 						if(mist_ack(bit_sasi)='0')then
 							wrote:='0';
-							cur_slba<=allzero(31 downto 20) & sasi_lba(20 downto 1);
-							lba_sasi<=allzero(31 downto 20) & sasi_lba(20 downto 1);
+							cur_slba<='0' & sasi_lba(31 downto 1);
+							lba_sasi<='0' & sasi_lba(31 downto 1);
 							mist_rd(bit_sasi)<='1';
 							sasibufstate<=ss_read;
 						end if;
@@ -2167,8 +2751,8 @@ begin
 						end if;
 					when ss_write2 =>
 						if(mist_ack(bit_sasi)='0')then
-							cur_slba<=allzero(31 downto 20) & sasi_lba(20 downto 1);
-							lba_sasi<=allzero(31 downto 20) & sasi_lba(20 downto 1);
+							cur_slba<='0' & sasi_lba(31 downto 1);
+							lba_sasi<='0' & sasi_lba(31 downto 1);
 							mist_rd(bit_sasi)<='1';
 							wrote:='0';
 							sasibufstate<=ss_wread;
@@ -2204,6 +2788,714 @@ begin
 		end if;
 	end process;
 
+
+	shared_sxsi_backend : if false generate
+	lba_sasi2<=sxsi_mist_lba(0);
+	lba_sasi3<=sxsi_mist_lba(1);
+	lba_sasi4<=sxsi_mist_lba(2);
+	lba_sasi5<=sxsi_mist_lba(3);
+	sasi2bufwr<=sxsi_bufwr(0);
+	sasi3bufwr<=sxsi_bufwr(1);
+	sasi4bufwr<=sxsi_bufwr(2);
+	sasi5bufwr<=sxsi_bufwr(3);
+	sasidone2<=sxsi_done(0);
+	sasidone3<=sxsi_done(1);
+	sasidone4<=sxsi_done(2);
+	sasidone5<=sxsi_done(3);
+	mist_rd(bit_sasi2)<=sxsi_mist_rd(0);
+	mist_rd(bit_sasi3)<=sxsi_mist_rd(1);
+	mist_rd(bit_sasi4)<=sxsi_mist_rd(2);
+	mist_rd(bit_sasi5)<=sxsi_mist_rd(3);
+	mist_wr(bit_sasi2)<=sxsi_mist_wr(0);
+	mist_wr(bit_sasi3)<=sxsi_mist_wr(1);
+	mist_wr(bit_sasi4)<=sxsi_mist_wr(2);
+	mist_wr(bit_sasi5)<=sxsi_mist_wr(3);
+
+
+	process(sclk,rstn)
+	variable d		:integer range 0 to 3;
+	variable op		:integer range 0 to 3; -- 0:none, 1:read, 2:write, 3:sync
+	variable req_lba	:std_logic_vector(31 downto 0);
+	begin
+		if rising_edge(sclk) then
+			if(rstn='0')then
+				sxsibufstate<=ss_idle;
+				sxsi_drive<=0;
+				sxsi_new_lba<=(others=>'0');
+				sxsi_cur_slba<=(others=>(others=>'1'));
+				sxsi_mist_lba<=(others=>(others=>'0'));
+				sxsi_dirty<=(others=>'0');
+				sxsi_bufwr<=(others=>'0');
+				sxsi_done<=(others=>'0');
+				sxsi_mist_rd<=(others=>'0');
+				sxsi_mist_wr<=(others=>'0');
+			elsif(sys_ce='1')then
+				sxsi_bufwr<=(others=>'0');
+				sxsi_done<=(others=>'0');
+				case sxsibufstate is
+				when ss_idle =>
+					d:=sxsi_drive;
+					op:=0;
+					req_lba:=sxsi_new_lba;
+					if(sasi2_rdreq2='1')then
+						d:=0; op:=1; req_lba:=sasi2_lba;
+					elsif(sasi2_wrreq2='1')then
+						d:=0; op:=2; req_lba:=sasi2_lba;
+					elsif(sasi2_syreq2='1')then
+						d:=0; op:=3; req_lba:=sasi2_lba;
+					elsif(sasi3_rdreq2='1')then
+						d:=1; op:=1; req_lba:=sasi3_lba;
+					elsif(sasi3_wrreq2='1')then
+						d:=1; op:=2; req_lba:=sasi3_lba;
+					elsif(sasi3_syreq2='1')then
+						d:=1; op:=3; req_lba:=sasi3_lba;
+					elsif(sasi4_rdreq2='1')then
+						d:=2; op:=1; req_lba:=sasi4_lba;
+					elsif(sasi4_wrreq2='1')then
+						d:=2; op:=2; req_lba:=sasi4_lba;
+					elsif(sasi4_syreq2='1')then
+						d:=2; op:=3; req_lba:=sasi4_lba;
+					elsif(sasi5_rdreq2='1')then
+						d:=3; op:=1; req_lba:=sasi5_lba;
+					elsif(sasi5_wrreq2='1')then
+						d:=3; op:=2; req_lba:=sasi5_lba;
+					elsif(sasi5_syreq2='1')then
+						d:=3; op:=3; req_lba:=sasi5_lba;
+					end if;
+
+					if(op/=0)then
+						sxsi_drive<=d;
+						sxsi_new_lba<=req_lba;
+						if(op=1)then
+							if(req_lba/=sxsi_cur_slba(d))then
+								if(sxsi_dirty(d)='1')then
+									sxsi_mist_wr(d)<='1';
+									sxsibufstate<=ss_rwrite;
+								else
+									sxsi_cur_slba(d)<=req_lba;
+									sxsi_mist_lba(d)<=req_lba;
+									sxsi_mist_rd(d)<='1';
+									sxsibufstate<=ss_read;
+								end if;
+							else
+								sxsi_done(d)<='1';
+							end if;
+						elsif(op=2)then
+							if(req_lba=sxsi_cur_slba(d))then
+								sxsi_bufwr(d)<='1';
+								sxsi_dirty(d)<='1';
+								sxsi_done(d)<='1';
+							else
+								if(sxsi_dirty(d)='1')then
+									sxsi_mist_wr(d)<='1';
+									sxsibufstate<=ss_write;
+								else
+									sxsi_cur_slba(d)<=req_lba;
+									sxsi_mist_lba(d)<=req_lba;
+									sxsi_mist_rd(d)<='1';
+									sxsibufstate<=ss_wread;
+								end if;
+							end if;
+						else
+							if(sxsi_dirty(d)='1')then
+								sxsi_mist_wr(d)<='1';
+								sxsibufstate<=ss_sync;
+							else
+								sxsi_done(d)<='1';
+							end if;
+						end if;
+					end if;
+
+				when ss_rwrite =>
+					d:=sxsi_drive;
+					if(mist_ack(bit_sasi2+d)='1')then
+						sxsi_mist_wr(d)<='0';
+						sxsibufstate<=ss_rwrite2;
+					end if;
+				when ss_rwrite2 =>
+					d:=sxsi_drive;
+					if(mist_ack(bit_sasi2+d)='0')then
+						sxsi_dirty(d)<='0';
+						sxsi_cur_slba(d)<=sxsi_new_lba;
+						sxsi_mist_lba(d)<=sxsi_new_lba;
+						sxsi_mist_rd(d)<='1';
+						sxsibufstate<=ss_read;
+					end if;
+				when ss_read =>
+					d:=sxsi_drive;
+					if(mist_ack(bit_sasi2+d)='1')then
+						sxsi_mist_rd(d)<='0';
+						sxsibufstate<=ss_read2;
+					end if;
+				when ss_read2 =>
+					d:=sxsi_drive;
+					if(mist_ack(bit_sasi2+d)='0')then
+						sxsi_done(d)<='1';
+						sxsibufstate<=ss_idle;
+					end if;
+				when ss_write =>
+					d:=sxsi_drive;
+					if(mist_ack(bit_sasi2+d)='1')then
+						sxsi_mist_wr(d)<='0';
+						sxsibufstate<=ss_write2;
+					end if;
+				when ss_write2 =>
+					d:=sxsi_drive;
+					if(mist_ack(bit_sasi2+d)='0')then
+						sxsi_cur_slba(d)<=sxsi_new_lba;
+						sxsi_mist_lba(d)<=sxsi_new_lba;
+						sxsi_mist_rd(d)<='1';
+						sxsi_dirty(d)<='0';
+						sxsibufstate<=ss_wread;
+					end if;
+				when ss_wread =>
+					d:=sxsi_drive;
+					if(mist_ack(bit_sasi2+d)='1')then
+						sxsi_mist_rd(d)<='0';
+						sxsibufstate<=ss_wread2;
+					end if;
+				when ss_wread2 =>
+					d:=sxsi_drive;
+					if(mist_ack(bit_sasi2+d)='0')then
+						sxsi_bufwr(d)<='1';
+						sxsi_dirty(d)<='1';
+						sxsi_done(d)<='1';
+						sxsibufstate<=ss_idle;
+					end if;
+				when ss_sync =>
+					d:=sxsi_drive;
+					if(mist_ack(bit_sasi2+d)='1')then
+						sxsi_mist_wr(d)<='0';
+						sxsibufstate<=ss_sync2;
+					end if;
+				when ss_sync2 =>
+					d:=sxsi_drive;
+					if(mist_ack(bit_sasi2+d)='0')then
+						sxsi_dirty(d)<='0';
+						sxsi_done(d)<='1';
+						sxsibufstate<=ss_idle;
+					end if;
+				when others =>
+					sxsibufstate<=ss_idle;
+				end case;
+			end if;
+		end if;
+	end process;
+
+	end generate shared_sxsi_backend;
+
+	process(sclk,rstn)
+	variable wrote	:std_logic;
+	variable swait	:integer range 0 to 2;
+	begin
+		if rising_edge(sclk) then
+			if(rstn='0')then
+				sasibufstate2<=ss_idle;
+				lba_sasi2<=(others=>'0');
+				cur_slba2<=(others=>'1');
+				wrote:='0';
+				mist_rd(bit_sasi2)<='0';
+				mist_wr(bit_sasi2)<='0';
+				sasi2bufwr<='0';
+				sasidone2<='0';
+				swait:=0;
+			elsif(sys_ce = '1')then
+				sasi2bufwr<='0';
+				sasidone2<='0';
+				if(swait>0)then
+					swait:=swait-1;
+				else
+					case sasibufstate2 is
+					when ss_idle =>
+						if(sasi2_rdreq2='1')then
+							if(sasi2_lba/=cur_slba2)then
+								if(wrote='1')then
+									mist_wr(bit_sasi2)<='1';
+									sasibufstate2<=ss_rwrite;
+								else
+									cur_slba2<=sasi2_lba;
+									lba_sasi2<=sasi2_lba;
+									mist_rd(bit_sasi2)<='1';
+									sasibufstate2<=ss_read;
+								end if;
+							else
+								sasidone2<='1';
+							end if;
+						elsif(sasi2_wrreq2='1')then
+							if(sasi2_lba=cur_slba2)then
+								sasi2bufwr<='1';
+								wrote:='1';
+								sasidone2<='1';
+							else
+								if(wrote='1')then
+									mist_wr(bit_sasi2)<='1';
+									sasibufstate2<=ss_write;
+								else
+									cur_slba2<=sasi2_lba;
+									lba_sasi2<=sasi2_lba;
+									mist_rd(bit_sasi2)<='1';
+									sasibufstate2<=ss_wread;
+								end if;
+							end if;
+						elsif(sasi2_syreq2='1')then
+							if(wrote='1')then
+								mist_wr(bit_sasi2)<='1';
+								sasibufstate2<=ss_sync;
+							else
+								sasidone2<='1';
+							end if;
+						end if;
+					when ss_rwrite =>
+						if(mist_ack(bit_sasi2)='1')then
+							mist_wr(bit_sasi2)<='0';
+							sasibufstate2<=ss_rwrite2;
+						end if;
+					when ss_rwrite2 =>
+						if(mist_ack(bit_sasi2)='0')then
+							wrote:='0';
+							cur_slba2<=sasi2_lba;
+							lba_sasi2<=sasi2_lba;
+							mist_rd(bit_sasi2)<='1';
+							sasibufstate2<=ss_read;
+						end if;
+					when ss_read =>
+						if(mist_ack(bit_sasi2)='1')then
+							mist_rd(bit_sasi2)<='0';
+							sasibufstate2<=ss_read2;
+						end if;
+					when ss_read2 =>
+						if(mist_ack(bit_sasi2)='0')then
+							sasidone2<='1';
+							sasibufstate2<=ss_idle;
+						end if;
+					when ss_write =>
+						if(mist_ack(bit_sasi2)='1')then
+							mist_wr(bit_sasi2)<='0';
+							sasibufstate2<=ss_write2;
+						end if;
+					when ss_write2 =>
+						if(mist_ack(bit_sasi2)='0')then
+							cur_slba2<=sasi2_lba;
+							lba_sasi2<=sasi2_lba;
+							mist_rd(bit_sasi2)<='1';
+							wrote:='0';
+							sasibufstate2<=ss_wread;
+						end if;
+					when ss_wread =>
+						if(mist_ack(bit_sasi2)='1')then
+							mist_rd(bit_sasi2)<='0';
+							sasibufstate2<=ss_wread2;
+						end if;
+					when ss_wread2 =>
+						if(mist_ack(bit_sasi2)='0')then
+							sasi2bufwr<='1';
+							wrote:='1';
+							sasidone2<='1';
+							sasibufstate2<=ss_idle;
+						end if;
+					when ss_sync =>
+						if(mist_ack(bit_sasi2)='1')then
+							mist_wr(bit_sasi2)<='0';
+							sasibufstate2<=ss_sync2;
+						end if;
+					when ss_sync2 =>
+						if(mist_ack(bit_sasi2)='0')then
+							wrote:='0';
+							sasidone2<='1';
+							sasibufstate2<=ss_idle;
+						end if;
+					when others =>
+						sasibufstate2<=ss_idle;
+					end case;
+				end if;
+			end if;
+		end if;
+	end process;
+
+	process(sclk,rstn)
+	variable wrote	:std_logic;
+	variable swait	:integer range 0 to 2;
+	begin
+		if rising_edge(sclk) then
+			if(rstn='0')then
+				sasibufstate3<=ss_idle;
+				lba_sasi3<=(others=>'0');
+				cur_slba3<=(others=>'1');
+				wrote:='0';
+				mist_rd(bit_sasi3)<='0';
+				mist_wr(bit_sasi3)<='0';
+				sasi3bufwr<='0';
+				sasidone3<='0';
+				swait:=0;
+			elsif(sys_ce = '1')then
+				sasi3bufwr<='0';
+				sasidone3<='0';
+				if(swait>0)then
+					swait:=swait-1;
+				else
+					case sasibufstate3 is
+					when ss_idle =>
+						if(sasi3_rdreq2='1')then
+							if(sasi3_lba/=cur_slba3)then
+								if(wrote='1')then
+									mist_wr(bit_sasi3)<='1';
+									sasibufstate3<=ss_rwrite;
+								else
+									cur_slba3<=sasi3_lba;
+									lba_sasi3<=sasi3_lba;
+									mist_rd(bit_sasi3)<='1';
+									sasibufstate3<=ss_read;
+								end if;
+							else
+								sasidone3<='1';
+							end if;
+						elsif(sasi3_wrreq2='1')then
+							if(sasi3_lba=cur_slba3)then
+								sasi3bufwr<='1';
+								wrote:='1';
+								sasidone3<='1';
+							else
+								if(wrote='1')then
+									mist_wr(bit_sasi3)<='1';
+									sasibufstate3<=ss_write;
+								else
+									cur_slba3<=sasi3_lba;
+									lba_sasi3<=sasi3_lba;
+									mist_rd(bit_sasi3)<='1';
+									sasibufstate3<=ss_wread;
+								end if;
+							end if;
+						elsif(sasi3_syreq2='1')then
+							if(wrote='1')then
+								mist_wr(bit_sasi3)<='1';
+								sasibufstate3<=ss_sync;
+							else
+								sasidone3<='1';
+							end if;
+						end if;
+					when ss_rwrite =>
+						if(mist_ack(bit_sasi3)='1')then
+							mist_wr(bit_sasi3)<='0';
+							sasibufstate3<=ss_rwrite2;
+						end if;
+					when ss_rwrite2 =>
+						if(mist_ack(bit_sasi3)='0')then
+							wrote:='0';
+							cur_slba3<=sasi3_lba;
+							lba_sasi3<=sasi3_lba;
+							mist_rd(bit_sasi3)<='1';
+							sasibufstate3<=ss_read;
+						end if;
+					when ss_read =>
+						if(mist_ack(bit_sasi3)='1')then
+							mist_rd(bit_sasi3)<='0';
+							sasibufstate3<=ss_read2;
+						end if;
+					when ss_read2 =>
+						if(mist_ack(bit_sasi3)='0')then
+							sasidone3<='1';
+							sasibufstate3<=ss_idle;
+						end if;
+					when ss_write =>
+						if(mist_ack(bit_sasi3)='1')then
+							mist_wr(bit_sasi3)<='0';
+							sasibufstate3<=ss_write2;
+						end if;
+					when ss_write2 =>
+						if(mist_ack(bit_sasi3)='0')then
+							cur_slba3<=sasi3_lba;
+							lba_sasi3<=sasi3_lba;
+							mist_rd(bit_sasi3)<='1';
+							wrote:='0';
+							sasibufstate3<=ss_wread;
+						end if;
+					when ss_wread =>
+						if(mist_ack(bit_sasi3)='1')then
+							mist_rd(bit_sasi3)<='0';
+							sasibufstate3<=ss_wread2;
+						end if;
+					when ss_wread2 =>
+						if(mist_ack(bit_sasi3)='0')then
+							sasi3bufwr<='1';
+							wrote:='1';
+							sasidone3<='1';
+							sasibufstate3<=ss_idle;
+						end if;
+					when ss_sync =>
+						if(mist_ack(bit_sasi3)='1')then
+							mist_wr(bit_sasi3)<='0';
+							sasibufstate3<=ss_sync2;
+						end if;
+					when ss_sync2 =>
+						if(mist_ack(bit_sasi3)='0')then
+							wrote:='0';
+							sasidone3<='1';
+							sasibufstate3<=ss_idle;
+						end if;
+					when others =>
+						sasibufstate3<=ss_idle;
+					end case;
+				end if;
+			end if;
+		end if;
+	end process;
+
+	process(sclk,rstn)
+	variable wrote	:std_logic;
+	variable swait	:integer range 0 to 2;
+	begin
+		if rising_edge(sclk) then
+			if(rstn='0')then
+				sasibufstate4<=ss_idle;
+				lba_sasi4<=(others=>'0');
+				cur_slba4<=(others=>'1');
+				wrote:='0';
+				mist_rd(bit_sasi4)<='0';
+				mist_wr(bit_sasi4)<='0';
+				sasi4bufwr<='0';
+				sasidone4<='0';
+				swait:=0;
+			elsif(sys_ce = '1')then
+				sasi4bufwr<='0';
+				sasidone4<='0';
+				if(swait>0)then
+					swait:=swait-1;
+				else
+					case sasibufstate4 is
+					when ss_idle =>
+						if(sasi4_rdreq2='1')then
+							if(sasi4_lba/=cur_slba4)then
+								if(wrote='1')then
+									mist_wr(bit_sasi4)<='1';
+									sasibufstate4<=ss_rwrite;
+								else
+									cur_slba4<=sasi4_lba;
+									lba_sasi4<=sasi4_lba;
+									mist_rd(bit_sasi4)<='1';
+									sasibufstate4<=ss_read;
+								end if;
+							else
+								sasidone4<='1';
+							end if;
+						elsif(sasi4_wrreq2='1')then
+							if(sasi4_lba=cur_slba4)then
+								sasi4bufwr<='1';
+								wrote:='1';
+								sasidone4<='1';
+							else
+								if(wrote='1')then
+									mist_wr(bit_sasi4)<='1';
+									sasibufstate4<=ss_write;
+								else
+									cur_slba4<=sasi4_lba;
+									lba_sasi4<=sasi4_lba;
+									mist_rd(bit_sasi4)<='1';
+									sasibufstate4<=ss_wread;
+								end if;
+							end if;
+						elsif(sasi4_syreq2='1')then
+							if(wrote='1')then
+								mist_wr(bit_sasi4)<='1';
+								sasibufstate4<=ss_sync;
+							else
+								sasidone4<='1';
+							end if;
+						end if;
+					when ss_rwrite =>
+						if(mist_ack(bit_sasi4)='1')then
+							mist_wr(bit_sasi4)<='0';
+							sasibufstate4<=ss_rwrite2;
+						end if;
+					when ss_rwrite2 =>
+						if(mist_ack(bit_sasi4)='0')then
+							wrote:='0';
+							cur_slba4<=sasi4_lba;
+							lba_sasi4<=sasi4_lba;
+							mist_rd(bit_sasi4)<='1';
+							sasibufstate4<=ss_read;
+						end if;
+					when ss_read =>
+						if(mist_ack(bit_sasi4)='1')then
+							mist_rd(bit_sasi4)<='0';
+							sasibufstate4<=ss_read2;
+						end if;
+					when ss_read2 =>
+						if(mist_ack(bit_sasi4)='0')then
+							sasidone4<='1';
+							sasibufstate4<=ss_idle;
+						end if;
+					when ss_write =>
+						if(mist_ack(bit_sasi4)='1')then
+							mist_wr(bit_sasi4)<='0';
+							sasibufstate4<=ss_write2;
+						end if;
+					when ss_write2 =>
+						if(mist_ack(bit_sasi4)='0')then
+							cur_slba4<=sasi4_lba;
+							lba_sasi4<=sasi4_lba;
+							mist_rd(bit_sasi4)<='1';
+							wrote:='0';
+							sasibufstate4<=ss_wread;
+						end if;
+					when ss_wread =>
+						if(mist_ack(bit_sasi4)='1')then
+							mist_rd(bit_sasi4)<='0';
+							sasibufstate4<=ss_wread2;
+						end if;
+					when ss_wread2 =>
+						if(mist_ack(bit_sasi4)='0')then
+							sasi4bufwr<='1';
+							wrote:='1';
+							sasidone4<='1';
+							sasibufstate4<=ss_idle;
+						end if;
+					when ss_sync =>
+						if(mist_ack(bit_sasi4)='1')then
+							mist_wr(bit_sasi4)<='0';
+							sasibufstate4<=ss_sync2;
+						end if;
+					when ss_sync2 =>
+						if(mist_ack(bit_sasi4)='0')then
+							wrote:='0';
+							sasidone4<='1';
+							sasibufstate4<=ss_idle;
+						end if;
+					when others =>
+						sasibufstate4<=ss_idle;
+					end case;
+				end if;
+			end if;
+		end if;
+	end process;
+
+	process(sclk,rstn)
+	variable wrote	:std_logic;
+	variable swait	:integer range 0 to 2;
+	begin
+		if rising_edge(sclk) then
+			if(rstn='0')then
+				sasibufstate5<=ss_idle;
+				lba_sasi5<=(others=>'0');
+				cur_slba5<=(others=>'1');
+				wrote:='0';
+				mist_rd(bit_sasi5)<='0';
+				mist_wr(bit_sasi5)<='0';
+				sasi5bufwr<='0';
+				sasidone5<='0';
+				swait:=0;
+			elsif(sys_ce = '1')then
+				sasi5bufwr<='0';
+				sasidone5<='0';
+				if(swait>0)then
+					swait:=swait-1;
+				else
+					case sasibufstate5 is
+					when ss_idle =>
+						if(sasi5_rdreq2='1')then
+							if(sasi5_lba/=cur_slba5)then
+								if(wrote='1')then
+									mist_wr(bit_sasi5)<='1';
+									sasibufstate5<=ss_rwrite;
+								else
+									cur_slba5<=sasi5_lba;
+									lba_sasi5<=sasi5_lba;
+									mist_rd(bit_sasi5)<='1';
+									sasibufstate5<=ss_read;
+								end if;
+							else
+								sasidone5<='1';
+							end if;
+						elsif(sasi5_wrreq2='1')then
+							if(sasi5_lba=cur_slba5)then
+								sasi5bufwr<='1';
+								wrote:='1';
+								sasidone5<='1';
+							else
+								if(wrote='1')then
+									mist_wr(bit_sasi5)<='1';
+									sasibufstate5<=ss_write;
+								else
+									cur_slba5<=sasi5_lba;
+									lba_sasi5<=sasi5_lba;
+									mist_rd(bit_sasi5)<='1';
+									sasibufstate5<=ss_wread;
+								end if;
+							end if;
+						elsif(sasi5_syreq2='1')then
+							if(wrote='1')then
+								mist_wr(bit_sasi5)<='1';
+								sasibufstate5<=ss_sync;
+							else
+								sasidone5<='1';
+							end if;
+						end if;
+					when ss_rwrite =>
+						if(mist_ack(bit_sasi5)='1')then
+							mist_wr(bit_sasi5)<='0';
+							sasibufstate5<=ss_rwrite2;
+						end if;
+					when ss_rwrite2 =>
+						if(mist_ack(bit_sasi5)='0')then
+							wrote:='0';
+							cur_slba5<=sasi5_lba;
+							lba_sasi5<=sasi5_lba;
+							mist_rd(bit_sasi5)<='1';
+							sasibufstate5<=ss_read;
+						end if;
+					when ss_read =>
+						if(mist_ack(bit_sasi5)='1')then
+							mist_rd(bit_sasi5)<='0';
+							sasibufstate5<=ss_read2;
+						end if;
+					when ss_read2 =>
+						if(mist_ack(bit_sasi5)='0')then
+							sasidone5<='1';
+							sasibufstate5<=ss_idle;
+						end if;
+					when ss_write =>
+						if(mist_ack(bit_sasi5)='1')then
+							mist_wr(bit_sasi5)<='0';
+							sasibufstate5<=ss_write2;
+						end if;
+					when ss_write2 =>
+						if(mist_ack(bit_sasi5)='0')then
+							cur_slba5<=sasi5_lba;
+							lba_sasi5<=sasi5_lba;
+							mist_rd(bit_sasi5)<='1';
+							wrote:='0';
+							sasibufstate5<=ss_wread;
+						end if;
+					when ss_wread =>
+						if(mist_ack(bit_sasi5)='1')then
+							mist_rd(bit_sasi5)<='0';
+							sasibufstate5<=ss_wread2;
+						end if;
+					when ss_wread2 =>
+						if(mist_ack(bit_sasi5)='0')then
+							sasi5bufwr<='1';
+							wrote:='1';
+							sasidone5<='1';
+							sasibufstate5<=ss_idle;
+						end if;
+					when ss_sync =>
+						if(mist_ack(bit_sasi5)='1')then
+							mist_wr(bit_sasi5)<='0';
+							sasibufstate5<=ss_sync2;
+						end if;
+					when ss_sync2 =>
+						if(mist_ack(bit_sasi5)='0')then
+							wrote:='0';
+							sasidone5<='1';
+							sasibufstate5<=ss_idle;
+						end if;
+					when others =>
+						sasibufstate5<=ss_idle;
+					end case;
+				end if;
+			end if;
+		end if;
+	end process;
+
 	sramwr<=	"00" when sram_wp='0' else
 				"00" when sram_cs='0' else
 				sram_wr;
@@ -2231,6 +3523,16 @@ begin
 		mist_wdat	=>mist_buffdout,
 		mist_rdat	=>sram_bufout,
 		mist_we		=>sram_bufwr,
+
+		ram_addr_a		=>sram_ram_addr_a,
+		ram_addr_b		=>sram_ram_addr_b,
+		ram_byteena_a	=>sram_ram_byteena_a,
+		ram_data_a		=>sram_ram_data_a,
+		ram_data_b		=>sram_ram_data_b,
+		ram_wren_a		=>sram_ram_wren_a,
+		ram_wren_b		=>sram_ram_wren_b,
+		ram_q_a			=>sram_ram_q_a,
+		ram_q_b			=>sram_ram_q_b,
 
 		clk		=>sclk,
 		ce      =>sys_ce,

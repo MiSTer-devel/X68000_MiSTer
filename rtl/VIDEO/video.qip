@@ -10,5 +10,6 @@ set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) v
 set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) txtpal.vhd ]
 set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) txtpraml.vhd ]
 set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) txtpramh.vhd ]
+set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) vc_compositor.vhd ]
 set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) vidcont.vhd ]
 set_global_assignment -name VHDL_FILE          [file join $::quartus(qip_path) vcreg.vhd ]

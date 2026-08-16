@@ -156,6 +156,8 @@ signal	INTA3	:std_logic;
 signal	INTA2	:std_logic;
 signal	INTA1	:std_logic;
 signal	INTA0	:std_logic;
+signal	INTA4_gate	:std_logic;
+signal	rxfull_acked	:std_logic := '0';
 
 component GPIP
 port(
@@ -586,7 +588,7 @@ begin
 		INTA7	=>INTA7,
 		INTA6	=>INTA6,
 		INTA5	=>INTA5,
-		INTA4	=>INTA4,
+		INTA4	=>INTA4_gate,
 		INTA3	=>INTA3,
 		INTA2	=>INTA2,
 		INTA1	=>INTA1,
@@ -627,6 +629,21 @@ begin
 		ce      =>ce,
 		rstn	=>rstn
 	);
+
+	INTA4_gate <= INTA4 and not rxfull_acked;
+	process(clk,rstn)begin
+		if rising_edge(clk) then
+			if(rstn='0')then
+				rxfull_acked<='0';
+			elsif(ce='1')then
+				if(INTA4='0')then
+					rxfull_acked<='0';
+				elsif(INTack='1' and IVack(3 downto 0)=x"C")then
+					rxfull_acked<='1';
+				end if;
+			end if;
+		end if;
+	end process;
 
 	INTA3<='0';
 	INTA1<='0';

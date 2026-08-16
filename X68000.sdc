@@ -18,3 +18,11 @@ set_false_path -from {emu:emu|X68K_top:X68K_top|contcont:cont|contval*}
 #port-B is read-only
 set_false_path -from {*~portb_we_reg} -to {*VLBUF*}
 set_false_path -from {*~PORT_B_WRITE_ENABLE_REG} -to {*VLBUF*}
+
+set_multicycle_path -to {emu:emu|X68K_top:X68K_top|sprram:spmem|bgvram:*} -setup 2
+set_multicycle_path -to {emu:emu|X68K_top:X68K_top|sprram:spmem|bgvram:*} -hold 1
+
+set_multicycle_path -from {emu:emu|X68K_top:X68K_top|vidcont:vc|vaddr*} -to {emu:emu|X68K_top:X68K_top|memcont:RAM|cachecont:CACHEC|*} -end -setup 2
+set_multicycle_path -from {emu:emu|X68K_top:X68K_top|vidcont:vc|vaddr*} -to {emu:emu|X68K_top:X68K_top|memcont:RAM|cachecont:CACHEC|*} -end -hold 1
+
+set_false_path -to {emu:emu|X68K_top:X68K_top|memcont:RAM|cachecont:CACHEC|cacheext:*|srclk}

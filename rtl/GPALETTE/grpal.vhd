@@ -21,6 +21,8 @@ port(
 	palnoh2	:in std_logic_vector(7 downto 0) := (others=>'0');
 	palnol2	:in std_logic_vector(7 downto 0) := (others=>'0');
 	palout2	:out std_logic_vector(15 downto 0);
+	palout_even	:out std_logic_vector(15 downto 0);
+	palout2_odd	:out std_logic_vector(15 downto 0);
 	
 	sclk	:in std_logic;
 	sys_ce  :in std_logic := '1';
@@ -39,6 +41,8 @@ signal	psel2	:std_logic_vector(1 downto 0);
 signal	red,grn,blu	:std_logic_vector(5 downto 0);
 signal	palp,pals	:std_logic_vector(15 downto 0);
 signal	palp2	:std_logic_vector(15 downto 0);
+signal	paleven	:std_logic_vector(15 downto 0);
+signal	palodd2	:std_logic_vector(15 downto 0);
 signal	pdat3m,pdat2m,pdat1m,pdat0m	:std_logic_vector(7 downto 0);
 signal	ssel	:std_logic;
 component gpram
@@ -121,5 +125,15 @@ begin
 							pdat1m when gmode='1' and psel2(0)='0' else
 							(others=>'0');
 	palout2<=palp2;
+
+	paleven(15 downto 8) <= pdat1 when gmode='0' else
+		pdat2 when psel(1)='1' else pdat3;
+	paleven(7 downto 0) <= pdat0 when gmode='0' else pdat1;
+	palout_even <= paleven;
+
+	palodd2(15 downto 8) <= pdat3m when gmode='0' else
+		pdat2m when psel2(1)='1' else pdat3m;
+	palodd2(7 downto 0) <= pdat2m when gmode='0' else pdat0m;
+	palout2_odd <= palodd2;
 
 end rtl;

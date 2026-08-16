@@ -92,7 +92,6 @@ signal	CZADDR       : std_logic_vector(10 downto 0);
 signal	BADDR        : std_logic_vector(1 downto 0);
 signal	addr1        : std_logic_vector(LAWIDTH-1 downto 0);
 signal	addr2        : std_logic_vector(LAWIDTH-1 downto 0);
-signal	addr3        : std_logic_vector(LAWIDTH-1 downto 0);
 signal	addr4        : std_logic_vector(LAWIDTH-1 downto 0);
 constant lastlow      : std_logic_vector(LAWIDTH-1 downto 0)	:=(others=>'1');
 signal	blkmask      : std_logic_vector(LAWIDTH-1 downto 0);
@@ -101,7 +100,6 @@ begin
 
 	addr1	<=conv_std_logic_vector(1,LAWIDTH);
 	addr2	<=conv_std_logic_vector(2,LAWIDTH);
-	addr3	<=conv_std_logic_vector(3,LAWIDTH);
 	--addr4	<=conv_std_logic_vector(4,LAWIDTH);
 
 	busy<= '1' when STATE/=ST_IDLE else

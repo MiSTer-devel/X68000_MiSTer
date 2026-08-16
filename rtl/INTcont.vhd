@@ -45,11 +45,12 @@ port(
 
 	int1	:in std_logic	:='0';
 	vect1	:in std_logic_vector(7 downto 0)	:=x"19";
-	iack1	:out std_logic;
 	e_ln1	:in std_logic	:='1';
+	iack1	:out std_logic;
 	ivack1	:out std_logic_vector(7 downto 0);
 
 	IPL		:out std_logic_vector(2 downto 0);
+	fc		:in std_logic_vector(2 downto 0)	:="000";
 	addrin	:in std_logic_vector(23 downto 0);
 	addrout	:out std_logic_vector(23 downto 0);
 	rw		:in std_logic;
@@ -80,7 +81,31 @@ signal	ldtack	:std_logic;
 signal	ackcount:integer range 0 to INText;
 signal	INTen	:std_logic;
 signal	iackv	:std_logic_vector(7 downto 1);
+signal	arm		:std_logic;
+signal	armfetch:std_logic;
+signal	vfetch	:std_logic;
 begin
+
+	vfetch<='1' when rw='1' and addrin(23 downto 5)="0000000000000000011"
+	             and addrin(4 downto 2)/="000" else '0';
+
+	process(clk,rstn)begin
+		if rising_edge(clk) then
+			if(rstn='0')then
+				arm<='0';
+				armfetch<='0';
+			elsif(ce='1')then
+				if(rw='1' and fc="111")then
+					arm<='1';
+				elsif(arm='1' and vfetch='1')then
+					armfetch<='1';
+				elsif(armfetch='1' and vfetch='0')then
+					arm<='0';
+					armfetch<='0';
+				end if;
+			end if;
+		end if;
+	end process;
 
 	vINT<=int7 & int6 & int5 & int4 & int3 & int2 & int1;
 	ve_ln<=e_ln7 & e_ln6 & e_ln5 & e_ln4 & e_ln3 & e_ln2 & e_ln1;
@@ -123,6 +148,7 @@ begin
 --	INTen<='1';
 	addrout<=
 			addrin	when rw='0' else	--or INTen='0'
+			addrin	when arm='0' else
 			"00000000000000" & vectl(7) & addrin(1 downto 0) when addrin(23 downto 2)="0000000000000000011111"  else
 			"00000000000000" & vectl(6) & addrin(1 downto 0) when addrin(23 downto 2)="0000000000000000011110"  else
 			"00000000000000" & vectl(5) & addrin(1 downto 0) when addrin(23 downto 2)="0000000000000000011101"  else
@@ -134,6 +160,7 @@ begin
 
 	INTclr<=
 			"000"	when rw='0' else
+			"000"	when arm='0' else
 			"111"	when INTe(7)='1' and addrin(23 downto 2)="0000000000000000011111"  else
 			"110"	when INTe(6)='1' and addrin(23 downto 2)="0000000000000000011110"  else
 			"101"	when INTe(5)='1' and addrin(23 downto 2)="0000000000000000011101"  else

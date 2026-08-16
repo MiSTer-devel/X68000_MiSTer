@@ -109,7 +109,6 @@ type gpstate_t is(
 	gp_end
 );
 signal	gpstate	:gpstate_t;
-signal	gppage	:std_logic_vector(1 downto 0);
 
 signal	gpconven	:std_logic;
 signal	gpack		:std_logic;
@@ -123,6 +122,8 @@ signal	swack	:std_logic;
 signal	SWen	:std_logic;
 signal	SWwr	:std_logic_vector(1 downto 0);
 signal	IO_ack	:std_logic;
+signal	null_gwr	:std_logic;
+signal	null_ack	:std_logic;
 	
 
 begin
@@ -165,6 +166,7 @@ begin
 				t_base+("00000" & m_addr(16 downto 1) & m_addr(18 downto 17)) when atype=addr_TRAM else
 				g_base+("00000" & m_addr(18 downto 1)) when gpconven='1' and vmode="01" else
 				g_base+("00000" & m_addr(18 downto 1)) when gpconven='1' and vmode="00" else
+				g_base+("00000" & m_addr(18 downto 1)) when atype=addr_GRAM and gfxbuf='1' else
 				g_base+("00000" & m_addr(18 downto 1)) when atype=addr_GRAM and (gmode="10" or gmode="11") else
 				g_base+("00000" & m_addr(18 downto 1)) when atype=addr_GRAM and gmode="01" else
 				g_base+("00000" & m_addr(18 downto 1)) when atype=addr_GRAM and gmode="00" and gsize='0' else
@@ -179,8 +181,6 @@ begin
 				m_wdat(15 downto 12) & m_wdat(15 downto 12) & m_wdat(15 downto 12) & m_wdat(15 downto 12) when gpconven='1' and vmode="00"and gpstate=gp_p3 else
 				m_wdat( 7 downto  0) & m_wdat( 7 downto  0) when gpconven='1' and vmode="01" and gpstate=gp_p0 else
 				m_wdat(15 downto  8) & m_wdat(15 downto  8) when gpconven='1' and vmode="01" and gpstate=gp_p2 else
-				-- GFXBUF bypass: when R20 bit 11 is set, write raw data without
-				-- color-mode filtering (matching MAME gvram_w buffer path).
 				m_wdat when atype=addr_GRAM and gfxbuf='1' else
 				m_wdat(3 downto 0) & m_wdat(3 downto 0) & m_wdat(3 downto 0) & m_wdat(3 downto 0) when atype=addr_GRAM and gmode="00" else
 				m_wdat(7 downto 0) & m_wdat(7 downto 0) when atype=addr_GRAM and gmode="01" else
@@ -233,9 +233,16 @@ begin
 			ram_rdat when atype/=addr_IO else
 			x"0000";
 	
+	null_gwr<= '1' when atype=addr_ROM and m_rw='0' and m_as='0'
+	                and (m_uds='0' or m_lds='0') else
+	           '1' when atype=addr_GRAM and gpconven='0' and SWen='0'
+	                and gmode="00" and b_wrb/="00"
+	                and ((gfxbuf='1' and m_addr(20 downto 19)/="00") or
+	                     (gfxbuf='0' and b_wrb(0)='0')) else '0';
+
 	m_ack<=	swack	when SWen='1' else
 			gpack when gpconven='1' else
-			ram_ack when atype/=addr_IO else
+			(ram_ack or null_ack) when atype/=addr_IO else
 			IO_ack when atype=addr_IO else
 			'1';
 
@@ -254,6 +261,8 @@ begin
 		x"00f0" when atype=addr_GRAM and gmode="00" and gsize='1' and m_addr(20)='0' and m_addr(10)='1' else
 		x"0f00" when atype=addr_GRAM and gmode="00" and gsize='1' and m_addr(20)='1' and m_addr(10)='0' else
 		x"f000" when atype=addr_GRAM and gmode="00" and gsize='1' and m_addr(20)='1' and m_addr(10)='1' else
+		x"ffff" when atype=addr_GRAM and gmode="00" and gfxbuf='1' and m_addr(20 downto 19)="00" else
+		x"ffff" when atype=addr_GRAM and gmode="00" and gsize='1' and gfxbuf='1' else
 		x"000f" when atype=addr_GRAM and gmode="00" and m_addr(20 downto 19)="00" else
 		x"00f0" when atype=addr_GRAM and gmode="00" and m_addr(20 downto 19)="01" else
 		x"0f00" when atype=addr_GRAM and gmode="00" and m_addr(20 downto 19)="10" else
@@ -376,6 +385,27 @@ begin
 			else
 				iocount:=1;
 				IO_ack<='0';
+			end if;
+		end if;
+	end process;
+	
+	process(sclk,rstn)
+	variable nullcount	:integer range 0 to 1;
+	begin
+		if(rstn='0')then
+			null_ack<='0';
+			nullcount:=1;
+		elsif rising_edge(sclk) then
+			if(null_gwr='1' and m_as='0')then
+				if(nullcount=0)then
+					null_ack<='1';
+				else
+					nullcount:=nullcount-1;
+					null_ack<='0';
+				end if;
+			else
+				nullcount:=1;
+				null_ack<='0';
 			end if;
 		end if;
 	end process;
@@ -549,12 +579,6 @@ begin
 			end if;
 		end if;
 	end process;
-						
-	gppage<=	"00" when gpstate=gp_p0 or gpstate=gp_p0w else
-				"01" when gpstate=gp_p1 or gpstate=gp_p1w else
-				"10" when gpstate=gp_p2 or gpstate=gp_p2w else
-				"11" when gpstate=gp_p3 or gpstate=gp_p3w else
-				"00";
 						
 						
 				

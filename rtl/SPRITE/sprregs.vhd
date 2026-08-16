@@ -60,6 +60,9 @@ signal	reg0dat	:std_logic_vector(15 downto 0);
 signal	reg1dat	:std_logic_vector(15 downto 0);
 signal	reg2dat	:std_logic_vector(15 downto 0);
 signal	reg3dat	:std_logic_vector(15 downto 0);
+signal	spr_bwr		:std_logic_vector(1 downto 0);
+signal	spr_wrdat_h	:std_logic_vector(7 downto 0);
+signal	spr_wrdat_l	:std_logic_vector(7 downto 0);
 signal	reg00rdat	:std_logic_vector(15 downto 0);
 signal	reg00doe	:std_logic;
 signal	reg00dat	:std_logic_vector(15 downto 0);
@@ -128,19 +131,26 @@ begin
 	reg1_cs<='1' when addr(23 downto 10)="11101011000000" and addr(2 downto 1)="01" else '0';
 	reg2_cs<='1' when addr(23 downto 10)="11101011000000" and addr(2 downto 1)="10" else '0';
 	reg3_cs<='1' when addr(23 downto 10)="11101011000000" and addr(2 downto 1)="11" else '0';
-	reg0_wr<=b_wr when reg0_cs='1' else "00";
-	reg1_wr<=b_wr when reg1_cs='1' else "00";
-	reg2_wr<=b_wr when reg2_cs='1' else "00";
-	reg3_wr<=b_wr when reg3_cs='1' else "00";
+
+	spr_bwr <= "00" when b_wr="00" else "11";
+	spr_wrdat_h <= wrdat(15 downto 8) when b_wr="11" or b_wr(1)='1' else
+	               wrdat(7 downto 0);
+	spr_wrdat_l <= wrdat(7 downto 0) when b_wr="11" or b_wr(0)='1' else
+	               wrdat(15 downto 8);
+
+	reg0_wr<=spr_bwr when reg0_cs='1' else "00";
+	reg1_wr<=spr_bwr when reg1_cs='1' else "00";
+	reg2_wr<=spr_bwr when reg2_cs='1' else "00";
+	reg3_wr<=spr_bwr when reg3_cs='1' else "00";
 	
-	reg0h	:sprreg port map(addr(9 downto 3),sprno,sclk,vclk,wrdat(15 downto 8),(others=>'0'),reg0_wr(1) and sys_ce,'0',reg0rd(15 downto 8),reg0dat(15 downto 8));
-	reg0l	:sprreg port map(addr(9 downto 3),sprno,sclk,vclk,wrdat( 7 downto 0),(others=>'0'),reg0_wr(0) and sys_ce,'0',reg0rd( 7 downto 0),reg0dat( 7 downto 0));
-	reg1h	:sprreg port map(addr(9 downto 3),sprno,sclk,vclk,wrdat(15 downto 8),(others=>'0'),reg1_wr(1) and sys_ce,'0',reg1rd(15 downto 8),reg1dat(15 downto 8));
-	reg1l	:sprreg port map(addr(9 downto 3),sprno,sclk,vclk,wrdat( 7 downto 0),(others=>'0'),reg1_wr(0) and sys_ce,'0',reg1rd( 7 downto 0),reg1dat( 7 downto 0));
-	reg2h	:sprreg port map(addr(9 downto 3),sprno,sclk,vclk,wrdat(15 downto 8),(others=>'0'),reg2_wr(1) and sys_ce,'0',reg2rd(15 downto 8),reg2dat(15 downto 8));
-	reg2l	:sprreg port map(addr(9 downto 3),sprno,sclk,vclk,wrdat( 7 downto 0),(others=>'0'),reg2_wr(0) and sys_ce,'0',reg2rd( 7 downto 0),reg2dat( 7 downto 0));
-	reg3h	:sprreg port map(addr(9 downto 3),sprno,sclk,vclk,wrdat(15 downto 8),(others=>'0'),reg3_wr(1) and sys_ce,'0',reg3rd(15 downto 8),reg3dat(15 downto 8));
-	reg3l	:sprreg port map(addr(9 downto 3),sprno,sclk,vclk,wrdat( 7 downto 0),(others=>'0'),reg3_wr(0) and sys_ce,'0',reg3rd( 7 downto 0),reg3dat( 7 downto 0));
+	reg0h	:sprreg port map(addr(9 downto 3),sprno,sclk,vclk,spr_wrdat_h,(others=>'0'),reg0_wr(1) and sys_ce,'0',reg0rd(15 downto 8),reg0dat(15 downto 8));
+	reg0l	:sprreg port map(addr(9 downto 3),sprno,sclk,vclk,spr_wrdat_l,(others=>'0'),reg0_wr(0) and sys_ce,'0',reg0rd( 7 downto 0),reg0dat( 7 downto 0));
+	reg1h	:sprreg port map(addr(9 downto 3),sprno,sclk,vclk,spr_wrdat_h,(others=>'0'),reg1_wr(1) and sys_ce,'0',reg1rd(15 downto 8),reg1dat(15 downto 8));
+	reg1l	:sprreg port map(addr(9 downto 3),sprno,sclk,vclk,spr_wrdat_l,(others=>'0'),reg1_wr(0) and sys_ce,'0',reg1rd( 7 downto 0),reg1dat( 7 downto 0));
+	reg2h	:sprreg port map(addr(9 downto 3),sprno,sclk,vclk,spr_wrdat_h,(others=>'0'),reg2_wr(1) and sys_ce,'0',reg2rd(15 downto 8),reg2dat(15 downto 8));
+	reg2l	:sprreg port map(addr(9 downto 3),sprno,sclk,vclk,spr_wrdat_l,(others=>'0'),reg2_wr(0) and sys_ce,'0',reg2rd( 7 downto 0),reg2dat( 7 downto 0));
+	reg3h	:sprreg port map(addr(9 downto 3),sprno,sclk,vclk,spr_wrdat_h,(others=>'0'),reg3_wr(1) and sys_ce,'0',reg3rd(15 downto 8),reg3dat(15 downto 8));
+	reg3l	:sprreg port map(addr(9 downto 3),sprno,sclk,vclk,spr_wrdat_l,(others=>'0'),reg3_wr(0) and sys_ce,'0',reg3rd( 7 downto 0),reg3dat( 7 downto 0));
 
 	rddat<=	reg0rd when reg0_cs='1' else
 			reg1rd when reg1_cs='1' else
