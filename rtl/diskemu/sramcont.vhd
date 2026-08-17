@@ -23,7 +23,17 @@ port(
 	mist_wdat	:in std_logic_vector(7 downto 0);
 	mist_rdat	:out std_logic_vector(7 downto 0);
 	mist_we		:in std_logic;
-	
+
+	ram_addr_a		:out std_logic_vector(12 downto 0);
+	ram_addr_b		:out std_logic_vector(13 downto 0);
+	ram_byteena_a	:out std_logic_vector(1 downto 0);
+	ram_data_a		:out std_logic_vector(15 downto 0);
+	ram_data_b		:out std_logic_vector(7 downto 0);
+	ram_wren_a		:out std_logic;
+	ram_wren_b		:out std_logic;
+	ram_q_a			:in std_logic_vector(15 downto 0)	:=(others=>'0');
+	ram_q_b			:in std_logic_vector(7 downto 0)	:=(others=>'0');
+
 	clk		:in std_logic;
 	ce      :in std_logic := '1';
 	rstn	:in std_logic
@@ -45,22 +55,6 @@ signal	byteena	:std_logic_vector(1 downto 0);
 signal	wren	:std_logic;
 signal	rddattmp	:std_logic_vector(15 downto 0);
 
-component sramram
-	PORT
-	(
-		address_a		: IN STD_LOGIC_VECTOR (12 DOWNTO 0);
-		address_b		: IN STD_LOGIC_VECTOR (13 DOWNTO 0);
-		byteena_a		: IN STD_LOGIC_VECTOR (1 DOWNTO 0) :=  (OTHERS => '1');
-		clock		:	 IN STD_LOGIC  := '1';
-		data_a		: IN STD_LOGIC_VECTOR (15 DOWNTO 0);
-		data_b		: IN STD_LOGIC_VECTOR (7 DOWNTO 0);
-		wren_a		: IN STD_LOGIC  := '0';
-		wren_b		: IN STD_LOGIC  := '0';
-		q_a		: OUT STD_LOGIC_VECTOR (15 DOWNTO 0);
-		q_b		: OUT STD_LOGIC_VECTOR (7 DOWNTO 0)
-	);
-END component;
-
 begin
 
 	byteena<=	"10" when wr="01" else
@@ -70,18 +64,15 @@ begin
 	
 	wren<='0' when wr="00" else '1';
 
-	ram	:sramram port map(
-		address_a		=>addr,
-		address_b		=>lba(4 downto 0) & mist_addr(8 downto 0),
-		byteena_a		=>byteena,
-		clock				=>clk,
-		data_a			=>wdat(7 downto 0) & wdat(15 downto 8),
-		data_b			=>mist_wdat,
-		wren_a			=>wren and ce,
-		wren_b			=>mist_we,
-		q_a				=>rddattmp,
-		q_b				=>mist_rdat
-	);
+	ram_addr_a		<=addr;
+	ram_addr_b		<=lba(4 downto 0) & mist_addr(8 downto 0);
+	ram_byteena_a	<=byteena;
+	ram_data_a		<=wdat(7 downto 0) & wdat(15 downto 8);
+	ram_data_b		<=mist_wdat;
+	ram_wren_a		<=wren and ce;
+	ram_wren_b		<=mist_we;
+	rddattmp		<=ram_q_a;
+	mist_rdat		<=ram_q_b;
 	rdat<=rddattmp(7 downto 0) & rddattmp(15 downto 8);
 	
 	process(clk,rstn)begin

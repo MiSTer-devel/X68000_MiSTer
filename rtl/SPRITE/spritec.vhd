@@ -43,8 +43,6 @@ port(
 	rdaddr	:in std_logic_vector(8 downto 0);
 	dotout	:out std_logic_vector(7 downto 0);
 
-	debugsel	:in std_logic_vector(1 downto 0)	:="11";
-
 	clk		:in std_logic;
 	ce      :in std_logic := '1';
 	rstn	:in std_logic
@@ -63,7 +61,6 @@ signal	bgaddrr1:std_logic_vector(12 downto 0);
 signal	bg_xmod	:std_logic_vector(9 downto 0);
 signal	bg_xmodd:std_logic_vector(9 downto 0);
 signal	bg_ymod	:std_logic_vector(9 downto 0);
-signal	linenum_lat	:std_logic_vector(8 downto 0);
 signal	bg_patno	:std_logic_vector(9 downto 0);
 signal	bg_patnolsb	:std_logic_vector(1 downto 0);
 signal	bg_patsub	:std_logic_vector(1 downto 0);
@@ -161,7 +158,6 @@ begin
 					bg0voff_lat<=bg0voff;
 					bg1hoff_lat<=bg1hoff;
 					bg1voff_lat<=bg1voff;
-					linenum_lat<=linenum;
 				elsif(state=st_BG0)then
 					if(bg_state=bg_END)then
 						state<=st_BG1;
@@ -445,13 +441,13 @@ begin
 
 	dotout<=
 		(others=>'0') when spren='0' else
-		sp3rdat	when sp3rdat(3 downto 0)/="0000" and debugsel(0)='1' else
-		bg0rdat	when bg0rdat(3 downto 0)/="0000" and bgen(0)='1' and debugsel(1)='1' else
-		sp2rdat when sp2rdat(3 downto 0)/="0000" and debugsel(0)='1' else
-		bg1rdat	when bg1rdat(3 downto 0)/="0000" and bgen(1)='1' and debugsel(1)='1' else
-		sp1rdat when sp1rdat(3 downto 0)/="0000" and debugsel(0)='1' else
-		bg1rdat when bg1rdat(7 downto 4)/="0000" and bgen(1)='1' and debugsel(1)='1' and hres='0' else
-		bg0rdat when bg0rdat(7 downto 4)/="0000" and bgen(0)='1' and debugsel(1)='1' else
+		sp3rdat	when sp3rdat(3 downto 0)/="0000" else
+		bg0rdat	when bg0rdat(3 downto 0)/="0000" and bgen(0)='1' else
+		sp2rdat when sp2rdat(3 downto 0)/="0000" else
+		bg1rdat	when bg1rdat(3 downto 0)/="0000" and bgen(1)='1' else
+		sp1rdat when sp1rdat(3 downto 0)/="0000" else
+		bg1rdat when bg1rdat(7 downto 4)/="0000" and bgen(1)='1' and hres='0' else
+		bg0rdat when bg0rdat(7 downto 4)/="0000" and bgen(0)='1' else
 		(others=>'0');
 
 end rtl;

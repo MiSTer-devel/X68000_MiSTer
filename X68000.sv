@@ -41,8 +41,9 @@ assign LED_POWER = 0;
 assign BUTTONS = 0;
 
 //////////////////////////////////////////////////////////////////
-assign LED_USER  = fdd_active;
-assign LED_DISK  = {1'b1, hdd_active};
+assign LED_USER = (disk_mode_r && no_sasi_loaded) ? fdd_drive_led_state[0] : fdd_active;
+assign LED_DISK = (disk_mode_r && no_sasi_loaded) ? {1'b1, fdd_drive_led_state[1]}
+                                                   : {1'b1, hdd_active};
  
 wire [1:0] ar = status[5:4];
 
@@ -71,11 +72,21 @@ parameter CONF_STR = {
 	"P1-,Use same type in disks;",
 	"P1oFG,FDD wait (XDF/DIM),disable,seek,data,seek+data;",
 	"SC2,HDF,SASI Hard Disk;",
+	"SC4,HDS,SXSI Hard Disk 1;",
+	"SC5,HDS,SXSI Hard Disk 2;",
+	"SC6,HDS,SXSI Hard Disk 3;",
+	"SC7,HDS,SXSI Hard Disk 4;",
 	"-;",
 	"P3,SRAM;",
 	"P3SC3,RAM,SRAM;",
 	"P3RD,Load SRAM from SD Card;",
 	"P3RE,Save SRAM to SD Card;",
+	"P3-;",
+	"P3O[68],CPU RAM,DDR3,SDRAM;",
+	"P3-;",
+	"P3R[75],Inject SXSI driver (+reset);",
+	"P3O[76],Load SXSI driver on boot,No,Yes;",
+	"P3O[74:71],Visible Memory,Auto,1MB,2MB,3MB,4MB,5MB,6MB,7MB,8MB,9MB,10MB,11MB,12MB;",
 	"-;",
 	"P4,Audio & Video;",
 	"P4-;",
@@ -111,26 +122,6 @@ parameter CONF_STR = {
 	"R7,NMI Button;",
 	"R8,Power Button;",
 	"R0,Reset;",
-	"-;",
-	"P6,Debug;",
-	"P6-;",
-	"P6oL,Text Layer,On,Off;",
-	"P6oM,Graphic Layer,On,Off;",
-	"P6oN,Sprite Layer,On,Off;",
-	"P6oO,BG0 Layer,On,Off;",
-	"P6oP,BG1 Layer,On,Off;",
-	"P6-;",
-	"P6oR,Graph G0,On,Off;",
-	"P6oS,Graph G1,On,Off;",
-	"P6oT,Graph G2,On,Off;",
-	"P6oU,Graph G3,On,Off;",
-	"P6-;",
-	"P6O[65],Fast Clear,On,Off;",
-	"P6O[66],OPM Mute (debug),Off,On;",
-	"P6O[68],Use DDR3 for CPU,Yes,No;",
-	"P6-;",
-	"P6O[84],INT4 Enable,On,Off;",
-
 	"-;",
 	"J,Button 1,Button 2,Run,Select,Button 3,Button 4,Button 5,Button 6;",
 	"jn,A,B,Run,Select,X,Y,L,R;",
@@ -218,16 +209,16 @@ wire        ps2_mouse_clk_in;
 wire        ps2_mouse_data_in;
 
 wire  [31:0] sd_lba;
-wire   [3:0] sd_rd;
-wire   [3:0] sd_wr;
+wire   [7:0] sd_rd;
+wire   [7:0] sd_wr;
 
-wire  [3:0] sd_ack;
+wire  [7:0] sd_ack;
 wire  [8:0] sd_buff_addr;
 wire  [7:0] sd_buff_dout;
 wire  [7:0] sd_buff_din;
 wire        sd_buff_wr;
-wire  [3:0] img_mounted;
-wire  [3:0] img_readonly;
+wire  [7:0] img_mounted;
+wire  [7:0] img_readonly;
 wire [63:0] img_size;
 
 wire [65:0] ps2_key;
@@ -394,7 +385,7 @@ XE1AP #(40) XE1AP		// for CyberStick - 40 clock cycles per microsecond (40MHz)
 ////////////////////////////  End Joystick  ////////////////////////////////// 
 
 
-hps_io #(.CONF_STR(CONF_STR), .PS2DIV(2400), .PS2WE(1), .VDNUM(4)) hps_io
+hps_io #(.CONF_STR(CONF_STR), .PS2DIV(2400), .PS2WE(1), .VDNUM(8)) hps_io
 (
 	.clk_sys(clk_sys),
 	.HPS_BUS(HPS_BUS),
@@ -405,13 +396,13 @@ hps_io #(.CONF_STR(CONF_STR), .PS2DIV(2400), .PS2WE(1), .VDNUM(4)) hps_io
 	.info_req(mt32_info_req),
 	.info(mt32_info_disp),
 
-	.sd_lba('{sd_lba,sd_lba,sd_lba,sd_lba}),
+	.sd_lba('{sd_lba,sd_lba,sd_lba,sd_lba,sd_lba,sd_lba,sd_lba,sd_lba}),
 	.sd_rd(sd_rd),
 	.sd_wr(sd_wr),
 	.sd_ack(sd_ack),
 	.sd_buff_addr(sd_buff_addr),
 	.sd_buff_dout(sd_buff_dout),
-	.sd_buff_din('{sd_buff_din,sd_buff_din,sd_buff_din,sd_buff_din}),
+	.sd_buff_din('{sd_buff_din,sd_buff_din,sd_buff_din,sd_buff_din,sd_buff_din,sd_buff_din,sd_buff_din,sd_buff_din}),
 	.sd_buff_wr(sd_buff_wr),
  
 	.img_mounted(img_mounted),
@@ -454,25 +445,29 @@ hps_io #(.CONF_STR(CONF_STR), .PS2DIV(2400), .PS2WE(1), .VDNUM(4)) hps_io
 
 /////////////////  RESET  /////////////////////////
 
-wire [3:0] img_mounted_d;
+wire [7:0] img_mounted_d;
 wire [1:0] fdd_eject_d;
-reg [23:0] mount_count[4];
+reg [23:0] mount_count[8];
 reg [15:0] fdd_eject_count[2];
-reg [3:0] disk_present = 0;      // Track which drives have a mounted disk
-reg [3:0] post_reset_mount = 0;  // 1-cycle remount pulse for XDF after reset
+reg [7:0] disk_present = 0;      // Track which drives have a mounted disk
+reg [7:0] post_reset_mount = 0;  // 1-cycle remount pulse for XDF after reset
 assign fdd_eject_d[0] = |mount_count[0][23:16] || |fdd_eject_count[0];
 assign fdd_eject_d[1] = |mount_count[1][23:16] || |fdd_eject_count[1];
 assign img_mounted_d[0] = ~fdd_eject_d[0] && |mount_count[0];
 assign img_mounted_d[1] = ~fdd_eject_d[1] && |mount_count[1];
 assign img_mounted_d[2] = |mount_count[2];
 assign img_mounted_d[3] = |mount_count[3];
+assign img_mounted_d[4] = |mount_count[4];
+assign img_mounted_d[5] = |mount_count[5];
+assign img_mounted_d[6] = |mount_count[6];
+assign img_mounted_d[7] = |mount_count[7];
 
 reg reset_n = 0;
 reg reset;
 always @(posedge clk_sys) begin : rst_block
 	reg init_reset_n = 0;
 	reg old_rst = 0;
-	reg [3:0] old_im = 4'd0;
+	reg [7:0] old_im = 8'd0;
 	reg old_download;
 	reg old_reset;
 	reg [15:0] reset_delayed;
@@ -486,7 +481,7 @@ always @(posedge clk_sys) begin : rst_block
 	
 	post_reset_mount <= 0;
 	
-	for (logic [2:0] x = 0; x < 3'd4; x=x+1'd1) begin
+	for (logic [3:0] x = 0; x < 4'd8; x=x+1'd1) begin
 		if (mount_count[x])
 			mount_count[x] <= mount_count[x] - 1'd1;
 		if (img_mounted[x]) begin
@@ -496,7 +491,7 @@ always @(posedge clk_sys) begin : rst_block
 	end
 	
 	if (old_reset & ~reset) begin
-		for (logic [2:0] x = 0; x < 3'd4; x=x+1'd1) begin
+		for (logic [3:0] x = 0; x < 4'd8; x=x+1'd1) begin
 			if (disk_present[x])
 				mount_count[x] <= 24'h00FFFF;
 		end
@@ -554,12 +549,71 @@ wire mt32_newmode;
 wire mt32_available;
 //wire mt32_use  = mt32_available & ~mt32_disable;
 wire mt32_mute = mt32_available &  mt32_disable;
+//Mute hanging notes from the MT32-pi after a core reset
+reg        inj_act = 0;
+reg        inj_txd = 1;
+reg  [6:0] inj_idx;
+reg  [3:0] inj_bitn;
+reg [10:0] inj_div;
+reg [21:0] inj_dly = 0;
+wire [7:0] inj_byte = (inj_idx[2:0]==3'd0) ? {4'hB, inj_idx[6:3]} :
+                      (inj_idx[2:0]==3'd1) ? 8'h78 :
+                      (inj_idx[2:0]==3'd2) ? 8'h00 :
+                      (inj_idx[2:0]==3'd3) ? {4'hB, inj_idx[6:3]} :
+                      (inj_idx[2:0]==3'd4) ? 8'h7B :
+                                             8'h00;
+always @(posedge clk_sys) begin : mt32_quiet
+	reg old_r;
+	old_r <= reset;
+	if (reset) begin
+		inj_act <= 0;
+		inj_txd <= 1;
+		inj_dly <= 0;
+	end else begin
+		if (old_r) inj_dly <= 22'd2000000;
+		if (|inj_dly) begin
+			inj_dly <= inj_dly - 1'd1;
+			if (inj_dly == 22'd1) begin
+				inj_act  <= 1;
+				inj_idx  <= 0;
+				inj_bitn <= 0;
+				inj_div  <= 0;
+				inj_txd  <= 1;
+			end
+		end
+		if (inj_act) begin
+			if (inj_idx[2:0] >= 3'd6) begin
+				inj_idx <= inj_idx + 1'd1;
+				if (&inj_idx) inj_act <= 0;
+			end else begin
+				inj_div <= inj_div + 1'd1;
+				if (inj_div == 11'd1279) begin
+					inj_div <= 0;
+					case (inj_bitn)
+						4'd0:    inj_txd <= 0;
+						4'd9:    inj_txd <= 1;
+						default: inj_txd <= inj_byte[inj_bitn-1];
+					endcase
+					if (inj_bitn == 4'd9) begin
+						inj_bitn <= 0;
+						inj_idx  <= inj_idx + 1'd1;
+						if (&inj_idx) inj_act <= 0;
+					end else begin
+						inj_bitn <= inj_bitn + 1'd1;
+					end
+				end
+			end
+		end else if (!(|inj_dly)) begin
+			inj_txd <= 1;
+		end
+	end
+end
 
 mt32pi mt32pi
 (
 	.*,
 	.reset(mt32_reset),
-	.midi_tx(UART_TXD | mt32_mute)
+	.midi_tx((inj_act ? inj_txd : UART_TXD) | mt32_mute)
 );
 
 reg mt32_info_req;
@@ -606,10 +660,18 @@ wire [1:0] fdsync = status[10:9];
 wire [1:0] fdeject = status[12:11];
 wire sramld	= status[13];
 wire sramst = status[14];
+wire [3:0] vis_mem = status[74:71];
 wire [2:0] kbdtype = status[36:34];
+wire sxsi_boot = status[76];
+reg  sxsi_boot_pulse = 0;
+always @(posedge clk_sys) begin : sxsi_boot_block
+	reg old_boot = 1'b0;
+	old_boot <= sxsi_boot;
+	sxsi_boot_pulse <= 0;
+	if (~old_boot & sxsi_boot) sxsi_boot_pulse <= 1'b1;
+end
 wire [1:0] fddwait = status[48:47];
 wire [1:0] vid_mode = status[70:69];
-wire       e_ln4    = ~status[84];
 
 assign CLK_VIDEO = clk_vid;
 assign AUDIO_S = 1;
@@ -655,14 +717,12 @@ always @(posedge clk_sys) begin
 end
 
 reg disk_mode_r = 0;
-reg [3:0] img_mounted_d1; 
 always @(posedge clk_sys) begin
-	img_mounted_d1 <= img_mounted;
 	if ((img_mounted[0] || img_mounted[1]) && |img_size)
 		disk_mode_r <= |ioctl_index[7:6];
 end
 
-wire disk_mode = disk_mode_r;
+wire disk_mode = disk_mode_r & (disk_present[0] | disk_present[1]);
 
 ddram ddram_cpu_ram
 (
@@ -746,7 +806,7 @@ X68K_top X68K_top
 	.mist_lba(sd_lba),
 	.mist_rd(sd_rd),
 	.mist_wr(sd_wr),
-	.mist_ack(disk_mode ? sd_ack : {sd_ack[3:2], |sd_ack[1:0], |sd_ack[1:0]}),
+	.mist_ack(disk_mode ? {4'b0000, sd_ack[3:0]} : {sd_ack[7:5], sd_ack[4], sd_ack[3:2], |sd_ack[1:0], |sd_ack[1:0]}),
 
 	.mist_buffaddr(sd_buff_addr),
 	.mist_buffdout(sd_buff_dout),
@@ -763,6 +823,8 @@ X68K_top X68K_top
 	.pFDSYNC(fdsync),
 	.pFDEJECT(fdd_eject_d),
 	.pFDMOTOR(fdd_active),
+	.pFDACTIVE(fdd_drive_activity_raw),
+	.pFDEJECTED(fdd_eject_latched),
 
 	.pLed(disk_led),
 	.pDip(4'b0000),
@@ -799,14 +861,9 @@ X68K_top X68K_top
 	.vid_mode(vid_mode),
 	.dHMode(status[45:44]),
 	.dVMode(status[46]),
-	.dLayers(status[57:53]),
 	.opm_sel(status[58]),
-	.dGrpLayers(status[62:59]),
-	.gclr_dis(status[65]),
-	.opm_mute(status[66]),
 	.pMidi_en(status[67]),
 	.use_ddr3(~status[68]),
-	.e_ln4(e_ln4),
 	.mix_fix(1'b1),
 	.ddr_addr(ddr_addr),
 	.ddr_din(ddr_din),
@@ -814,7 +871,9 @@ X68K_top X68K_top
 	.ddr_rd(ddr_rd),
 	.ddr_wr(ddr_wr),
 	.ddr_ack(ddr_ack),
-	.ddr_ready(ddr_ready)
+	.ddr_ready(ddr_ready),
+	.sxsi_inject(status[75] | sxsi_boot_pulse),
+	.vis_mem(vis_mem)
 );
 
 wire ldr_ack;
@@ -834,7 +893,22 @@ end
 
 wire hdd_active;
 wire fdd_active;
+wire [1:0] fdd_drive_activity_raw;
+wire [1:0] fdd_drive_activity;
+wire [1:0] fdd_eject_latched;
+wire [1:0] fdd_drive_led_state;
+wire no_sasi_loaded = ~(disk_present[2] | (|disk_present[7:4]));
+reg [24:0] fdd_blink_counter = 0;
+wire fdd_eject_blink = fdd_blink_counter[24];
+always @(posedge clk_sys) begin
+	if(reset) fdd_blink_counter <= 0;
+	else      fdd_blink_counter <= fdd_blink_counter + 1'd1;
+end
+assign fdd_drive_led_state[0] = fdd_eject_latched[0] ? fdd_eject_blink : fdd_drive_activity[0];
+assign fdd_drive_led_state[1] = fdd_eject_latched[1] ? fdd_eject_blink : fdd_drive_activity[1];
 led hdd_led(clk_sys,  sd_ack[2],   hdd_active);
+led fdd0_led(clk_sys, fdd_drive_activity_raw[0], fdd_drive_activity[0]);
+led fdd1_led(clk_sys, fdd_drive_activity_raw[1], fdd_drive_activity[1]);
 //led fdd_led(clk_sys, |sd_ack[1:0], fdd_active);
 
 
@@ -989,7 +1063,7 @@ always @(posedge clk) begin
 		counter <= counter - 1'b1;
 		out <= 1;
 	end
-	
+
 	if(in) counter <= 4500000;
 end
 

@@ -231,6 +231,7 @@ begin
 	end process;
 	
 	regArdat<=
+		x"04" when regAno=x"0" else
 		iVectR when regAno=x"2" else
 		x"00";
 	

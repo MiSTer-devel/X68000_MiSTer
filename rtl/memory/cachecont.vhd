@@ -181,6 +181,8 @@ signal	brdath	:brdat_t;
 signal	brdatl	:brdat_t;
 signal	brack		:std_logic;
 signal	backx		:std_logic;
+signal	b_ack_q		:std_logic;
+signal	cpu_dirty_hazard:std_logic;
 signal	bwack		:std_logic;
 signal	bwwr0		:std_logic_vector(1 downto 0);
 signal	bwwr1		:std_logic_vector(1 downto 0);
@@ -320,6 +322,7 @@ signal	sbrmwack	:std_logic;
 
 signal	refcount		:integer range 0 to refcnt-1;
 signal	vidcount		:integer range 0 to 2;
+signal	cpu_urgent_used	:std_logic;
 type state_t is (
 	ST_IDLE,
 	ST_BREAD,
@@ -357,7 +360,8 @@ signal	rmw_state	:rmwstate_t;
 
 component cacheext
 generic(
-	awidth	:integer	:=8
+	awidth	:integer	:=8;
+	cdcfilt	:integer	:=1
 );
 port(
 	wraddr	:in std_logic_vector(awidth-1 downto 0);
@@ -399,7 +403,8 @@ END component;
 
 component CACHEMEMWN
 	generic(
-		awidth	:integer	:=8
+		awidth	:integer	:=8;
+		ramtype :string     :="AUTO"
 	);
 	PORT
 	(
@@ -470,6 +475,8 @@ begin
 
 	bwaddr_sel<=bwaddr0 when bwcache_sel='0' else bwaddr1;
 	bwcache_dirty <= '1' when waddrmin<=waddrmax else '0';
+	cpu_dirty_hazard <= '1' when sb_rd='1' and bwcache_dirty='1' and
+								 sb_addr(awidth-1 downto brsize)=bwaddr_sel else '0';
 	vid_hazard <= '1' when bwcache_dirty='1' and brsize<9 and (
 		(g00_rd='1' and g00_addr(awidth-1 downto 9)/=g00addrh and
 		 bwaddr_sel(awidth-brsize-1 downto 9-brsize)=g00_addr(awidth-1 downto 9)) or
@@ -646,6 +653,7 @@ begin
 			bwcache_clr1<='0';
 			refcount<=refint-1;
 			vidcount<=0;
+			cpu_urgent_used<='0';
 			dual_phase<='0';
 			bcpend<='0';
 			bcackx<='0';
@@ -703,7 +711,33 @@ begin
 						refcount<=refint-1;
 						RAM_STATE<=ST_REFRSH;
 						vidcount<=0;
-					elsif(braddrnone='1' and (sb_rd='1' or sb_rmw/="00") and rambusy='0' and brcache_busy='0' and sb_addr(22 downto 17)="000000")then
+					elsif(cpu_dirty_hazard='1' and rambusy='0' and bwcache_busy='0')then
+						ramaddrh<=bwaddr_sel(awidth-brsize-1 downto 8-brsize);
+						if(bwcache_sel='0')then
+							bwaddr1<=sb_addr(awidth-1 downto brsize);
+							bwcache_clr1<='1';
+						else
+							bwaddr0<=sb_addr(awidth-1 downto brsize);
+							bwcache_clr0<='1';
+						end if;
+						rambgnaddr(brsize-1 downto 0)<=waddrmin;
+						ramendaddr(brsize-1 downto 0)<=waddrmax;
+						if(brsize<8)then
+							rambgnaddr(7 downto brsize)<=bwaddr_sel(7-brsize downto 0);
+							ramendaddr(7 downto brsize)<=bwaddr_sel(7-brsize downto 0);
+						end if;
+						for i in 0 to brblocks-1 loop
+							if(braddr(i)=('0' & sb_addr(awidth-1 downto brsize)))then
+								braddr(i)<=(others=>'1');
+								brcache_clr(i)<='1';
+							end if;
+						end loop;
+						bwcache_sel<=not bwcache_sel;
+						wminmaxclr<='1';
+						ramwr<='1';
+						vidcount<=0;
+						RAM_STATE<=ST_BWRITE;
+					elsif(cpu_urgent_used='0' and braddrnone='1' and (sb_rd='1' or sb_rmw/="00") and rambusy='0' and brcache_busy='0' and sb_addr(22 downto 17)="000000")then
 						ramaddrh<=sb_addr(awidth-1 downto 8);
 						rambgnaddr<=sb_addr(7 downto 0);
 						ramendaddr<=sb_addr(7 downto 0);
@@ -718,6 +752,7 @@ begin
 						end if;
 						ramrd<='1';
 						vidcount<=0;
+						cpu_urgent_used<='1';
 						RAM_STATE<=ST_BREAD;
 					elsif(vid_hazard='1' and rambusy='0' and bwcache_busy='0')then
 						ramaddrh<=bwaddr_sel(awidth-brsize-1 downto 8-brsize);
@@ -739,7 +774,7 @@ begin
 						ramwr<='1';
 						vidcount<=0;
 						RAM_STATE<=ST_BWRITE;
-					elsif(g00_addr(awidth-1 downto 9)/=g00addrh and g00_rd='1' and vidcount<1 and rambusy='0')then
+					elsif(g00_addr(awidth-1 downto 9)/=g00addrh and g00_rd='1' and vidcount<2 and rambusy='0')then
 						g00addrh<=g00_addr(awidth-1 downto 9);
 						if(g00_addr(awidth-1 downto 9)=g01_addr(awidth-1 downto 9))then
 							g01addrh<=g00_addr(awidth-1 downto 9);
@@ -757,7 +792,7 @@ begin
 						ramrd<='1';
 						vidcount<=vidcount+1;
 						dual_phase<='0';
-					elsif(g01_addr(awidth-1 downto 9)/=g01addrh and g01_rd='1' and vidcount<1 and rambusy='0')then
+					elsif(g01_addr(awidth-1 downto 9)/=g01addrh and g01_rd='1' and vidcount<2 and rambusy='0')then
 						g01addrh<=g01_addr(awidth-1 downto 9);
 						ramaddrh<=g01_addr(awidth-1 downto 9) & '0';
 						RAM_STATE<=ST_G01READ;
@@ -766,7 +801,7 @@ begin
 						ramrd<='1';
 						vidcount<=vidcount+1;
 						dual_phase<='0';
-					elsif(g02_addr(awidth-1 downto 9)/=g02addrh and g02_rd='1' and vidcount<1 and rambusy='0')then
+					elsif(g02_addr(awidth-1 downto 9)/=g02addrh and g02_rd='1' and vidcount<2 and rambusy='0')then
 						g02addrh<=g02_addr(awidth-1 downto 9);
 						if(g02_addr(awidth-1 downto 9)=g03_addr(awidth-1 downto 9))then
 							g03addrh<=g02_addr(awidth-1 downto 9);
@@ -778,7 +813,7 @@ begin
 						ramrd<='1';
 						vidcount<=vidcount+1;
 						dual_phase<='0';
-					elsif(g03_addr(awidth-1 downto 9)/=g03addrh and g03_rd='1' and vidcount<1 and rambusy='0')then
+					elsif(g03_addr(awidth-1 downto 9)/=g03addrh and g03_rd='1' and vidcount<2 and rambusy='0')then
 						g03addrh<=g03_addr(awidth-1 downto 9);
 						ramaddrh<=g03_addr(awidth-1 downto 9) & '0';
 						RAM_STATE<=ST_G03READ;
@@ -787,7 +822,7 @@ begin
 						ramrd<='1';
 						vidcount<=vidcount+1;
 						dual_phase<='0';
-					elsif(t0_addr(awidth-3 downto 6)/=t0addrh and t0_rd='1' and vidcount<1 and rambusy='0')then
+					elsif(t0_addr(awidth-3 downto 6)/=t0addrh and t0_rd='1' and vidcount<2 and rambusy='0')then
 						t0addrh<=t0_addr(awidth-3 downto 6);
 						ramaddrh<=t0_addr(awidth-3downto 6);
 						RAM_STATE<=ST_T0READ;
@@ -795,7 +830,7 @@ begin
 						ramendaddr<=(others=>'0');
 						ramrd<='1';
 						vidcount<=vidcount+1;
-					elsif(g10_addr(awidth-1 downto 9)/=g10addrh and g10_rd='1' and vidcount<1 and rambusy='0')then
+					elsif(g10_addr(awidth-1 downto 9)/=g10addrh and g10_rd='1' and vidcount<2 and rambusy='0')then
 						g10addrh<=g10_addr(awidth-1 downto 9);
 						if(g10_addr(awidth-1 downto 9)=g11_addr(awidth-1 downto 9))then
 							g11addrh<=g10_addr(awidth-1 downto 9);
@@ -813,7 +848,7 @@ begin
 						ramrd<='1';
 						vidcount<=vidcount+1;
 						dual_phase<='0';
-					elsif(g11_addr(awidth-1 downto 9)/=g11addrh and g11_rd='1' and vidcount<1 and rambusy='0')then
+					elsif(g11_addr(awidth-1 downto 9)/=g11addrh and g11_rd='1' and vidcount<2 and rambusy='0')then
 						g11addrh<=g11_addr(awidth-1 downto 9);
 						ramaddrh<=g11_addr(awidth-1 downto 9) & '0';
 						RAM_STATE<=ST_G11READ;
@@ -822,7 +857,7 @@ begin
 						ramrd<='1';
 						vidcount<=vidcount+1;
 						dual_phase<='0';
-					elsif(g12_addr(awidth-1 downto 9)/=g12addrh and g12_rd='1' and vidcount<1 and rambusy='0')then
+					elsif(g12_addr(awidth-1 downto 9)/=g12addrh and g12_rd='1' and vidcount<2 and rambusy='0')then
 						g12addrh<=g12_addr(awidth-1 downto 9);
 						if(g12_addr(awidth-1 downto 9)=g13_addr(awidth-1 downto 9))then
 							g13addrh<=g12_addr(awidth-1 downto 9);
@@ -834,7 +869,7 @@ begin
 						ramrd<='1';
 						vidcount<=vidcount+1;
 						dual_phase<='0';
-					elsif(g13_addr(awidth-1 downto 9)/=g13addrh and g13_rd='1' and vidcount<1 and rambusy='0')then
+					elsif(g13_addr(awidth-1 downto 9)/=g13addrh and g13_rd='1' and vidcount<2 and rambusy='0')then
 						g13addrh<=g13_addr(awidth-1 downto 9);
 						ramaddrh<=g13_addr(awidth-1 downto 9) & '0';
 						RAM_STATE<=ST_G13READ;
@@ -843,7 +878,7 @@ begin
 						ramrd<='1';
 						vidcount<=vidcount+1;
 						dual_phase<='0';
-					elsif(t1_addr(awidth-3 downto 6)/=t1addrh and t1_rd='1' and vidcount<1 and rambusy='0')then
+					elsif(t1_addr(awidth-3 downto 6)/=t1addrh and t1_rd='1' and vidcount<2 and rambusy='0')then
 						t1addrh<=t1_addr(awidth-3 downto 6);
 						ramaddrh<=t1_addr(awidth-3downto 6);
 						RAM_STATE<=ST_T1READ;
@@ -1012,6 +1047,9 @@ begin
 							if(refcount>0)then
 								refcount<=refcount-1;
 							end if;
+							if(vidcount=2)then
+								cpu_urgent_used<='0';
+							end if;
 							RAM_STATE<=ST_IDLE;
 						end if;
 					end if;
@@ -1020,6 +1058,9 @@ begin
 					if(rambusy='0')then
 						if(RAM_STATE/=ST_REFRSH)then
 							refcount<=refcount-1;
+						end if;
+						if((RAM_STATE=ST_T0READ or RAM_STATE=ST_T1READ) and vidcount=2)then
+							cpu_urgent_used<='0';
 						end if;
 						RAM_STATE<=ST_IDLE;
 						if(RAM_STATE=ST_FECREAD or RAM_STATE=ST_FECWRITE)then
@@ -1198,22 +1239,27 @@ begin
 		end loop;
 	end process;
 	
-	process(b_rd,b_addr,braddr,brcache_ext)begin
+	process(b_rd,b_addr,braddr,brcache_ext,bwcache_dirty,bwaddr_sel)begin
 		brack<='0';
 		for i in brblocks-1 downto 0 loop
-			if(b_rd='1' and braddr(i)=('0' & b_addr(awidth-1 downto brsize)) and brcache_ext(i)='1')then
+			if(b_rd='1' and braddr(i)=('0' & b_addr(awidth-1 downto brsize)) and
+			   brcache_ext(i)='1' and not (bwcache_dirty='1' and
+			   b_addr(awidth-1 downto brsize)=bwaddr_sel))then
 				brack<='1';
 			end if;
 		end loop;
 	end process;
 	backx<=brack or	bwack or brmwack;
 	bcread<=brack;
+
+	b_ack <= b_ack_q and backx;
+
 	process(sclk,rstn)begin
 		if(rstn='0')then
-			b_ack<='0';
+			b_ack_q<='0';
 		elsif rising_edge(sclk) then
 			if (sys_ce = '1') then
-				b_ack<=backx;
+				b_ack_q<=backx;
 			end if;
 		end if;
 	end process;
@@ -1290,10 +1336,10 @@ begin
 	bwwr0m<=bwwr0 or (b_cwr0 & b_cwr0);
 	bwwr1m<=bwwr1 or (b_cwr1 & b_cwr1);
 	--BWewaddr<= ramaddrrc when RAM_STATE=ST_BCREAD else b_addr(7 downto 0);
-	BWext0h	:cacheext generic map(brsize) port map(ramaddrwex(brsize-1 downto 0),bwwr0m(1),bwcache_clr0,bwcache_busy0,ramaddrwc(brsize-1 downto 0),bwwe0(1),'0',rclk, ram_ce, rclk, ram_ce, rstn);
-	BWext0l	:cacheext generic map(brsize) port map(ramaddrwex(brsize-1 downto 0),bwwr0m(0),bwcache_clr0,open,         ramaddrwc(brsize-1 downto 0),bwwe0(0),'0',rclk, ram_ce, rclk, ram_ce, rstn);
-	BWext1h	:cacheext generic map(brsize) port map(ramaddrwex(brsize-1 downto 0),bwwr1m(1),bwcache_clr1,bwcache_busy1,ramaddrwc(brsize-1 downto 0),bwwe1(1),'0',rclk, ram_ce, rclk, ram_ce, rstn);
-	BWext1l	:cacheext generic map(brsize) port map(ramaddrwex(brsize-1 downto 0),bwwr1m(0),bwcache_clr1,open,         ramaddrwc(brsize-1 downto 0),bwwe1(0),'0',rclk, ram_ce, rclk, ram_ce, rstn);
+	BWext0h	:cacheext generic map(brsize,0) port map(ramaddrwex(brsize-1 downto 0),bwwr0m(1),bwcache_clr0,bwcache_busy0,ramaddrwc(brsize-1 downto 0),bwwe0(1),'0',rclk, ram_ce, rclk, ram_ce, rstn);
+	BWext0l	:cacheext generic map(brsize,0) port map(ramaddrwex(brsize-1 downto 0),bwwr0m(0),bwcache_clr0,open,         ramaddrwc(brsize-1 downto 0),bwwe0(0),'0',rclk, ram_ce, rclk, ram_ce, rstn);
+	BWext1h	:cacheext generic map(brsize,0) port map(ramaddrwex(brsize-1 downto 0),bwwr1m(1),bwcache_clr1,bwcache_busy1,ramaddrwc(brsize-1 downto 0),bwwe1(1),'0',rclk, ram_ce, rclk, ram_ce, rstn);
+	BWext1l	:cacheext generic map(brsize,0) port map(ramaddrwex(brsize-1 downto 0),bwwr1m(0),bwcache_clr1,open,         ramaddrwc(brsize-1 downto 0),bwwe1(0),'0',rclk, ram_ce, rclk, ram_ce, rstn);
 	bwcache_busy<=bwcache_busy0 or bwcache_busy1;
 	
 	BWcache0h	:CACHEMEMN generic map(brsize,8)port map(ramaddrwcb(brsize-1 downto 0),b_addr(brsize-1 downto 0),rclk,sclk,ramrdat(15 downto 8),b_wdatm(15 downto 8),b_cwr0 and ram_ce,bwwr0(1) and sys_ce,bwwdat0h,open);
@@ -1460,10 +1506,10 @@ begin
 	t0rwrq(3)<=t0rwr when ramaddrrc(1 downto 0)="11" else '0';
 
 	t0rwdat<=t0rwdath & t0rwdatl;
-	T00Rcache	:CACHEMEMWN generic map(6)port map(t0rwdat,t0_addr(5 downto 0),vclk,ramaddrrc(7 downto 2),rclk,t0rwrq(0) and ram_ce,t0_rdat0);
-	T01Rcache	:CACHEMEMWN generic map(6)port map(t0rwdat,t0_addr(5 downto 0),vclk,ramaddrrc(7 downto 2),rclk,t0rwrq(1) and ram_ce,t0_rdat1);
-	T02Rcache	:CACHEMEMWN generic map(6)port map(t0rwdat,t0_addr(5 downto 0),vclk,ramaddrrc(7 downto 2),rclk,t0rwrq(2) and ram_ce,t0_rdat2);
-	T03Rcache	:CACHEMEMWN generic map(6)port map(t0rwdat,t0_addr(5 downto 0),vclk,ramaddrrc(7 downto 2),rclk,t0rwrq(3) and ram_ce,t0_rdat3);
+	T00Rcache	:CACHEMEMWN generic map(awidth=>6,ramtype=>"MLAB")port map(t0rwdat,t0_addr(5 downto 0),vclk,ramaddrrc(7 downto 2),rclk,t0rwrq(0) and ram_ce,t0_rdat0);
+	T01Rcache	:CACHEMEMWN generic map(awidth=>6,ramtype=>"MLAB")port map(t0rwdat,t0_addr(5 downto 0),vclk,ramaddrrc(7 downto 2),rclk,t0rwrq(1) and ram_ce,t0_rdat1);
+	T02Rcache	:CACHEMEMWN generic map(awidth=>6,ramtype=>"MLAB")port map(t0rwdat,t0_addr(5 downto 0),vclk,ramaddrrc(7 downto 2),rclk,t0rwrq(2) and ram_ce,t0_rdat2);
+	T03Rcache	:CACHEMEMWN generic map(awidth=>6,ramtype=>"MLAB")port map(t0rwdat,t0_addr(5 downto 0),vclk,ramaddrrc(7 downto 2),rclk,t0rwrq(3) and ram_ce,t0_rdat3);
 
 	t0_addra<=t0_addr & "11";
 	t0ack	:vrcack generic map(awidth,8)port map(t0_rd,t0_addra,t0addrh,ramaddrrc,t0rwr,t0_ack,vclk,vid_ce,rstn);
@@ -1558,10 +1604,10 @@ begin
 	t1rwrq(3)<=t1rwr when ramaddrrc(1 downto 0)="11" else '0';
 
 	t1rwdat<=t1rwdath & t1rwdatl;
-	T10Rcache	:CACHEMEMWN generic map(6)port map(t1rwdat,t1_addr(5 downto 0),vclk,ramaddrrc(7 downto 2),rclk,t1rwrq(0) and ram_ce,t1_rdat0);
-	T11Rcache	:CACHEMEMWN generic map(6)port map(t1rwdat,t1_addr(5 downto 0),vclk,ramaddrrc(7 downto 2),rclk,t1rwrq(1) and ram_ce,t1_rdat1);
-	T12Rcache	:CACHEMEMWN generic map(6)port map(t1rwdat,t1_addr(5 downto 0),vclk,ramaddrrc(7 downto 2),rclk,t1rwrq(2) and ram_ce,t1_rdat2);
-	T13Rcache	:CACHEMEMWN generic map(6)port map(t1rwdat,t1_addr(5 downto 0),vclk,ramaddrrc(7 downto 2),rclk,t1rwrq(3) and ram_ce,t1_rdat3);
+	T10Rcache	:CACHEMEMWN generic map(awidth=>6,ramtype=>"MLAB")port map(t1rwdat,t1_addr(5 downto 0),vclk,ramaddrrc(7 downto 2),rclk,t1rwrq(0) and ram_ce,t1_rdat0);
+	T11Rcache	:CACHEMEMWN generic map(awidth=>6,ramtype=>"MLAB")port map(t1rwdat,t1_addr(5 downto 0),vclk,ramaddrrc(7 downto 2),rclk,t1rwrq(1) and ram_ce,t1_rdat1);
+	T12Rcache	:CACHEMEMWN generic map(awidth=>6,ramtype=>"MLAB")port map(t1rwdat,t1_addr(5 downto 0),vclk,ramaddrrc(7 downto 2),rclk,t1rwrq(2) and ram_ce,t1_rdat2);
+	T13Rcache	:CACHEMEMWN generic map(awidth=>6,ramtype=>"MLAB")port map(t1rwdat,t1_addr(5 downto 0),vclk,ramaddrrc(7 downto 2),rclk,t1rwrq(3) and ram_ce,t1_rdat3);
 
 	t1_addra<=t1_addr & "11";
 	t1ack	:vrcack generic map(awidth,8)port map(t1_rd,t1_addra,t1addrh,ramaddrrc,t1rwr,t1_ack,vclk,vid_ce,rstn);

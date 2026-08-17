@@ -46,7 +46,10 @@ port(
 	clk			:in std_logic;
 	ce          :in std_logic := '1';
 	is_ch3		:in std_logic;
-	rstn		:in std_logic
+	scsi_mode	:in std_logic := '0';
+	rstn		:in std_logic;
+
+	sabevt_out	:out std_logic := '0'
 );
 end dma1ch;
 
@@ -65,6 +68,9 @@ signal	S_CER	:std_logic_vector(4 downto 0);
 signal	S_COCset:std_logic;
 signal	S_COCres:std_logic;
 signal	S_BTCset:std_logic;
+signal	S_BTCset_x:std_logic;
+signal	SABevt:std_logic;
+signal	STRpend:std_logic;
 signal	S_BTCres:std_logic;
 signal	S_NDTset:std_logic;
 signal	S_NDTres:std_logic;
@@ -120,6 +126,9 @@ signal	DAR_decw		:std_logic;
 signal	DAR_incl		:std_logic;
 signal	DAR_decl		:std_logic;
 signal	DAR_dec3		:std_logic;
+signal	DAR_dec6		:std_logic;
+signal	DAR_inc8		:std_logic;
+signal	DAR_dec8		:std_logic;
 
 signal	BTC_dec		:std_logic;
 
@@ -134,6 +143,7 @@ signal	GCR_BR		:std_logic_vector(1 downto 0);
 
 signal	TXDAT		:std_logic_vector(31 downto 0);
 signal	bytecnt		:integer range 0 to 3;
+signal	l32_step	:integer range 0 to 5;
 
 signal	int_comp	:std_logic;
 
@@ -151,6 +161,8 @@ type state_t is(
 	ST_CHDIR,
 	ST_WRITE,
 	ST_NEXT,
+	ST_L32_SETUP,
+	ST_L32_ACK,
 	ST_NBLOCK,
 	ST_CONT,
 	ST_CHAINBUSWAIT,
@@ -171,15 +183,14 @@ signal	STATE	:state_t;
 signal	drqx	:std_logic;
 signal	drqe	:std_logic;
 signal	drqeclr:std_logic;
-signal	ldrq	:std_logic;
-signal	CONT	:std_logic;
-signal	CONT_clr:std_logic;
 signal	CCR_CNT_clr:std_logic;
 signal	BAR_clr:std_logic;
 signal	BTC_clr:std_logic;
 
+
 signal	TERR_SET	:std_logic;
 signal	CERR_SET	:std_logic;
+signal	MERR_EVT	:std_logic;
 signal	TERR_CNT	:std_logic;
 signal	CERR_CNT	:std_logic;
 
@@ -203,19 +214,24 @@ begin
 	dtc <= '0';
 	pclo <= '0';
 
-	S_NDTset <= '0';
+	S_NDTset <= int_comp;
 	S_DITset <= '0';
 	S_PCTset <= '0';
 
 	COCR	:g_srff port map(S_COCset,S_COCres,S_COC,clk,ce,rstn);
-	BTCR	:g_srff port map(S_BTCset,S_BTCres,S_BTC,clk,ce,rstn);
+	BTCR	:g_srff port map(S_BTCset_x,S_BTCres,S_BTC,clk,ce,rstn);
 	NDTR	:g_srff port map(S_NDTset,S_NDTres,S_NDT,clk,ce,rstn);
 	ERRR	:g_srff port map(S_ERRset,S_ERRres,S_ERR,clk,ce,rstn);
 	DITR	:g_srff port map(S_DITset,S_DITres,S_DIT,clk,ce,rstn);
 	PCTR	:g_srff port map(S_PCTset,S_PCTres,S_PCT,clk,ce,rstn);
 
 	S_BTCres<=regwdat(14) when regaddr(5 downto 1)="00000" and regwr(1)='1' else '0';
-	S_COCset<=int_comp;
+	SABevt<='1' when CCR_SAB='1' and CHactive='1' and is_ch3='1' else '0';
+	MERR_EVT<='1' when STATE=ST_IDLE and CHactive='1' and
+	                     OCR_CHAIN="00" and MTC=x"0000" else '0';
+	sabevt_out<=SABevt;
+	S_COCset<=int_comp or SABevt;
+	S_BTCset_x<=S_BTCset or int_comp;
 
 	S_COCres<=regwdat(15) when regaddr(5 downto 1)="00000" and regwr(1)='1' else '0';
 	S_NDTres<=regwdat(13) when regaddr(5 downto 1)="00000" and regwr(1)='1' else '0';
@@ -288,14 +304,13 @@ begin
 					end if;
 					if(regwr(0)='1')then
 						CCR_STR<=regwdat(7);
-						CCR_CNT<=regwdat(6);
+						if(regwdat(6)='1')then
+							CCR_CNT<='1';
+						end if;
 						CCR_HLT<=regwdat(5);
 						CCR_SAB<=regwdat(4);
 						CCR_INT<=regwdat(3);
 					end if;
-				if(CCR_CNT_clr='1')then
-					CCR_CNT<='0';
-				end if;
 				when "10010" =>
 					if(regwr(0)='1')then
 						NIV<=regwdat(7 downto 0);
@@ -310,6 +325,10 @@ begin
 					end if;
 				when others =>
 				end case;
+				if(CCR_CNT_clr='1' or CCR_SAB='1' or MERR_EVT='1' or
+				   int_comp='1')then
+					CCR_CNT<='0';
+				end if;
 			end if;
 		end if;
 	end process;
@@ -415,10 +434,16 @@ begin
 						DAR(7 downto 0)<=regwdat(7 downto 0);
 					end if;
 				end if;
-				if(DAR_incl='1')then
+				if(DAR_inc8='1')then
+					DAR<=DAR+x"00000008";
+				elsif(DAR_dec8='1')then
+					DAR<=DAR-x"00000008";
+				elsif(DAR_incl='1')then
 					DAR<=DAR+x"00000004";
 				elsif(DAR_decl='1')then
 					DAR<=DAR-x"00000004";
+				elsif(DAR_dec6='1')then
+					DAR<=DAR-x"00000006";
 				elsif(DAR_dec3='1')then
 					DAR<=DAR-x"00000003";
 				elsif(DAR_incw='1')then
@@ -580,13 +605,21 @@ begin
 		if rising_edge(clk) then
 			if(rstn='0')then
 				CHactive<='0';
+				STRpend<='0';
 			elsif(ce = '1')then
 				if(CCR_STR='1')then
 					CHactive<='1';
+				elsif(MERR_EVT='1')then
+					CHactive<='0';
 				elsif(CCR_SAB='1')then
 					CHactive<='0';
 				elsif(int_comp='1')then
 					CHactive<='0';
+				end if;
+				if(CCR_STR='1' and is_ch3='1' and STATE/=ST_IDLE)then
+					STRpend<='1';
+				elsif(STATE=ST_IDLE)then
+					STRpend<='0';
 				end if;
 			end if;
 		end if;
@@ -606,7 +639,6 @@ begin
 				busreq<='0';
 --puu
 				if(is_ch3='1') then
-					ldrq<='0';
 				end if;
 				
 				dack<='0';
@@ -621,6 +653,7 @@ begin
 				d_wr<='0';
 				TXDAT<=(others=>'0');
 				bytecnt<=0;
+				l32_step<=0;
 
 				MTC_dec		<='0';
 				MTC_dec2		<='0';
@@ -633,6 +666,7 @@ begin
 				MAR_decw	<='0';
 				MAR_incl	<='0';
 				MAR_decl	<='0';
+				MAR_dec3	<='0';
 				MAR_loadh	<='0';
 				MAR_loadl	<='0';
 				MAR_BAR		<='0';
@@ -643,6 +677,10 @@ begin
 				DAR_decw		<='0';
 				DAR_incl		<='0';
 				DAR_decl		<='0';
+				DAR_dec3		<='0';
+				DAR_dec6		<='0';
+				DAR_inc8		<='0';
+				DAR_dec8		<='0';
 
 				BTC_dec		<='0';
 
@@ -652,7 +690,6 @@ begin
 
 				MFC_BFC		<='0';
 
-				CONT_clr<='0';
 				CCR_CNT_clr<='0';
 				BAR_clr<='0';
 				BTC_clr<='0';
@@ -683,18 +720,19 @@ begin
 				DAR_incl		<='0';
 				DAR_decl		<='0';
 				DAR_dec3		<='0';
+				DAR_dec6		<='0';
+				DAR_inc8		<='0';
+				DAR_dec8		<='0';
 				BTC_dec		<='0';
 				BAR_loadh	<='0';
 				BAR_loadl	<='0';
 				BAR_inc		<='0';
 				MFC_BFC		<='0';
-				CONT_clr<='0';
 				CCR_CNT_clr<='0';
 				BAR_clr<='0';
 				BTC_clr<='0';
 --puu				
 				if(is_ch3='1') then
-					ldrq<=drqx;
 				end if;
 				
 				int_comp<='0';
@@ -706,24 +744,36 @@ begin
 					case STATE is
 					when ST_IDLE =>
 						if(CHactive='1')then
---puu
-							--drqeclr<='1';
-							if(is_ch3='0') then
+							if(MERR_EVT='1')then
+								busreq<='0';
+								STATE<=ST_IDLE;
+							elsif(is_ch3='0') then
 								drqeclr<='1';
 							end if;
-							
-							CONTMODE<='0';
-							if(OCR_CHAIN(1)='1')then
-								busreq<='1';
-								STATE<=ST_CHAINBUSWAIT;
-								reqwait<='1';
-							else
-								state<=st_RQWAIT;
+							if(MERR_EVT='0')then
+								CONTMODE<='0';
+								if(OCR_CHAIN(1)='1')then
+									busreq<='1';
+									STATE<=ST_CHAINBUSWAIT;
+									reqwait<='1';
+								else
+									state<=st_RQWAIT;
+									if(scsi_mode='1')then
+										reqwait<='1';
+									end if;
+								end if;
 							end if;
 						end if;
 					when ST_RQWAIT =>
-						if(CHactive='0')then
+						if(CHactive='0' or STRpend='1' or
+						   (CCR_STR='1' and is_ch3='1' and CHactive='1'))then
 							STATE<=ST_IDLE;
+							if(STRpend='1' or
+							   (CCR_STR='1' and is_ch3='1' and CHactive='1'))then
+								drqeclr<='1';
+							end if;
+						elsif(CCR_HLT='1')then
+							busreq<='0';
 						else
 							case OCR_REQG is
 							when "00" | "01" =>
@@ -776,36 +826,46 @@ begin
 					when ST_BUSWAIT =>
 						busreq<='1';
 						if(busact='1')then
-							if(DCR_DTYPE(1)='1')then	--single address
-								if(OCR_DIR='0')then		--MEM->DEV
+							if(DCR_DTYPE(1)='1')then
+								if(OCR_DIR='0')then
 									BUSADDR<=MAR;
 									b_as<='0';
 									b_rwn<='1';
-									if(DCR_DPS='1')then	--16bit
+									if(DCR_DPS='1')then
 										b_lds<='0';
 										b_uds<='0';
-									else				--8bit
+									else
 										b_uds<=MAR(0);
 										b_lds<=not MAR(0);
 									end if;
-								else					--DEV->MEM
+								else
 									dack<='1';
 									d_rd<='1';
 									BUSADDR<=MAR;
 									b_lds<='0';
 								end if;
-							else	--dual address
-								if(OCR_DIR='0')then
-									BUSADDR<=MAR;
+							else
+								if(DCR_DPS='0' and OCR_SIZE="10")then
+									l32_step<=0;
+									if(OCR_DIR='0')then
+										BUSADDR<=MAR;
+									else
+										BUSADDR<=DAR;
+									end if;
+									STATE<=ST_L32_SETUP;
 								else
-									BUSADDR<=DAR;
+									if(OCR_DIR='0')then
+										BUSADDR<=MAR;
+									else
+										BUSADDR<=DAR;
+									end if;
+									b_as<='0';
+									b_rwn<='1';
+									b_uds<='0';
+									b_lds<='0';
+									STATE<=ST_READ;
 								end if;
-								b_as<='0';
-								b_rwn<='1';
-								b_uds<='0';
-								b_lds<='0';
 							end if;
-							STATE<=ST_READ;
 						end if;
 					when ST_READ =>
 						if(DCR_DTYPE(1)='1')then
@@ -846,7 +906,8 @@ begin
 										TXDAT(7 downto 0)<=b_indat(7 downto 0);
 									end if;
 								end if;
-								if(OCR_SIZE="01" or OCR_SIZE="10" or packen='1')then
+								if((OCR_SIZE="01" or OCR_SIZE="10" or packen='1') and
+								   not (DCR_DPS='0' and OCR_SIZE="10"))then
 									TXDAT(15 downto 0)<=b_indat;
 								end if;
 								STATE<=ST_CHDIR;
@@ -855,7 +916,17 @@ begin
 					when ST_CHDIR =>
 						b_as<='0';
 						b_rwn<='0';
-						if(OCR_SIZE="01" or OCR_SIZE="10" or packen='1')then
+						if(DCR_DPS='0' and OCR_SIZE="10")then
+							if(OCR_DIR='0')then
+								b_uds<=DAR(0);
+								b_lds<=not DAR(0);
+							else
+								b_uds<=MAR(0);
+								b_lds<=not MAR(0);
+							end if;
+							b_outdat<=TXDAT(7 downto 0) & TXDAT(7 downto 0);
+							b_doe<='1';
+						elsif(OCR_SIZE="01" or OCR_SIZE="10" or packen='1')then
 							b_uds<='0';
 							b_lds<='0';
 							b_outdat<=TXDAT(15 downto 0);
@@ -892,8 +963,96 @@ begin
 							d_wr<='0';
 							STATE<=ST_NEXT;
 						end if;
+					when ST_L32_SETUP =>
+						b_as<='0';
+						if(OCR_DIR='0')then
+							if(l32_step<2)then
+								b_rwn<='1';
+								b_uds<='0';
+								b_lds<='0';
+								b_doe<='0';
+							else
+								case l32_step is
+								when 2 =>
+									b_outdat<=TXDAT(31 downto 24) & TXDAT(31 downto 24);
+								when 3 =>
+									b_outdat<=TXDAT(23 downto 16) & TXDAT(23 downto 16);
+								when 4 =>
+									b_outdat<=TXDAT(15 downto 8) & TXDAT(15 downto 8);
+								when others =>
+									b_outdat<=TXDAT(7 downto 0) & TXDAT(7 downto 0);
+								end case;
+								b_rwn<='0';
+								b_uds<=DAR(0);
+								b_lds<=not DAR(0);
+								b_doe<='1';
+							end if;
+						else
+							if(l32_step<4)then
+								b_rwn<='1';
+								b_uds<=DAR(0);
+								b_lds<=not DAR(0);
+								b_doe<='0';
+							else
+								if(l32_step=4)then
+									b_outdat<=TXDAT(31 downto 16);
+								else
+									b_outdat<=TXDAT(15 downto 0);
+								end if;
+								b_rwn<='0';
+								b_uds<='0';
+								b_lds<='0';
+								b_doe<='1';
+							end if;
+						end if;
+						STATE<=ST_L32_ACK;
+					when ST_L32_ACK =>
+						if(b_ack='0')then
+							if(OCR_DIR='0')then
+								if(l32_step=0)then
+									TXDAT(31 downto 16)<=b_indat;
+								elsif(l32_step=1)then
+									TXDAT(15 downto 0)<=b_indat;
+								end if;
+							elsif(l32_step<4)then
+								if(DAR(0)='0')then
+									case l32_step is
+									when 0 => TXDAT(31 downto 24)<=b_indat(15 downto 8);
+									when 1 => TXDAT(23 downto 16)<=b_indat(15 downto 8);
+									when 2 => TXDAT(15 downto 8)<=b_indat(15 downto 8);
+									when others => TXDAT(7 downto 0)<=b_indat(15 downto 8);
+									end case;
+								else
+									case l32_step is
+									when 0 => TXDAT(31 downto 24)<=b_indat(7 downto 0);
+									when 1 => TXDAT(23 downto 16)<=b_indat(7 downto 0);
+									when 2 => TXDAT(15 downto 8)<=b_indat(7 downto 0);
+									when others => TXDAT(7 downto 0)<=b_indat(7 downto 0);
+									end case;
+								end if;
+							end if;
+							if((OCR_DIR='0' and (l32_step=0 or (l32_step>=2 and l32_step<5))) or
+							   (OCR_DIR='1' and (l32_step<3 or l32_step=4)))then
+								BUSADDR<=BUSADDR+x"00000002";
+							elsif(OCR_DIR='0' and l32_step=1)then
+								BUSADDR<=DAR;
+							elsif(OCR_DIR='1' and l32_step=3)then
+								BUSADDR<=MAR;
+							end if;
+							b_as<='1';
+							b_rwn<='1';
+							b_uds<='1';
+							b_lds<='1';
+							b_doe<='0';
+							if(l32_step=5)then
+								MTC_dec<='1';
+								STATE<=ST_CONT;
+							else
+								l32_step<=l32_step+1;
+								STATE<=ST_L32_SETUP;
+							end if;
+						end if;
 					when ST_NEXT =>
-						-- Default: fast 9-state transfer for all modes SIZE="10" (32-bit) always uses ST_CONT needs multiple bus accesses
 						if(OCR_SIZE/="10")then
 							case SCR_MAC is
 							when "01" =>
@@ -951,8 +1110,8 @@ begin
 							when others =>
 							end case;
 						end if;
-						-- Continue with MTC handling
-						if(DCR_DPS='1')then	--16bit
+
+						if(DCR_DPS='1')then
 							case OCR_SIZE is
 							when "00" | "01" | "11" =>
 								if(packen='1')then
@@ -1060,13 +1219,13 @@ begin
 								bytecnt<=bytecnt+1;
 								if(bytecnt=3)then
 									MAR_dec3<='1';
-									DAR_dec3<='1';
+									DAR_dec6<='1';
 									bytecnt<=0;
 									MTC_dec<='1';
 									STATE<=ST_CONT;
 								else
 									MAR_incb<='1';
-									DAR_incb<='1';
+									DAR_incw<='1';
 									STATE<=ST_BUSWAIT;
 									reqwait<='1';
 								end if;
@@ -1246,7 +1405,11 @@ begin
 						case SCR_DAC is
 						when "01" =>
 							if(DCR_DPS='0')then
-								DAR_incw<='1';
+								if(OCR_SIZE="10")then
+									DAR_inc8<='1';
+								else
+									DAR_incw<='1';
+								end if;
 							elsif(OCR_SIZE="01" or packen='1')then
 								DAR_incw<='1';
 							elsif(OCR_SIZE="10")then
@@ -1256,7 +1419,11 @@ begin
 							end if;
 						when "10" =>
 							if(DCR_DPS='0')then
-								DAR_decw<='1';
+								if(OCR_SIZE="10")then
+									DAR_dec8<='1';
+								else
+									DAR_decw<='1';
+								end if;
 							elsif(OCR_SIZE="01" or packen='1')then
 								DAR_decw<='1';
 							elsif(OCR_SIZE="10")then
@@ -1313,7 +1480,6 @@ begin
 	begin
 		if rising_edge(clk) then
 			if(rstn='0')then
-				CONT<='0';
 				TERR_CNT<='0';
 				CERR_CNT<='0';
 				lCNT:='0';
@@ -1325,11 +1491,7 @@ begin
 						TERR_CNT<='1';
 					elsif(OCR_CHAIN(1)='1')then
 						CERR_CNT<='1';
-					else
-						CONT<='1';
 					end if;
-				elsif(CONT_clr='1')then
-					CONT<='0';
 				end if;
 				lCNT:=CCR_CNT;
 			end if;
@@ -1346,7 +1508,13 @@ begin
 				S_CER<=(others=>'0');
 			elsif(ce = '1')then
 				S_ERRset<='0';
-				if(CERR_SET='1')then
+				if(MERR_EVT='1')then
+					S_CER<="01101";
+					S_ERRset<='1';
+				elsif(SABevt='1')then
+					S_CER<="10001";
+					S_ERRset<='1';
+				elsif(CERR_SET='1')then
 					S_CER<="00001";
 					S_ERRset<='1';
 				elsif(TERR_SET='1')then

@@ -1,11 +1,12 @@
 LIBRARY	IEEE;
 USE	IEEE.STD_LOGIC_1164.ALL;
+USE	IEEE.STD_LOGIC_ARITH.ALL;
 USE	IEEE.STD_LOGIC_UNSIGNED.ALL;
 
 entity diskemu_misterFDC is
 generic(
 	sclkfreq		:integer	:=10000;
-	fdc_TCtout		:integer	:=100;
+	fdc_TCtout		:integer	:=2000;
 	fdc_wtrack		:integer	:=7;
 	fdc_wsect	:integer	:=5
 );
@@ -22,10 +23,23 @@ port(
 	sasi_cd	:out std_logic;
 	sasi_msg	:out std_logic;
 	sasi_rst	:in std_logic						:='0';
+	sxs0_idsel	:out std_logic_vector(7 downto 0);
+	sxs0_cap	:out std_logic_vector(63 downto 0);
+	sxs0_lba	:in std_logic_vector(31 downto 0)	:=(others=>'0');
+	sxs0_rdreq	:in std_logic						:='0';
+	sxs0_wrreq	:in std_logic						:='0';
+	sxs0_syncreq	:in std_logic					:='0';
+	sxs0_sectaddr	:in std_logic_vector(8 downto 0)	:=(others=>'0');
+	sxs0_rddat	:out std_logic_vector(7 downto 0);
+	sxs0_wrdat	:in std_logic_vector(7 downto 0)	:=(others=>'0');
+	sxs0_bufbusy	:out std_logic;
 
 --FDD
 	fdc_tracks	:in std_logic_vector(fdc_wtrack-1 downto 0);
 	fdc_sects	:in std_logic_vector(fdc_wsect-1 downto 0);
+	fdc_act_tracks	:out std_logic_vector(fdc_wtrack-1 downto 0);
+	fdc_act_sects	:out std_logic_vector(fdc_wsect-1 downto 0);
+	fdc_act_ismode	:out std_logic;
 	
 	fdc_RDn		:in std_logic;
 	fdc_WRn		:in std_logic;
@@ -39,12 +53,12 @@ port(
 	fdc_TC		:in std_logic;
 	fdc_INTn	:out std_logic;
 	fdc_WAITIN	:in std_logic	:='0';
-	
 	fdc_indisk	:out std_logic_vector(1 downto 0);
 	fdc_usel		:out std_logic_vector(1 downto 0);
 	fdc_mfm		:out std_logic;
 	fdc_sectsize:out std_logic_vector(1 downto 0);
-	fdc_ready	:in std_logic;
+	fdc_ready	:in std_logic_vector(1 downto 0);
+	fdc_dsel	:in std_logic_vector(1 downto 0)	:="00";
 	fdc_hmssft	:in std_logic;
 	fdc_bitsft	:in std_logic;
 	fdc_fmterr	:in std_logic;
@@ -52,7 +66,8 @@ port(
 	fdc_seekwait:in std_logic;
 	fdc_txwait	:in std_logic;
 	fdc_ismode	:in std_logic	:='1';
-	
+	fdc_sys_ce	:in std_logic	:='1';
+
 	fdc_rxN		:in std_logic_Vector(7 downto 0);
 
 	
@@ -68,8 +83,18 @@ port(
 	sram_ld		:in std_logic;
 	sram_st		:in std_logic;
 
+	sram_ram_addr_a		:out std_logic_vector(12 downto 0);
+	sram_ram_addr_b		:out std_logic_vector(13 downto 0);
+	sram_ram_byteena_a	:out std_logic_vector(1 downto 0);
+	sram_ram_data_a		:out std_logic_vector(15 downto 0);
+	sram_ram_data_b		:out std_logic_vector(7 downto 0);
+	sram_ram_wren_a		:out std_logic;
+	sram_ram_wren_b		:out std_logic;
+	sram_ram_q_a		:in std_logic_vector(15 downto 0)	:=(others=>'0');
+	sram_ram_q_b		:in std_logic_vector(7 downto 0)	:=(others=>'0');
+
 --MiSTer diskimage
-	mist_mounted	:in std_logic_vector(3 downto 0);	--SRAM & HDD & FDD1 &FDD0
+	mist_mounted	:in std_logic_vector(3 downto 0);
 	mist_readonly	:in std_logic_vector(3 downto 0);
 	mist_imgsize	:in std_logic_vector(63 downto 0);
 
@@ -109,7 +134,6 @@ constant allzero	:std_logic_vector(63 downto 0)	:=(others=>'0');
 signal	fdcdone	:std_logic;
 signal	sasidone :std_logic;
 signal	sramdone :std_logic;
-signal	proc_begin	:std_logic;
 
 constant bit_fd0	:integer	:=0;
 constant bit_fd1	:integer	:=1;
@@ -172,11 +196,33 @@ signal	dim_sects_0		:std_logic_vector(fdc_wsect-1 downto 0);
 signal	dim_sects_1		:std_logic_vector(fdc_wsect-1 downto 0);
 signal	dim_rxN_0		:std_logic_vector(7 downto 0);
 signal	dim_rxN_1		:std_logic_vector(7 downto 0);
-signal	active_sects	:std_logic_vector(fdc_wsect-1 downto 0);
+signal	dim_imgsize_0	:std_logic_vector(31 downto 0);
+signal	dim_imgsize_1	:std_logic_vector(31 downto 0);
+signal	act_tracks		:std_logic_vector(fdc_wtrack-1 downto 0);
+signal	act_sects		:std_logic_vector(fdc_wsect-1 downto 0);
+signal	act_ismode		:std_logic;
+signal	bpt_0		:std_logic_vector(13 downto 0);
+signal	bpt_1		:std_logic_vector(13 downto 0);
+signal	bpt_a		:std_logic_vector(13 downto 0);
+signal	nat_rxN_0	:std_logic_vector(7 downto 0);
+signal	nat_rxN_1	:std_logic_vector(7 downto 0);
 signal	active_rxN		:std_logic_vector(7 downto 0);
+signal	media_sectsize	:std_logic_vector(1 downto 0);
+signal	fdc_fmterr_mfm	:std_logic;
+signal	dim_is2hde_0	:std_logic	:='0';
+signal	dim_is2hde_1	:std_logic	:='0';
+signal	cache_clr	:std_logic;
+signal	ej_cnt0		:integer range 0 to 33554431 :=0;
+signal	ej_cnt1		:integer range 0 to 33554431 :=0;
+signal	ej_kind0	:std_logic :='0';
+signal	ej_kind1	:std_logic :='0';
+signal	act_2hde		:std_logic;
+signal	dim_is2hs_0		:std_logic	:='0';
+signal	dim_is2hs_1		:std_logic	:='0';
+signal	act_2hs			:std_logic;
+signal	act_ismode_drv	:std_logic;
 signal	buf_addr2		:std_logic_vector(8 downto 0);
 signal	fdcsectwr	:std_logic;
-signal	fdc_sectamod	:std_logic_vector(8 downto 0);
 signal	lba_fdc			:std_logic_vector(31 downto 0);
 signal	cur_flba		:std_logic_vector(31 downto 0);
 signal	fdc_lunit		:integer range 0 to 2;
@@ -188,8 +234,8 @@ signal	fdc_busy		:std_logic;
 signal	sasien		:std_logic;
 signal	sasi_idsel	:std_logic_vector(7 downto 0);
 signal	sasi_cap		:std_logic_vector(63 downto 0);
-signal	sasi_lba		:std_logic_vector(20 downto 0);
-signal	sasi_sectaddr	:std_logic_vector(7 downto 0);
+signal	sasi_lba		:std_logic_vector(31 downto 0);
+signal	sasi_sectaddr	:std_logic_vector(8 downto 0);
 signal	sasisectwr	:std_logic;
 signal	sasibufwr	:std_logic;
 signal	sasi_rdreq	:std_logic;
@@ -201,6 +247,9 @@ signal	sasi_sectrddat	:std_logic_vector(7 downto 0);
 signal	sasi_rdreq2	:std_logic;
 signal	sasi_wrreq2	:std_logic;
 signal	sasi_syreq2	:std_logic;
+signal	lsasi_rdreq	:std_logic;
+signal	lsasi_wrreq	:std_logic;
+signal	lsasi_syncreq	:std_logic;
 signal	sasi_bufodat	:std_logic_vector(7 downto 0);
 signal	lba_sasi		:std_logic_vector(31 downto 0);
 signal	cur_slba		:std_logic_vector(31 downto 0);
@@ -274,18 +323,23 @@ port(
 	sectbusy	:in std_logic;
 	readonly	:in std_logic;
 	fmterr		:in std_logic;
-	ready		:in std_logic;
+	ready		:in std_logic_vector(1 downto 0);
+	dsel		:in std_logic_vector(1 downto 0)	:="00";
 
 	rxN		:in std_logic_vector(7 downto 0);
-	
+	hd80	:in std_logic	:='0';
+	is2hs	:in std_logic	:='0';
+	sectspt	:in std_logic_vector(wsect-1 downto 0)	:="01000";
+
 	seekwait		:in std_logic;
 	txwait		:in std_logic;
 	ismode	:in std_logic	:='1';
-	
+
 	busy		:out std_logic;
 
-	hmssft	:in std_logic;		--0.5msec
+	hmssft	:in std_logic;
 	bitsft	:in std_logic;
+	sys_ce	:in std_logic	:='1';
 	clk		:in std_logic;
 	rstn	:in std_logic
 );
@@ -299,7 +353,7 @@ generic(
 );
 port(
 	tracks	:in std_logic_vector(wtrack-1 downto 0);
-	sectsize:in std_logic_vector(1 downto 0);	--00:128 01:256 10:512 11:1024
+	sectsize:in std_logic_vector(1 downto 0);
 	sects	:in std_logic_vector(wsect-1 downto 0);
 	
 	track	:in std_logic_vector(wtrack-1 downto 0);
@@ -330,16 +384,19 @@ port(
 	id			:out std_logic_vector(2 downto 0);
 	unit		:out std_logic_vector(2 downto 0);
 	capacity	:in std_logic_vector(63 downto 0);
-	lba		:out std_logic_vector(20 downto 0);
+	lba		:out std_logic_vector(31 downto 0);
 	rdreq		:out std_logic;
 	wrreq		:out std_logic;
 	syncreq	:out std_logic;
-	sectaddr	:out std_logic_vector(7 downto 0);
+	sectaddr	:out std_logic_vector(8 downto 0);
 	rddat		:in std_logic_vector(7 downto 0);
 	wrdat		:out std_logic_vector(7 downto 0);
 	sectbusy	:in std_logic;
 	
+	mode_scsi	:in std_logic := '0';
+	
 	clk		:in std_logic;
+	ce      :in std_logic := '1';
 	rstn		:in std_logic
 );
 end component;
@@ -364,7 +421,17 @@ port(
 	mist_wdat	:in std_logic_vector(7 downto 0);
 	mist_rdat	:out std_logic_vector(7 downto 0);
 	mist_we		:in std_logic;
-	
+
+	ram_addr_a		:out std_logic_vector(12 downto 0);
+	ram_addr_b		:out std_logic_vector(13 downto 0);
+	ram_byteena_a	:out std_logic_vector(1 downto 0);
+	ram_data_a		:out std_logic_vector(15 downto 0);
+	ram_data_b		:out std_logic_vector(7 downto 0);
+	ram_wren_a		:out std_logic;
+	ram_wren_b		:out std_logic;
+	ram_q_a			:in std_logic_vector(15 downto 0)	:=(others=>'0');
+	ram_q_b			:in std_logic_vector(7 downto 0)	:=(others=>'0');
+
 	clk		:in std_logic;
 	rstn	:in std_logic
 );
@@ -421,19 +488,24 @@ begin
 		mfm			=>fdc_mfm,
 		sectbusy	=>fdc_bufbusy,
 		readonly	=>fdc_readonlys,
-		fmterr		=>fdc_fmterr,
+		fmterr		=>fdc_fmterr_mfm,
 		ready		=>fdc_ready,
+		dsel		=>fdc_dsel,
 
 		rxN		=>active_rxN,
-	
+		hd80	=>act_2hde,
+		is2hs	=>act_2hs,
+		sectspt	=>act_sects,
+
 		seekwait	=>fdc_seekwait,
 		txwait		=>fdc_txwait,
-		ismode		=>fdc_ismode,
+		ismode		=>act_ismode_drv,
 		
 		busy		=>fdc_busy,
 
 		hmssft	=>fdc_hmssft,
 		bitsft	=>fdc_bitsft,
+		sys_ce	=>fdc_sys_ce,
 		clk		=>sclk,
 		rstn	=>prstn
 	);
@@ -442,22 +514,55 @@ begin
 					fdc_readonly(1) when fdc_unit(1)='1' else
 					'0';
 	
-	active_sects <= dim_sects_0 when is_dim(0)='1' and fdc_unit(0)='1' else
-	                dim_sects_1 when is_dim(1)='1' and fdc_unit(1)='1' else
-	                fdc_sects;
-	active_rxN <= dim_rxN_0 when is_dim(0)='1' and fdc_unit(0)='1' else
-	              dim_rxN_1 when is_dim(1)='1' and fdc_unit(1)='1' else
+	bpt_a <= bpt_0 when fdc_unit(0)='1' else
+	         bpt_1 when fdc_unit(1)='1' else
+	         "10000000000000";
+	active_rxN <= dim_rxN_0 when (is_dim(0)='1' and fdc_unit(0)='1') else
+	              nat_rxN_0 when fdc_unit(0)='1' else
+	              dim_rxN_1 when (is_dim(1)='1' and fdc_unit(1)='1') else
+	              nat_rxN_1 when fdc_unit(1)='1' else
 	              fdc_rxN;
+	media_sectsize <= "00" when active_rxN=x"00" else
+	                  "01" when active_rxN=x"01" else
+	                  "10" when active_rxN=x"02" else
+	                  "11";
 	buf_addr2 <= (others=>'0') when dim_hdr_reading='1' else fdc_lbapos;
 
+	act_tracks <= "1010000" when (bpt_0="10010000000000" and fdc_unit(0)='1') else
+	              "1010000" when (bpt_1="10010000000000" and fdc_unit(1)='1') else
+	              "1010000" when (bpt_0="01111000000000" and fdc_unit(0)='1') else
+	              "1010000" when (bpt_1="01111000000000" and fdc_unit(1)='1') else
+	              "1001101";
+	act_sects  <= dim_sects_0 when (is_dim(0)='1' and fdc_unit(0)='1') else
+	              dim_sects_1 when (is_dim(1)='1' and fdc_unit(1)='1') else
+	              "01001" when (bpt_0="10010000000000" and fdc_unit(0)='1') else
+	              "01001" when (bpt_1="10010000000000" and fdc_unit(1)='1') else
+	              "01111" when (bpt_0="01111000000000" and fdc_unit(0)='1') else
+	              "01111" when (bpt_1="01111000000000" and fdc_unit(1)='1') else
+	              "01000";
+
+	fdc_act_tracks <= act_tracks;
+	fdc_act_sects  <= act_sects;
+	act_ismode <= '1' when (bpt_a="10010000000000" and active_rxN=x"03") else '0';
+	fdc_act_ismode <= act_ismode;
+
+	act_2hde <= dim_is2hde_0 when (is_dim(0)='1' and fdc_unit(0)='1') else
+	             dim_is2hde_1 when (is_dim(1)='1' and fdc_unit(1)='1') else
+	             '0';
+	act_2hs <= dim_is2hs_0 when (is_dim(0)='1' and fdc_unit(0)='1') else
+	            dim_is2hs_1 when (is_dim(1)='1' and fdc_unit(1)='1') else
+	            '0';
+	act_ismode_drv <= '0';
+
+	fdc_fmterr_mfm <= '0' when (active_rxN >= x"02") else fdc_fmterr;
 	fdclba	:fdc_calclba generic map(
 		wtrack	=>fdc_wtrack,
 		wsect	=>fdc_wsect
 	)port map(
-		tracks	=>fdc_tracks,
-		sectsize=>fdc_sectsizeb,
-		sects	=>active_sects,
-		
+		tracks	=>act_tracks,
+		sectsize=>media_sectsize,
+		sects	=>act_sects,
+
 		track	=>fdc_track,
 		head	=>fdc_head,
 		sect	=>fdc_sect,
@@ -478,7 +583,6 @@ begin
 	fdc_sectsize<=fdc_sectsizeb;
 
 	fdcsectwr<=		mist_buffwr when emustate=es_fdc else '0';
-	fdc_sectamod<=	fdc_sectaddr(8 downto 0);
 	fdcbuf	:dpssram generic map(9,8)port map(
 		addr1	=>mist_buffaddr,
 		wdat1	=>mist_buffdout,
@@ -525,6 +629,11 @@ begin
 		elsif(sclk' event and sclk='1')then
 			fdcbufwr<='0';
 			fdcdone<='0';
+			if(cache_clr='1')then
+				cur_flba<=(others=>'1');
+				fdc_lunit<=2;
+				wrote:='0';
+			end if;
 			if(swait>0)then
 				swait:=swait-1;
 			else
@@ -736,49 +845,61 @@ begin
 					fdcbufstate<=ss_dimhdr3;
 				when ss_dimhdr3 =>
 					dim_hdr_reading<='0';
-					-- Decode DIM type from header byte 0
+					if(dim_hdr_funit=0)then
+						dim_is2hs_0<='0';
+					else
+						dim_is2hs_1<='0';
+					end if;
 					case fdc_sectrddat is
-					when x"00" =>	-- 2HD: 8 spt, 1024B, N=3
+					when x"00" =>
 						if(dim_hdr_funit=0)then
-							dim_sects_0<="01000"; dim_rxN_0<=x"03";
+							dim_sects_0<="01000"; dim_rxN_0<=x"03"; dim_is2hde_0<='0';
 						else
-							dim_sects_1<="01000"; dim_rxN_1<=x"03";
+							dim_sects_1<="01000"; dim_rxN_1<=x"03"; dim_is2hde_1<='0';
 						end if;
-					when x"01" =>	-- 2HS: 9 spt, 1024B, N=3
+					when x"01" =>
 						if(dim_hdr_funit=0)then
-							dim_sects_0<="01001"; dim_rxN_0<=x"03";
+							dim_sects_0<="01001"; dim_rxN_0<=x"03"; dim_is2hde_0<='0'; dim_is2hs_0<='1';
 						else
-							dim_sects_1<="01001"; dim_rxN_1<=x"03";
+							dim_sects_1<="01001"; dim_rxN_1<=x"03"; dim_is2hde_1<='0'; dim_is2hs_1<='1';
 						end if;
-					when x"02" =>	-- 2HC: 15 spt, 512B, N=2
+					when x"02" =>
 						if(dim_hdr_funit=0)then
-							dim_sects_0<="01111"; dim_rxN_0<=x"02";
+							if(dim_imgsize_0=x"00168100")then
+								dim_sects_0<="01001"; dim_rxN_0<=x"03"; dim_is2hde_0<='0'; dim_is2hs_0<='1';
+							else
+								dim_sects_0<="01111"; dim_rxN_0<=x"02"; dim_is2hde_0<='0';
+							end if;
 						else
-							dim_sects_1<="01111"; dim_rxN_1<=x"02";
+							if(dim_imgsize_1=x"00168100")then
+								dim_sects_1<="01001"; dim_rxN_1<=x"03"; dim_is2hde_1<='0'; dim_is2hs_1<='1';
+							else
+								dim_sects_1<="01111"; dim_rxN_1<=x"02"; dim_is2hde_1<='0';
+							end if;
 						end if;
-					when x"03" =>	-- 2HD (9 spt): 9 spt, 1024B, N=3
+					when x"03" =>
 						if(dim_hdr_funit=0)then
-							dim_sects_0<="01001"; dim_rxN_0<=x"03";
+							dim_sects_0<="01001"; dim_rxN_0<=x"03"; dim_is2hde_0<='1';
 						else
-							dim_sects_1<="01001"; dim_rxN_1<=x"03";
+							dim_sects_1<="01001"; dim_rxN_1<=x"03"; dim_is2hde_1<='1';
 						end if;
-					when x"09" =>	-- 2HQ: 18 spt, 512B, N=2
+					when x"09" =>
 						if(dim_hdr_funit=0)then
-							dim_sects_0<="10010"; dim_rxN_0<=x"02";
+							dim_sects_0<="10010"; dim_rxN_0<=x"02"; dim_is2hde_0<='0';
 						else
-							dim_sects_1<="10010"; dim_rxN_1<=x"02";
+							dim_sects_1<="10010"; dim_rxN_1<=x"02"; dim_is2hde_1<='0';
 						end if;
-					when x"11" =>	-- 2HDE: 26 spt, 256B, N=1
+					when x"11" =>
 						if(dim_hdr_funit=0)then
-							dim_sects_0<="11010"; dim_rxN_0<=x"01";
+							dim_sects_0<="11010"; dim_rxN_0<=x"01"; dim_is2hde_0<='0';
 						else
-							dim_sects_1<="11010"; dim_rxN_1<=x"01";
+							dim_sects_1<="11010"; dim_rxN_1<=x"01"; dim_is2hde_1<='0';
 						end if;
-					when others =>	-- default to 2HD
+					when others =>
 						if(dim_hdr_funit=0)then
-							dim_sects_0<="01000"; dim_rxN_0<=x"03";
+							dim_sects_0<="01000"; dim_rxN_0<=x"03"; dim_is2hde_0<='0';
 						else
-							dim_sects_1<="01000"; dim_rxN_1<=x"03";
+							dim_sects_1<="01000"; dim_rxN_1<=x"03"; dim_is2hde_1<='0';
 						end if;
 					end case;
 					fdcdone<='1';
@@ -790,36 +911,22 @@ begin
 		end if;
 	end process;
 	
-	
-	sasi	:sasidev port map(
-		IDAT	=>sasi_din,
-		ODAT	=>sasi_dout,
-		SEL	=>sasi_sel,
-		BSY	=>sasi_bsy,
-		REQ	=>sasi_req,
-		ACK	=>sasi_ack,
-		IO		=>sasi_io,
-		CD		=>sasi_cd,
-		MSG	=>sasi_msg,
-		RST	=>sasi_rst,
-		
-		idsel	=>sasi_idsel,
-		
-		id		=>open,
-		unit	=>open,
-		capacity	=>sasi_cap,
-		lba		=>sasi_lba,
-		rdreq		=>sasi_rdreq,
-		wrreq		=>sasi_wrreq,
-		syncreq	=>sasi_syncreq,
-		sectaddr	=>sasi_sectaddr,
-		rddat		=>sasi_sectrddat,
-		wrdat		=>sasi_sectwrdat,
-		sectbusy	=>sasi_bufbusy,
-		
-		clk			=>sclk,
-		rstn		=>prstn
-	);
+	sasi_dout<=(others=>'0');
+	sasi_bsy<='0';
+	sasi_req<='0';
+	sasi_io<='0';
+	sasi_cd<='0';
+	sasi_msg<='0';
+	sxs0_idsel<=sasi_idsel;
+	sxs0_cap<=sasi_cap;
+	sxs0_rddat<=sasi_sectrddat;
+	sxs0_bufbusy<=sasi_bufbusy;
+	sasi_lba<=sxs0_lba;
+	sasi_rdreq<=sxs0_rdreq;
+	sasi_wrreq<=sxs0_wrreq;
+	sasi_syncreq<=sxs0_syncreq;
+	sasi_sectaddr<=sxs0_sectaddr;
+	sasi_sectwrdat<=sxs0_wrdat;
 	
 	sasisectwr<=	mist_buffwr when emustate=es_sasi else '0';
 	
@@ -829,7 +936,7 @@ begin
 		wr1	=>sasisectwr,
 		rdat1	=>sasi_bufodat,
 
-		addr2	=>sasi_lba(0) & sasi_sectaddr,
+		addr2	=>sasi_lba(0) & sasi_sectaddr(7 downto 0),
 		wdat2	=>sasi_sectwrdat,
 		wr2	=>sasibufwr,
 		rdat2	=>sasi_sectrddat,
@@ -995,7 +1102,17 @@ begin
 		mist_wdat	=>mist_buffdout,
 		mist_rdat	=>sram_bufout,
 		mist_we		=>sram_bufwr,
-		
+
+		ram_addr_a		=>sram_ram_addr_a,
+		ram_addr_b		=>sram_ram_addr_b,
+		ram_byteena_a	=>sram_ram_byteena_a,
+		ram_data_a		=>sram_ram_data_a,
+		ram_data_b		=>sram_ram_data_b,
+		ram_wren_a		=>sram_ram_wren_a,
+		ram_wren_b		=>sram_ram_wren_b,
+		ram_q_a			=>sram_ram_q_a,
+		ram_q_b			=>sram_ram_q_b,
+
 		clk		=>sclk,
 		rstn		=>prstn
 	);
@@ -1017,7 +1134,6 @@ begin
 		if(srstn='0')then
 			lmount:=(others=>'0');
 			emustate<=es_IDLE;
-			proc_begin<='0';
 			fdrpend:=(others=>'0');
 			fdwpend:=(others=>'0');
 			fdc_bufbusy<='0';
@@ -1028,10 +1144,15 @@ begin
 			sload:='0';
 			fdc_indiskb<="00";
 			is_dim<="00";
+			bpt_0<="10000000000000"; nat_rxN_0<=x"03";
+			bpt_1<="10000000000000"; nat_rxN_1<=x"03";
+			dim_imgsize_0<=(others=>'0');
+			dim_imgsize_1<=(others=>'0');
 			dim_hdr_pend:="00";
 			dim_hdr_active:='0';
 			dim_hdr_drv:=0;
 			dim_hdr_req2<=(others=>'0');
+			cache_clr<='0';
 			sasiwpend:='0';
 			sasirpend:='0';
 			sasispend:='0';
@@ -1039,17 +1160,20 @@ begin
 			sasi_rdreq2<='0';
 			sasi_wrreq2<='0';
 			sasi_syreq2<='0';
+			lsasi_rdreq<='0';
+			lsasi_wrreq<='0';
+			lsasi_syncreq<='0';
 			sram_ldreq<='0';
 			sram_streq<='0';
 			sramen<='0';
 			sasien<='0';
 			fdc_readonly<=(others=>'0');
 		elsif(sclk' event and sclk='1')then
-			proc_begin<='0';
 			fdc_rdreq2<=(others=>'0');
 			fdc_wrreq2<=(others=>'0');
 			fdc_syreq2<=(others=>'0');
 			dim_hdr_req2<=(others=>'0');
+			cache_clr<='0';
 			sasi_rdreq2<='0';
 			sasi_wrreq2<='0';
 			sasi_syreq2<='0';
@@ -1061,12 +1185,29 @@ begin
 					is_dim(0)<='0';
 				elsif(mist_imgsize(8 downto 0)="100000000")then
 					is_dim(0)<='1';
-					dim_hdr_pend(0):='1';
+					fdc_indiskb(0)<='0';
+					ej_cnt0<=sclkfreq*400; ej_kind0<='1';
 					fdc_readonly(0)<=mist_readonly(bit_fd0);
+					dim_imgsize_0<=mist_imgsize(31 downto 0);
+					if(mist_imgsize(31 downto 0)=x"00168100")then
+						bpt_0<="10010000000000"; nat_rxN_0<=x"03";
+					elsif(mist_imgsize(31 downto 0)=x"0012C100")then
+						bpt_0<="01111000000000"; nat_rxN_0<=x"02";
+					else
+						bpt_0<="10000000000000"; nat_rxN_0<=x"03";
+					end if;
 				else
-					fdc_indiskb(0)<='1';
+					fdc_indiskb(0)<='0';
+					ej_cnt0<=sclkfreq*400; ej_kind0<='0';
 					is_dim(0)<='0';
 					fdc_readonly(0)<=mist_readonly(bit_fd0);
+					if(mist_imgsize(31 downto 0)=x"00168000")then
+						bpt_0<="10010000000000"; nat_rxN_0<=x"02";
+					elsif(mist_imgsize(31 downto 0)=x"0012C000")then
+						bpt_0<="01111000000000"; nat_rxN_0<=x"02";
+					else
+						bpt_0<="10000000000000"; nat_rxN_0<=x"03";
+					end if;
 				end if;
 			elsif(fdc_eject(0)='1')then
 				fdc_indiskb(0)<='0';
@@ -1078,12 +1219,29 @@ begin
 					is_dim(1)<='0';
 				elsif(mist_imgsize(8 downto 0)="100000000")then
 					is_dim(1)<='1';
-					dim_hdr_pend(1):='1';
+					fdc_indiskb(1)<='0';
+					ej_cnt1<=sclkfreq*400; ej_kind1<='1';
 					fdc_readonly(1)<=mist_readonly(bit_fd1);
+					dim_imgsize_1<=mist_imgsize(31 downto 0);
+					if(mist_imgsize(31 downto 0)=x"00168100")then
+						bpt_1<="10010000000000"; nat_rxN_1<=x"03";
+					elsif(mist_imgsize(31 downto 0)=x"0012C100")then
+						bpt_1<="01111000000000"; nat_rxN_1<=x"02";
+					else
+						bpt_1<="10000000000000"; nat_rxN_1<=x"03";
+					end if;
 				else
-					fdc_indiskb(1)<='1';
+					fdc_indiskb(1)<='0';
+					ej_cnt1<=sclkfreq*400; ej_kind1<='0';
 					is_dim(1)<='0';
 					fdc_readonly(1)<=mist_readonly(bit_fd1);
+					if(mist_imgsize(31 downto 0)=x"00168000")then
+						bpt_1<="10010000000000"; nat_rxN_1<=x"02";
+					elsif(mist_imgsize(31 downto 0)=x"0012C000")then
+						bpt_1<="01111000000000"; nat_rxN_1<=x"02";
+					else
+						bpt_1<="10000000000000"; nat_rxN_1<=x"03";
+					end if;
 				end if;
 			elsif(fdc_eject(1)='1')then
 				fdc_indiskb(1)<='0';
@@ -1096,7 +1254,7 @@ begin
 				else
 					sasien<='1';
 				end if;
-				sasi_cap<=mist_imgsize;
+				sasi_cap<=x"00000000" & mist_imgsize(31 downto 0);
 			end if;
 			
 			if(mist_mounted(bit_sram)='1' and lmount(bit_sram)='0')then
@@ -1148,16 +1306,44 @@ begin
 				sstore:='1';
 			end if;
 			
-			if(sasi_rdreq='1')then
+			lsasi_rdreq<=sasi_rdreq;
+			lsasi_wrreq<=sasi_wrreq;
+			lsasi_syncreq<=sasi_syncreq;
+			if(sasi_rdreq='1' and lsasi_rdreq='0')then
 				sasirpend:='1';
 				sasi_bufbusy<='1';
-			elsif(sasi_wrreq='1')then
+			elsif(sasi_wrreq='1' and lsasi_wrreq='0')then
 				sasiwpend:='1';
 				sasi_bufbusy<='1';
-			elsif(sasi_syncreq='1')then
+			elsif(sasi_syncreq='1' and lsasi_syncreq='0')then
 				sasispend:='1';
 			end if;
 			
+
+			if((mist_mounted(bit_fd0)='1' and lmount(bit_fd0)='0') or
+			   (mist_mounted(bit_fd1)='1' and lmount(bit_fd1)='0'))then
+				cache_clr<='1';
+			end if;
+			if(ej_cnt0>0)then
+				if(ej_cnt0=1)then
+					if(ej_kind0='1')then
+						dim_hdr_pend(0):='1';
+					else
+						fdc_indiskb(0)<='1';
+					end if;
+				end if;
+				ej_cnt0<=ej_cnt0-1;
+			end if;
+			if(ej_cnt1>0)then
+				if(ej_cnt1=1)then
+					if(ej_kind1='1')then
+						dim_hdr_pend(1):='1';
+					else
+						fdc_indiskb(1)<='1';
+					end if;
+				end if;
+				ej_cnt1<=ej_cnt1-1;
+			end if;
 			lmount:=mist_mounted;
 			case emustate is
 			when es_IDLE =>
@@ -1247,5 +1433,3 @@ begin
 	busy<=	sasi_bufbusy or fdc_bufbusy or fdc_busy;
 						
 end rtl;
-	
-

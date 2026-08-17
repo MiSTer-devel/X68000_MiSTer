@@ -60,7 +60,10 @@ port(
 	clk			:in std_logic;
 	ce          :in std_logic := '1';
 	is_ch3      :in std_logic;
-	rstn		:in std_logic
+	scsi_mode	:in std_logic := '0';
+	rstn		:in std_logic;
+
+	ch3_sabevt	:out std_logic := '0'
 );
 
 end DMA63450;
@@ -147,7 +150,9 @@ port(
 	clk			:in std_logic;
 	ce          :in std_logic := '1';
 	is_ch3		:in std_logic;
-	rstn		:in std_logic
+	scsi_mode	:in std_logic := '0';
+	rstn		:in std_logic;
+	sabevt_out	:out std_logic := '0'
 );
 end component;
 
@@ -376,6 +381,7 @@ begin
 		clk			=>clk,
 		ce          =>ce,
 		is_ch3		=>'0',
+		scsi_mode	=>scsi_mode,
 		rstn		=>rstn
 	);
 
@@ -468,6 +474,7 @@ begin
 		clk			=>clk,
 		ce          =>ce,
 		is_ch3		=>'1',
+		sabevt_out	=>ch3_sabevt,
 		rstn		=>rstn
 	);
 	busreqv(4)<='1';

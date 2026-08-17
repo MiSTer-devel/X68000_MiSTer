@@ -41,7 +41,8 @@ USE altera_mf.altera_mf_components.all;
 
 ENTITY CACHEMEMWN IS
 	generic(
-		awidth	:integer	:=8
+		awidth	:integer	:=8;
+		ramtype :string     :="AUTO"
 	);
 	PORT
 	(
@@ -78,6 +79,7 @@ BEGIN
 		outdata_aclr_b => "NONE",
 		outdata_reg_b => "UNREGISTERED",
 		power_up_uninitialized => "FALSE",
+		ram_block_type => ramtype,
 		widthad_a => awidth,
 		widthad_b => awidth,
 		width_a => 16,

@@ -21,6 +21,8 @@ set_global_assignment -name HEX_FILE  rtl/diskemu/sramdefault.hex
 set_global_assignment -name VHDL_FILE rtl/diskemu/wrotecont.vhd
 set_global_assignment -name VHDL_FILE rtl/diskemu/sramram.vhd
 set_global_assignment -name VHDL_FILE rtl/diskemu/sramcont.vhd
+set_global_assignment -name VHDL_FILE rtl/diskemu/sxsidrv_rom.vhd
+set_global_assignment -name MIF_FILE  rtl/diskemu/sxsidrv.mif
 set_global_assignment -name VHDL_FILE rtl/diskemu/sasidev.vhd
 
 # --- D88 diskemu-specific ---
