@@ -38,7 +38,7 @@ begin
 	indat<=	'0' when wraddr=rdaddr else '1';
 	--puu	buffull<='1' when wraddr+1=rdaddr else '0';
 	buffull<=	'1' when rdaddr=((wraddr+1)mod depth) else '0';
-	datnum<=wraddr-rdaddr;
+	datnum<=wraddr-rdaddr when wraddr>=rdaddr else depth-rdaddr+wraddr;
 	
 	process(clk,rstn)begin
 		if rising_edge(clk) then
@@ -47,7 +47,7 @@ begin
 			elsif(ce = '1')then
 				if(clr='1')then
 					wraddr<=0;
-				elsif(datwr='1')then
+				elsif(datwr='1' and (rdaddr/=((wraddr+1) mod depth) or datrd='1'))then
 					RAM(wraddr)<=datin;
 					if((wraddr+1)=depth)then
 						wraddr<=0;
@@ -68,7 +68,7 @@ begin
 			elsif(ce = '1')then
 				if(clr='1')then
 					rdaddr<=0;
-				elsif(datrd='1')then
+				elsif(datrd='1' and wraddr/=rdaddr)then
 					if((rdaddr+1)=depth)then
 						rdaddr<=0;
 					else
