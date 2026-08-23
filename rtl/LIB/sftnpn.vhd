@@ -28,6 +28,7 @@ begin
 		if rising_edge(clk) then
 		if(rstn='0')then
 			sftdat<=numer;
+			sftout<='0';
 		elsif(ce = '1')then
 			if(sftin='1')then
 				sftout<=sftdat(0);

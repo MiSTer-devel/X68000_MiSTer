@@ -71,6 +71,11 @@ signal	rmsg_tx,rmsg_sync,rmsg_cc,rmsg_pc,rmsg_rc	:std_logic;
 signal	rmsg_content	:std_logic_vector(2 downto 0);
 -- UART-related signals
     signal fifo_IRx : std_logic;       -- UART RX FIFO interrupt
+    signal irxfifowdat :std_logic_vector(7 downto 0);
+    signal irxfifowr   :std_logic;
+    signal irxfifodat  :std_logic_vector(7 downto 0);
+    signal irxfifoempn :std_logic;
+    signal irxfifofull :std_logic;
 signal	rxrate	:std_logic_vector(4 downto 0);
 signal	rxsrc		:std_logic;
 signal	RxCL,RxPE,RxPL,RxEO,RxSL,RxST	:std_logic;
@@ -84,6 +89,17 @@ signal	FLTE		:std_logic;
 signal	BLKC		:std_logic;
 signal	RxOLC		:std_logic;
 signal	AHE		:std_logic;
+signal ah_state :integer range 0 to 4;
+signal ah_busy :std_logic;
+signal ah_maker_ok :std_logic;
+signal ah_evac_f0 :std_logic_vector(7 downto 0);
+signal ah_evac_maker :std_logic_vector(7 downto 0);
+signal ah_evac_device :std_logic_vector(7 downto 0);
+signal ah_replay_count :integer range 0 to 3;
+signal ah_replay_index :integer range 0 to 2;
+signal ah_replay_data :std_logic_vector(7 downto 0);
+signal ah_direct_pass :std_logic;
+signal rxfifo_req :std_logic;
 signal	RxE		:std_logic;
 signal	TxRx		:std_logic;
 signal	TxDF		:std_logic;
@@ -105,15 +121,24 @@ signal	MTLD		:std_logic;
 
 signal	txfifowdat	:std_logic_vector(7 downto 0);
 signal	txfifowr		:std_logic;
+signal	txfifowr_accept	:std_logic;
 signal	txfifordat	:std_logic_vector(7 downto 0);
 signal	txfiford		:std_logic;
 signal	txfifoclr		:std_logic;
 signal	txfifoempn	:std_logic;
 signal	txfifofull	:std_logic;
+signal itxfifowdat :std_logic_vector(7 downto 0);
+signal itxfifowr   :std_logic;
+signal itxfifodat  :std_logic_vector(7 downto 0);
+signal itxfiford   :std_logic;
+signal itxfifoempn :std_logic;
+signal itxfifofull :std_logic;
+signal itx_manual_req :std_logic;
+signal itx_clock_pending :std_logic;
 
-signal	rxfifowdat	:std_logic_vector(7 downto 0); -- RX FIFO write data
+signal	rxfifowdat	:std_logic_vector(9 downto 0); -- RX FIFO write data
 signal	rxfifowr		:std_logic;       -- RX FIFO write enable
-signal	rxfifordat	:std_logic_vector(7 downto 0); -- RX FIFO data
+signal	rxfifordat	:std_logic_vector(9 downto 0); -- RX FIFO data
 signal	rxfiford		:std_logic;       -- RX FIFO read enable
 signal	rxfifoclr		:std_logic;
 signal	rxfifoempn	:std_logic;     -- RX FIFO empty flag
@@ -136,6 +161,8 @@ signal	srxbit		:std_logic;
 signal	rxbyte		:std_logic_vector(7 downto 0);
 signal	rxdata		:std_logic_vector(12 downto 0);
 signal	rxdone		:std_logic;
+signal rxframe_done :std_logic;
+signal rx_midi_clock :std_logic;
 signal	rxstoperr	:std_logic;
 signal	rxparerr		:std_logic;
 signal	rxstop2err	:std_logic;
@@ -146,8 +173,20 @@ signal	txsft			:std_logic;
 signal	txframelen	:integer range 1 to 13;
 signal	txdata		:std_logic_vector(12 downto 0);
 signal	txen			:std_logic;
+signal	txserial		:std_logic;
 signal	txrd			:std_logic;
 signal	txbusy		:std_logic;
+signal txidle       :std_logic;
+constant txidle_ticks :integer :=sysclk*80;
+signal txidle_count :integer range 0 to txidle_ticks-1;
+constant rxoffline_ticks :integer :=sysclk*300;
+signal rxoffline_count :integer range 0 to rxoffline_ticks-1;
+signal rxoffline :std_logic;
+signal rxbreak_count :integer range 0 to 120;
+signal rxbreak :std_logic;
+signal rxbreak_event :std_logic;
+signal active_sense_pending :std_logic;
+signal txsource :std_logic_vector(7 downto 0);
 signal	rstcmd		:std_logic;
 
 signal	intgt		:std_logic;
@@ -157,6 +196,8 @@ signal	intol		:std_logic;
 signal	intrc		:std_logic;
 signal	intpc		:std_logic;
 signal	intcc		:std_logic;
+signal intmc :std_logic;
+signal intirq1 :std_logic;
 signal	intmm		:std_logic;
 
 constant inum_gt	:integer	:=7;
@@ -174,10 +215,30 @@ signal	intnum	:std_logic_vector(3 downto 0);
 
 signal	gcounter	:std_logic_vector(13 downto 0);
 signal	ccounter	:std_logic_vector(6 downto 0);
+signal click_running       :std_logic;
+signal click_start_pending :std_logic;
+signal click_pulse :std_logic;
+signal click_pulse_count :integer range 0 to 2047;
 signal	mcounter	:std_logic_vector(13 downto 0);
 
-signal  mscrstep    :std_logic_vector(13 downto 0);
 signal  mclk        :std_logic;
+signal midim_phase :std_logic;
+signal  midi_clock_dist :std_logic;
+signal interp_div16 :integer range 0 to 15;
+signal interp_measure :integer range 0 to 1048575;
+signal interp_interval :integer range 0 to 1048575;
+signal interp_measured :std_logic;
+signal interp_spacing :integer range 0 to 1048575;
+signal interp_countdown :integer range 0 to 1048575;
+signal interp_emitted :integer range 0 to 15;
+signal interp_due :integer range 0 to 16;
+signal rcounter :std_logic_vector(7 downto 0);
+signal recording_running :std_logic;
+signal pcounter :integer range -32768 to 32767;
+signal playback_running :std_logic;
+signal sync_running :std_logic;
+signal sync_pulse :std_logic;
+signal sync_pulse_count :integer range 0 to 2047;
 constant gczero	:std_logic_Vector(13 downto 0)	:=(others=>'0');
 constant cczero	:std_logic_vector(6 downto 0)		:=(others=>'0');
 constant mczero	:std_logic_Vector(13 downto 0)	:=(others=>'0');
@@ -285,9 +346,9 @@ end component;
 
 begin
 
-	txfifo	:datfifo generic map(256,8) port map(
+	txfifo	:datfifo generic map(17,8) port map(
 		datin		=>txfifowdat,
-		datwr		=>txfifowr,
+		datwr		=>txfifowr_accept,
 		
 		datout	=>txfifordat,
 		datrd		=>txfiford,
@@ -303,28 +364,113 @@ begin
 		rstn		=>rstn and (not sreset)
 	);
 	
+	itxfifo :datfifo generic map(5,8) port map(
+		datin   =>itxfifowdat,
+		datwr   =>itxfifowr,
+		datout  =>itxfifodat,
+		datrd   =>itxfiford,
+		datnum  =>open,
+		indat   =>itxfifoempn,
+		buffull =>itxfifofull,
+		clr     =>TxC,
+		clk     =>clk,
+		ce      =>ce,
+		rstn    =>rstn and (not sreset)
+	);
+
+	irxfifowdat<=rxbyte;
+	irxfifowr<=rxframe_done and CDE and
+		not rxstoperr and not rxstop2err and not rxparerr and
+		'1' when rxbyte>=x"F9" and rxbyte<=x"FD" and
+		(not irxfifofull or fifo_IRx)='1' else '0';
+
+	rx_midi_clock<=rxframe_done and
+		not rxstoperr and not rxstop2err and
+		not rxparerr when rxbyte=x"F8" else '0';
+
+	midi_clock_dist<=
+		(mclk and not MCDS and
+			(MCFS(1) and MCFS(0))) or
+		(rx_midi_clock and not MCDS and
+				not MCFS(1) and MCFS(0)) or
+		(rmsg_tx and MCDS and
+			not rmsg_content(2) and
+			not rmsg_content(1) and
+			not rmsg_content(0));
+
+	itx_manual_req<=rmsg_tx and
+		(rmsg_content(2) or rmsg_content(1) or rmsg_content(0)) and
+		not (rmsg_content(2) and rmsg_content(1));
+	itxfifowdat<=x"F8" + ("00000" & rmsg_content)
+		when itx_manual_req='1' else
+		x"F8" when itx_clock_pending='1' else x"FE";
+	itxfifowr<=(itx_manual_req or itx_clock_pending or
+		active_sense_pending) and
+		(not itxfifofull or itxfiford);
+
+	process(clk,rstn)
+	begin
+		if rising_edge(clk) then
+			if(rstn='0')then
+				itx_clock_pending<='0';
+			elsif(ce='1')then
+				if(sreset='1' or TxC='1')then
+					itx_clock_pending<='0';
+				elsif(midi_clock_dist='1' and MCE='1')then
+					itx_clock_pending<='1';
+				elsif(itxfifowr='1' and
+					itx_manual_req='0' and
+					itx_clock_pending='1')then
+					itx_clock_pending<='0';
+				end if;
+			end if;
+		end if;
+	end process;
+
 	-- Reset process: Initializes all internal registers and counters on reset
 	process(clk,rstn)
 	variable ltxfifoempn	:std_logic;
 	begin
 	if rising_edge(clk) then
 		if(rstn='0')then
-			inttx<='1';
+			inttx<='0';
 			ltxfifoempn:='0';
 		elsif(ce ='1')then
 			if(sreset='1')then
-				inttx<='1';
+				inttx<='0';
+			elsif(TxC='1')then
+				null;
+			elsif(txfifowr_accept='1')then
+				inttx<='0';
 			elsif(txfifoempn='0' and ltxfifoempn='1')then
 				inttx<='1';
 			elsif(intclr(inum_tx)='1')then
 				inttx<='0';
 			end if;
-			ltxfifoempn:=txfifoempn;
+			if(TxC='1')then
+				ltxfifoempn:='0';
+			else
+				ltxfifoempn:=txfifoempn;
+			end if;
 		end if;
 	end if;
 	end process;
 	
-	rxfifo	:datfifo generic map(128,8) port map(
+	irxfifo :datfifo generic map(5,8) port map(
+		datin   =>irxfifowdat,
+		datwr   =>irxfifowr,
+		datout  =>irxfifodat,
+		datrd   =>fifo_IRx,
+		datnum  =>open,
+		indat   =>irxfifoempn,
+		buffull =>irxfifofull,
+		clr     =>'0',
+		clk     =>clk,
+		ce      =>ce,
+		rstn    =>rstn and (not sreset)
+	);
+
+	rxfifo  :datfifo generic map(129,10) port map(
 		datin		=>rxfifowdat,
 		datwr		=>rxfifowr,
 		
@@ -342,17 +488,27 @@ begin
 		rstn		=>rstn and (not sreset)
 	);
 	
-	process(clk,rstn,ce)begin
+	process(clk,rstn,ce)
+	variable lrxfifoempn :std_logic;
+	begin
 	if rising_edge(clk) then
 		if(rstn='0')then
 			intrx<='0';
-		elsif(ce ='1')then
-			if(sreset='1')then
+			lrxfifoempn:='0';
+		elsif(ce='1')then
+			if(sreset='1' or RxC='1')then
 				intrx<='0';
-			elsif(rxfifoempn='1')then
-				intrx<='1';
-			elsif(intclr(inum_rx)='1')then
-				intrx<='0';
+				lrxfifoempn:='0';
+			else
+				if(rxfifoempn='0')then
+					intrx<='0';
+				elsif(intclr(inum_rx)='1')then
+					intrx<='0';
+				elsif(lrxfifoempn='0')then
+					intrx<='1';
+				end if;
+
+				lrxfifoempn:=rxfifoempn;
 			end if;
 		end if;
 	end if;
@@ -409,6 +565,8 @@ begin
 			R85<=(others=>'0');
 			R86<=(others=>'0');
 			R87<=(others=>'0');
+			R94<=(others=>'0');
+			R95<=(others=>'0');
 			rmsg_tx<='0';
 			rmsg_sync<='0';
 			rmsg_cc<='0';
@@ -422,8 +580,6 @@ begin
 			CCLD<='0';
 			PCADD<='0';
 			PCCLR<='0';
-			INTRATE<=(others=>'0');
-			PCADDVAL<=(others=>'0');
 			GTLD<='0';
 			MTLD<='0';
 			ldatwr:='0';
@@ -469,12 +625,15 @@ begin
 				R55<=(others=>'0');
 				R65<=(others=>'0');
 				R66<=(others=>'0');
+				R67<=(others=>'0');
 				R76<=(others=>'0');
 				R77<=(others=>'0');
 				R84<=(others=>'0');
 				R85<=(others=>'0');
 				R86<=(others=>'0');
 				R87<=(others=>'0');
+				R94<=(others=>'0');
+				R95<=(others=>'0');
 				rmsg_tx<='0';
 				rmsg_sync<='0';
 				rmsg_cc<='0';
@@ -488,8 +647,6 @@ begin
 				CCLD<='0';
 				PCADD<='0';
 				PCCLR<='0';
-				INTRATE<=(others=>'0');
-				PCADDVAL<=(others=>'0');
 				GTLD<='0';
 				MTLD<='0';
 			end if;
@@ -653,7 +810,6 @@ begin
 	CCLDVAL<=R67(6 downto 0);
 	PCADDVAL<=R77(6 downto 0) & R76;
 	INTRATE<=R75(3 downto 0);
-	mscrstep <= "00000000000001" when R75(3 downto 0)=x"0" else "0000000000" & R75(3 downto 0);
 	GTLDVAL<=R85(5 downto 0) & R84;
 	MTLDVAL<=R87(5 downto 0) & R86;
 	GPOE<=R94;
@@ -703,10 +859,15 @@ begin
 				R96	when reggroup=x"9" and ADDR="110" else
 				(others=>'0');
 	
+	SYNC<=sync_pulse;
+	CLICK<=click_pulse when OUTE='1' else '0';
+	R16<=irxfifodat when irxfifoempn='1' else x"00";
+	R74<=rcounter;
 	R34(7)<=rxfifoempn;
 	rxfifoclr<=RxC;
+	txfifowr_accept<=txfifowr and (not txfifofull or txfiford);
 	txfifoclr<=TxC;
-	R36<=rxfifordat;
+	R36<=rxfifordat(7 downto 0);
 	
 	process(clk,crstn,ce)
 	variable rd,lrd	:std_logic;
@@ -717,7 +878,7 @@ begin
 			rxfiford<='0';
 		elsif(ce ='1')then
 			rxfiford<='0';
-			if(DATWR='1' and ADDR="110" and reggroup=x"3")then
+			if(DATRD='1' and ADDR="110" and reggroup=x"3")then
 				rd:='1';
 			else
 				rd:='0';
@@ -733,9 +894,48 @@ begin
 	R54(7)<=not txfifoempn;
 	R54(6)<=not txfifofull;
 	R54(5 downto 3)<=(others=>'0');
-	R54(2)<='0';
+	R54(2)<=txidle;
 	R54(1)<='0';
 	R54(0)<=txbusy;
+
+	-- Latch TX idle and schedule Active Sense every 80 ms.
+	process(clk,rstn)
+	begin
+		if rising_edge(clk) then
+			if(rstn='0')then
+				txidle<='0';
+				txidle_count<=0;
+				active_sense_pending<='0';
+			elsif(ce='1')then
+				if(sreset='1')then
+					txidle<='0';
+					txidle_count<=0;
+					active_sense_pending<='0';
+				else
+					if(TxIDLC='1')then
+						txidle<='0';
+					end if;
+					if(TxC='1')then
+						active_sense_pending<='0';
+					elsif(itxfifowr='1' and itx_manual_req='0' and
+						itx_clock_pending='0')then
+						active_sense_pending<='0';
+					end if;
+					if(TxE='0' or txfifoempn='1' or txbusy='1')then
+						txidle_count<=0;
+					elsif(txidle_count=txidle_ticks-1)then
+						txidle<='1';
+						txidle_count<=0;
+						if(ASE='1')then
+							active_sense_pending<='1';
+						end if;
+					else
+						txidle_count<=txidle_count+1;
+					end if;
+				end if;
+			end if;
+		end if;
+	end process;
 	
 	process(clk,crstn,ce)begin
 		if rising_edge(clk) then
@@ -868,7 +1068,7 @@ begin
 			if(crstn='0')then
 				srxbit<='1';
 			elsif(ce = '1')then
-				if(RxE='1')then
+				if(RxE='1' or rxbusy='1')then
 					srxbit<=RxD;
 				else
 					srxbit<='1';
@@ -917,13 +1117,13 @@ begin
 		rstn		=>crstn
 	);
 	rxbyte<=rxdata(7 downto 0) when RxCL='0' else ('0' & rxdata(6 downto 0));
-	process(rxdone,RxCL,RxPE,RxPL,RxEO,RxSL,RxST)
+	process(rxframe_done,RxCL,RxPE,RxPL,RxEO,RxSL,RxST)
 	variable	par	:std_logic;
 	variable	par4	:std_logic_vector(3 downto 0);
 	variable	parloc	:integer range 0 to 12;
 	variable parlen	:integer range 0 to 4;
 	begin
-		if(rxdone='1')then
+		if(rxframe_done='1')then
 			par:='0';
 			if(RxCL='0')then
 				for i in 0 to 7 loop
@@ -994,35 +1194,46 @@ begin
 		end if;
 	end process;
 	
-	rxfifowr<=rxdone and ((not rxstoperr) and (not rxparerr) and (not rxstop2err) and (not rxfifofull));
+	rxframe_done<=rxdone or rxstoperr;
+        ah_replay_data<=ah_evac_f0 when ah_replay_index=0 else
+                ah_evac_maker when ah_replay_index=1 else
+                ah_evac_device;
+
+        ah_direct_pass<='1' when
+                rxstoperr='1' or rxstop2err='1' or rxparerr='1' or
+                rxbyte>=x"F8" or AHE='0' or
+                (rxbyte>=x"80" and rxbyte<=x"F7" and rxbyte/=x"F0") or
+                (rxbyte/=x"F0" and (ah_state=0 or ah_state=3))
+                else '0';
+
+        rxfifo_req<='1' when ah_replay_count>0 else
+                rxframe_done and not (FLTE and rx_midi_clock) and
+                ah_direct_pass;
+        rxfifowr<=rxfifo_req and not rxfifofull;
 	
 	process(clk,crstn,ce)begin
 	if rising_edge(clk) then
 
 		if(crstn='0')then
-			R34(6 downto 1)<=(others=>'0');
+			R34(6)<='0';
 		elsif(ce ='1')then
-			if(rxfifofull='1' and rxdone='1')then
+			if(rxfifofull='1' and rxfifo_req='1')then
 				R34(6)<='1';
 			elsif(RxOVC='1')then
 				R34(6)<='0';
 			end if;
-			if(rxstoperr='1' or rxstop2err='1')then
-				R34(4)<='1';
-			elsif(rxfifowr='1')then
-				R34(4)<='0';
-			end if;
-			if(rxparerr='1')then
-				R34(3)<='1';
-			elsif(rxfifowr='1')then
-				R34(3)<='0';
-			end if;
 		end if;
 	end if;
 	end process;
+	R34(5)<=rxfifordat(9) when rxfifoempn='1' else '0';
+	R34(4)<=rxfifordat(8) when rxfifoempn='1' else '0';
+	R34(3)<=rxbreak;
+	R34(2)<=rxoffline;
+	R34(1)<=ah_busy;
 	R34(0)<=rxbusy;
 	
-	rxfifowdat<=rxbyte;
+        rxfifowdat<="00" & ah_replay_data when ah_replay_count>0 else
+                (rxstoperr or rxstop2err) & rxparerr & rxbyte;
 
 	process(clk,crstn)begin
 	if rising_edge(clk) then
@@ -1118,9 +1329,11 @@ begin
 	end process;
 	
 	
-	txfiford<=txrd;
+	txfiford<=txrd and not itxfifoempn;
+	itxfiford<=txrd and itxfifoempn;
+	txsource<=itxfifodat when itxfifoempn='1' else txfifordat;
 	--process(clk,crstn)
-	process(txfifordat,TxPE,TxPL,TxEO,TxCL,TxSL)
+	process(clk)
 	variable vlen	:integer range 1 to 13;
 	variable	par	:std_logic;
 	variable par4	:std_logic_vector(3 downto 0);
@@ -1138,10 +1351,10 @@ begin
 		--			txwr<='1';
 		--			txfiford<='1';
 		if(TxCL='0')then
-			txdata(7 downto 0)<=txfifordat;
+			txdata(7 downto 0)<=txsource;
 			vlen:=8;
 		else
-			txdata(6 downto 0)<=txfifordat(6 downto 0);
+			txdata(6 downto 0)<=txsource(6 downto 0);
 			vlen:=7;
 		end if;
 		if(TxPE='1')then
@@ -1149,7 +1362,7 @@ begin
 				par:=TxEO;
 				for i in 0 to 7 loop
 					if(TxCL='0' or i<7)then
-						par:=par xor txfifordat(i);
+						par:=par xor txsource(i);
 					end if;
 				end loop;
 				txdata(vlen)<=par;
@@ -1157,9 +1370,9 @@ begin
 			else
 				par4:=(others=>TxEO);
 				if(TxCL='0')then
-					par4:=par4 xor txfifordat(3 downto 0) xor txfifordat(7 downto 4);
+					par4:=par4 xor txsource(3 downto 0) xor txsource(7 downto 4);
 				else
-					par4:=par4 xor txfifordat(3 downto 0) xor ('0' & txfifordat(6 downto 4));
+					par4:=par4 xor txsource(3 downto 0) xor ('0' & txsource(6 downto 4));
 				end if;
 				txdata(vlen+3 downto vlen)<=par4;
 				vlen:=vlen+4;
@@ -1177,10 +1390,14 @@ begin
 	end process;
 
 	
-	txen<=TXE and txfifoempn;
+	TxD<='0' when BRKE='1' else
+		RxD when TxRx='1' else
+		'1' when TxDF='1' else txserial;
+
+	txen<=TXE and (txfifoempn or itxfifoempn);
 	
 	txunit	:txframenb	generic map(13,3)	port map(
-		SD			=>TxD,
+		SD			=>txserial,
 		DRCNT		=>txbusy,
 
 		SFT		=>txsft,
@@ -1197,6 +1414,97 @@ begin
 		rstn		=>crstn
 	);
 	
+	-- MIDI clock interval measurement at CLK/16.
+	process(clk,rstn)begin
+	if rising_edge(clk) then
+		if(rstn='0')then
+			interp_div16<=0;
+			interp_measure<=0;
+			interp_interval<=0;
+			interp_measured<='0';
+		elsif(ce='1')then
+			if(sreset='1')then
+				interp_div16<=0;
+				interp_measure<=0;
+				interp_interval<=0;
+				interp_measured<='0';
+			else
+				if(interp_div16=15)then
+					interp_div16<=0;
+					if(interp_measure<1048575)then
+						interp_measure<=interp_measure+1;
+					end if;
+				else
+					interp_div16<=interp_div16+1;
+				end if;
+				if(midi_clock_dist='1')then
+					if(interp_measured='1')then
+						if(interp_div16=15 and interp_measure<1048575)then
+							interp_interval<=interp_measure+1;
+						else
+							interp_interval<=interp_measure;
+						end if;
+					end if;
+					interp_measure<=0;
+					interp_measured<='1';
+				end if;
+			end if;
+		end if;
+	end if;
+	end process;
+
+	-- MIDI clock interpolation and missing-clock compensation.
+	process(clk,rstn)
+	variable rate :integer range 0 to 15;
+	variable measured_now :integer range 0 to 1048575;
+	variable missing :integer range 0 to 15;
+	begin
+	if rising_edge(clk) then
+		if(rstn='0')then
+			interp_spacing<=0;
+			interp_countdown<=0;
+			interp_emitted<=0;
+			interp_due<=0;
+		elsif(ce='1')then
+			interp_due<=0;
+			rate:=conv_integer(INTRATE);
+			if(sreset='1' or rate=0)then
+				interp_spacing<=0;
+				interp_countdown<=0;
+				interp_emitted<=0;
+			elsif(midi_clock_dist='1')then
+				if(interp_div16=15 and interp_measure<1048575)then
+					measured_now:=interp_measure+1;
+				else
+					measured_now:=interp_measure;
+				end if;
+				if(interp_measured='1')then
+					interp_spacing<=measured_now/rate;
+					interp_countdown<=measured_now/rate;
+					if(interp_emitted<rate)then
+						missing:=rate-interp_emitted;
+					else
+						missing:=0;
+					end if;
+					interp_due<=missing+1;
+				else
+					interp_due<=1;
+				end if;
+				interp_emitted<=1;
+			elsif(interp_div16=15 and interp_spacing>0 and
+			      interp_emitted<rate)then
+				if(interp_countdown<=1)then
+					interp_due<=1;
+					interp_emitted<=interp_emitted+1;
+					interp_countdown<=interp_spacing;
+				else
+					interp_countdown<=interp_countdown-1;
+				end if;
+			end if;
+		end if;
+	end if;
+	end process;
+
 	--counter section
 	
 	process(clk,rstn)begin
@@ -1216,9 +1524,9 @@ begin
 				if(GTLD='1')then
 					gcounter<=GTLDVAL;
 				elsif(gcountsft='1')then
-					if(gcounter>0)then
+					if(gcounter>1)then
 						gcounter<=gcounter-1;
-					elsif(GTLDVAL/=gczero)then
+					elsif(gcounter=1 and GTLDVAL>1)then
 						intgt<='1';
 						gcounter<=GTLDVAL;
 					end if;
@@ -1234,21 +1542,62 @@ begin
 		if(rstn='0')then
 			ccounter<=(others=>'0');
 			intcc<='0';
-		elsif(ce ='1')then
+			click_running<='0';
+			click_start_pending<='0';
+			click_pulse<='0';
+			click_pulse_count<=0;
+		elsif(ce='1')then
 			if(sreset='1')then
 				intcc<='0';
 				ccounter<=(others=>'0');
+				click_running<='0';
+				click_start_pending<='0';
+				click_pulse<='0';
+				click_pulse_count<=0;
 			else
-				if(intclr(inum_cc)='1')then
+				if(sftm='1' and click_pulse='1')then
+					if(click_pulse_count=0)then
+						click_pulse<='0';
+					else
+						click_pulse_count<=click_pulse_count-1;
+					end if;
+				end if;
+				if(intclr(inum_cc)='1' and CT='0')then
 					intcc<='0';
 				end if;
-				if(CCLD='1')then
+
+				if(rmsg_cc='1')then
+					case rmsg_content is
+					when "010" =>
+						click_running<='1';
+						click_start_pending<='1';
+					when "011" =>
+						click_running<='0';
+						click_start_pending<='0';
+					when "100" =>
+						click_running<='1';
+					when others =>
+					end case;
+				elsif(CCLD='1' and CCLDVAL>1)then
 					ccounter<=CCLDVAL;
-				elsif(mclk='1')then
-					if(ccounter>0)then
+					intcc<='1';
+					click_pulse<='1';
+					click_pulse_count<=2047;
+				elsif(midi_clock_dist='1' and click_running='1')then
+					if(click_start_pending='1')then
+						click_start_pending<='0';
+						if(CCLDVAL>1)then
+							ccounter<=CCLDVAL;
+							intcc<='1';
+							click_pulse<='1';
+							click_pulse_count<=2047;
+						end if;
+					elsif(ccounter>0)then
 						ccounter<=ccounter-1;
 					elsif(CCLDVAL/=cczero)then
 						intcc<='1';
+						click_pulse<='1';
+						click_pulse_count<=2047;
 						ccounter<=CCLDVAL;
 					end if;
 				end if;
@@ -1262,6 +1611,7 @@ begin
 
 		if(rstn='0')then
 			mcounter<=(others=>'0');
+			midim_phase<='0';
 			mclk<='0';
 
 		elsif(ce ='1')then
@@ -1269,15 +1619,24 @@ begin
 
 			if(sreset='1')then
 				mcounter<=(Others=>'0');
+				midim_phase<='0';
 
 			else
-				if(MTLD='1')then
+				if(mcountsft='1')then
+					if(MCE='1')then
+						midim_phase<=not midim_phase;
+					else
+						midim_phase<='0';
+					end if;
+				end if;
+				if(MTLD='1' and MTLDVAL>1)then
 					mcounter<=MTLDVAL;
+					mclk<='1';
 
-				elsif(mcountsft='1')then
-					if(mcounter>mscrstep)then
-						mcounter<=mcounter-mscrstep;
-					elsif(MTLDVAL/=mczero)then
+				elsif(mcountsft='1' and (MCE='0' or midim_phase='1'))then
+					if(mcounter>0)then
+						mcounter<=mcounter-1;
+					elsif(MTLDVAL>1)then
 						mcounter<=MTLDVAL;
 						mclk<='1';
 					end if;
@@ -1287,15 +1646,376 @@ begin
 	end if;
 	end process;
 	
+	-- SYNC controller with 2.048 ms output pulse.
+	process(clk,rstn)begin
+	if rising_edge(clk) then
+		if(rstn='0')then
+			sync_running<='0';
+			sync_pulse<='0';
+			sync_pulse_count<=0;
+		elsif(ce='1')then
+			if(sreset='1')then
+				sync_running<='0';
+				sync_pulse<='0';
+				sync_pulse_count<=0;
+			else
+				if(rmsg_sync='1')then
+					case rmsg_content is
+					when "010" =>
+						sync_running<='1';
+					when "011" =>
+						sync_running<='0';
+					when "100" =>
+						sync_running<='1';
+					when others =>
+					end case;
+				end if;
+				if(midi_clock_dist='1' and sync_running='1')then
+					sync_pulse<='1';
+					sync_pulse_count<=2047;
+				elsif(sftm='1' and sync_pulse='1')then
+					if(sync_pulse_count=0)then
+						sync_pulse<='0';
+					else
+						sync_pulse_count<=sync_pulse_count-1;
+					end if;
+				end if;
+			end if;
+		end if;
+	end if;
+	end process;
+
+	-- Playback counter controlled by R15 PC destination.
+	process(clk,rstn)
+	variable rate :integer range 0 to 15;
+	variable pending :integer range 0 to 15;
+	variable value :integer range -65536 to 65534;
+	variable changed :std_logic;
+	begin
+	if rising_edge(clk) then
+		if(rstn='0')then
+			pcounter<=0;
+			playback_running<='0';
+			intpc<='0';
+		elsif(ce='1')then
+			if(sreset='1')then
+				pcounter<=0;
+				playback_running<='0';
+				intpc<='0';
+			else
+				rate:=conv_integer(INTRATE);
+				value:=pcounter;
+				changed:='0';
+				if(PCCLR='1')then
+					value:=0;
+					changed:='1';
+				end if;
+				if(PCADD='1')then
+					value:=value+conv_integer(PCADDVAL);
+					changed:='1';
+				end if;
+				if(rmsg_pc='1')then
+					case rmsg_content is
+					when "010" =>
+						value:=0;
+						changed:='1';
+						playback_running<='1';
+					when "011" =>
+						if(playback_running='1' and rate>0)then
+							if(interp_emitted<rate)then
+								pending:=rate-interp_emitted;
+							else
+								pending:=0;
+							end if;
+							value:=value-pending;
+							changed:='1';
+						end if;
+						playback_running<='0';
+					when "100" =>
+						playback_running<='1';
+					when others =>
+					end case;
+				elsif(playback_running='1' and interp_due>0)then
+					value:=value-interp_due;
+					changed:='1';
+				end if;
+				if(value>32767)then
+					value:=value-65536;
+				elsif(value< -32768)then
+					value:=value+65536;
+				end if;
+				pcounter<=value;
+				if(changed='1')then
+					if(value<=0)then
+						intpc<='1';
+					else
+						intpc<='0';
+					end if;
+				end if;
+			end if;
+		end if;
+	end if;
+	end process;
+
+	-- Recording counter controlled by R15 RC destination.
+	process(clk,rstn)
+	variable rate :integer range 0 to 15;
+	variable pending :integer range 0 to 15;
+	variable total :integer range 0 to 271;
+	begin
+	if rising_edge(clk) then
+		if(rstn='0')then
+			rcounter<=(others=>'0');
+			recording_running<='0';
+			intrc<='0';
+		elsif(ce='1')then
+			if(sreset='1')then
+				rcounter<=(others=>'0');
+				recording_running<='0';
+				intrc<='0';
+			else
+				if(intclr(inum_rc)='1')then
+					intrc<='0';
+				end if;
+				rate:=conv_integer(INTRATE);
+				if(rmsg_rc='1')then
+					case rmsg_content is
+					when "010" =>
+						rcounter<=(others=>'0');
+						recording_running<='1';
+					when "011" =>
+						if(recording_running='1' and rate>0)then
+							if(interp_emitted<rate)then
+								pending:=rate-interp_emitted;
+							else
+								pending:=0;
+							end if;
+							total:=conv_integer(rcounter)+pending;
+							rcounter<=conv_std_logic_vector(total mod 256,8);
+							if(total>=256)then
+								intrc<='1';
+							end if;
+						end if;
+						recording_running<='0';
+					when "100" =>
+						recording_running<='1';
+					when others =>
+					end case;
+				elsif(recording_running='1' and interp_due>0)then
+					total:=conv_integer(rcounter)+interp_due;
+					rcounter<=conv_std_logic_vector(total mod 256,8);
+					if(total>=256)then
+						intrc<='1';
+					end if;
+				end if;
+			end if;
+		end if;
+	end if;
+	end process;
+
+	-- Address Hunter filtering and evacuated-byte replay.
+	process(clk,rstn)begin
+	if rising_edge(clk) then
+	    if(rstn='0')then
+	        ah_state<=0;
+	        ah_busy<='0';
+	        ah_maker_ok<='0';
+	        ah_evac_f0<=(others=>'0');
+	        ah_evac_maker<=(others=>'0');
+	        ah_evac_device<=(others=>'0');
+	        ah_replay_count<=0;
+	        ah_replay_index<=0;
+	    elsif(ce='1')then
+	        if(sreset='1' or AHE='0')then
+	            ah_state<=0;
+	            ah_busy<='0';
+	            ah_maker_ok<='0';
+	            ah_replay_count<=0;
+	            ah_replay_index<=0;
+	        else
+	            if(ah_replay_count>0 and rxfifofull='0')then
+	                if(ah_replay_count=1)then
+	                    ah_replay_count<=0;
+	                else
+	                    ah_replay_count<=ah_replay_count-1;
+	                    ah_replay_index<=ah_replay_index+1;
+	                end if;
+	            end if;
+
+	            if(rxframe_done='1' and
+	              rxstoperr='0' and rxstop2err='0' and
+	              rxparerr='0')then
+	            if(rxbyte=x"F0")then
+	                ah_evac_f0<=rxbyte;
+	                ah_state<=1;
+	                ah_busy<='1';
+	                ah_maker_ok<='0';
+	                    ah_replay_count<=0;
+	                    ah_replay_index<=0;
+	            elsif(rxbyte>=x"80" and rxbyte<=x"F7")then
+	                ah_state<=0;
+	                ah_busy<='0';
+	                    ah_replay_count<=0;
+	                    ah_replay_index<=0;
+	            elsif(rxbyte<x"80")then
+	                case ah_state is
+	                when 1 =>
+	                    ah_evac_maker<=rxbyte;
+	                    if(rxbyte(6 downto 0)=ID_MAKER)then
+	                        ah_maker_ok<='1';
+	                        if(IDCL='1')then
+	                            ah_state<=2;
+	                        else
+	                            ah_state<=3;
+	                                ah_replay_count<=2;
+	                                ah_replay_index<=0;
+	                        end if;
+	                    else
+	                        ah_maker_ok<='0';
+	                        ah_state<=4;
+	                    end if;
+	                when 2 =>
+	                    ah_evac_device<=rxbyte;
+	                    if(ah_maker_ok='1' and
+	                      (rxbyte(6 downto 0)=ID_DEVICE or
+	                       (BDRE='1' and rxbyte=x"7F")))then
+	                        ah_state<=3;
+	                            ah_replay_count<=3;
+	                            ah_replay_index<=0;
+	                    else
+	                        ah_state<=4;
+	                    end if;
+	                when others =>
+	                end case;
+	                end if;
+	            end if;
+	        end if;
+	    end if;
+	end if;
+	end process;
+
+	-- BREAK detector: RxD low for two character periods.
+	process(clk,rstn)
+	variable break_limit :integer range 16 to 120;
+	begin
+	if rising_edge(clk) then
+	    if(rstn='0')then
+	        rxbreak_count<=0;
+	        rxbreak<='0';
+	        rxbreak_event<='0';
+	    elsif(ce='1')then
+	        rxbreak_event<='0';
+	        if(sreset='1')then
+	            rxbreak_count<=0;
+	            rxbreak<='0';
+	        elsif(BLKC='1' or intclr(inum_ol)='1')then
+	            rxbreak_count<=0;
+	            rxbreak<='0';
+	        elsif(RxE='0' or srxbit='1')then
+	            rxbreak_count<=0;
+	        elsif(rxsft='1')then
+	            break_limit:=8*(rxframelen+2);
+	            if(rxbreak_count>=break_limit-1)then
+	                rxbreak_count<=break_limit;
+	                if(rxbreak='0')then
+	                    rxbreak<='1';
+	                    rxbreak_event<='1';
+	                end if;
+	            else
+	                rxbreak_count<=rxbreak_count+1;
+	            end if;
+	        end if;
+	    end if;
+	end if;
+	end process;
+
+	-- Receiver off-line detector, approximately 300 ms.
+	process(clk,rstn)begin
+	if rising_edge(clk) then
+	    if(rstn='0')then
+	        rxoffline_count<=0;
+	        rxoffline<='0';
+	        intol<='0';
+	    elsif(ce='1')then
+	        if(sreset='1' or RxE='0')then
+	            rxoffline_count<=0;
+	            rxoffline<='0';
+	            intol<='0';
+	        else
+	            if(RxOLC='1' or intclr(inum_ol)='1')then
+	                rxoffline<='0';
+	            end if;
+	            if(RxOLC='1' or BLKC='1' or intclr(inum_ol)='1')then
+	                intol<='0';
+	            end if;
+	            if(rxbreak_event='1' and OB='1')then
+	                intol<='1';
+	            end if;
+	            if(rxframe_done='1')then
+	                rxoffline_count<=0;
+	            elsif(rxoffline_count=rxoffline_ticks-1)then
+	                rxoffline_count<=0;
+	                rxoffline<='1';
+	                if(OB='0')then
+	                    intol<='1';
+	                end if;
+	            else
+	                rxoffline_count<=rxoffline_count+1;
+	            end if;
+	        end if;
+	    end if;
+	end if;
+	end process;
+
+	-- MIDI clock detect latch for selectable IRQ-1.
+	process(clk,rstn)begin
+	if rising_edge(clk) then
+		if(rstn='0')then
+			intmc<='0';
+		elsif(ce='1')then
+			if(sreset='1')then
+				intmc<='0';
+			elsif(intclr(inum_cc)='1' and CT='1')then
+				intmc<='0';
+			elsif(midi_clock_dist='1' and MCDS='0')then
+				intmc<='1';
+			end if;
+		end if;
+	end if;
+	end process;
+
 	--interrupt session
 	
-	intol<='0';
-	intrc<='0';
-	intpc<='0';
-	intmm<='0';
+	process(clk,rstn)
+	variable irx_front_delivered :std_logic;
+	begin
+	if rising_edge(clk) then
+		if(rstn='0')then
+			intmm<='0';
+			irx_front_delivered:='0';
+		elsif(ce='1')then
+			if(sreset='1')then
+				intmm<='0';
+				irx_front_delivered:='0';
+			elsif(irxfifoempn='0')then
+				intmm<='0';
+				irx_front_delivered:='0';
+			elsif(fifo_IRx='1')then
+				intmm<='0';
+				irx_front_delivered:='0';
+			elsif(intclr(inum_mm)='1')then
+				intmm<='0';
+			elsif(irx_front_delivered='0')then
+				intmm<='1';
+				irx_front_delivered:='1';
+			end if;
+		end if;
+	end if;
+	end process;
 	
-	intx<=intgt & inttx & intrx & intol & intrc & intpc & intcc & intmm;
-	intm<=(intx and intmask) when R05(1)='1' else (others=>'0');
+	intirq1<=intmc when CT='1' else intcc;
+	intx<=intgt & inttx & intrx & intol & intrc & intpc & intirq1 & intmm;
+	intm<=intx and intmask;
 	R02<=intx;
 	
 	process(intm)
@@ -1305,6 +2025,7 @@ begin
 		for i in 7 downto 0 loop
 			if(intm(i)='1')then
 				num:=i;
+				exit;
 			end if;
 		end loop;
 		intnum<=conv_std_logic_vector(num,4);
@@ -1319,6 +2040,6 @@ begin
 	R00(0)<='0';
 	R00(4 downto 1)<=intnum;
 
-	IVECT<=R00;
+	IVECT<=R00 when VE='1' and (VM='1' or intm/=x"00") else (others=>'0');
 	
 end rtl;
