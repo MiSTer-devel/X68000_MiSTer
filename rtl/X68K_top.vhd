@@ -4237,12 +4237,12 @@ begin
 	mfp_gpip7<=VID_HRTCi;
 	mfp_gpip6<=not VID_RINT;
 	mfp_gpip5<='1';
-	mfp_gpip4<=VID_VVIDEN;
+	mfp_gpip4<=not VID_VRTC;
 	mfp_gpip3<=opm_intn;
 	mfp_gpip2<=pwrsw;
 	mfp_gpip1<='1';
 	mfp_gpip0<=not rtc_alarm;
-	mfp_tai<=not VID_VVIDEN;
+	mfp_tai<=VID_VRTC;
 
 	UMFP	:MFP generic map(SCFREQ) port map(
 		addr	=>abus(23 downto 0),
