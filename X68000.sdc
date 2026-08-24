@@ -26,3 +26,8 @@ set_multicycle_path -from {emu:emu|X68K_top:X68K_top|vidcont:vc|vaddr*} -to {emu
 set_multicycle_path -from {emu:emu|X68K_top:X68K_top|vidcont:vc|vaddr*} -to {emu:emu|X68K_top:X68K_top|memcont:RAM|cachecont:CACHEC|*} -end -hold 1
 
 set_false_path -to {emu:emu|X68K_top:X68K_top|memcont:RAM|cachecont:CACHEC|cacheext:*|srclk}
+
+# YM3802 interpolator clock-enable paths
+# em3802 advances once every four 40 MHz clock cycles.
+set_multicycle_path -end -setup 4 -to [get_registers {*|em3802:midi|interp_spacing[*] *|em3802:midi|interp_countdown[*]}]
+set_multicycle_path -end -hold 3 -to [get_registers {*|em3802:midi|interp_spacing[*] *|em3802:midi|interp_countdown[*]}]
