@@ -226,7 +226,6 @@ signal midim_phase :std_logic;
 signal  midi_clock_dist :std_logic;
 signal interp_div16 :integer range 0 to 15;
 signal interp_measure :integer range 0 to 1048575;
-signal interp_interval :integer range 0 to 1048575;
 signal interp_measured :std_logic;
 signal interp_spacing :integer range 0 to 1048575;
 signal interp_countdown :integer range 0 to 1048575;
@@ -1420,13 +1419,11 @@ begin
 		if(rstn='0')then
 			interp_div16<=0;
 			interp_measure<=0;
-			interp_interval<=0;
 			interp_measured<='0';
 		elsif(ce='1')then
 			if(sreset='1')then
 				interp_div16<=0;
 				interp_measure<=0;
-				interp_interval<=0;
 				interp_measured<='0';
 			else
 				if(interp_div16=15)then
@@ -1438,13 +1435,6 @@ begin
 					interp_div16<=interp_div16+1;
 				end if;
 				if(midi_clock_dist='1')then
-					if(interp_measured='1')then
-						if(interp_div16=15 and interp_measure<1048575)then
-							interp_interval<=interp_measure+1;
-						else
-							interp_interval<=interp_measure;
-						end if;
-					end if;
 					interp_measure<=0;
 					interp_measured<='1';
 				end if;
