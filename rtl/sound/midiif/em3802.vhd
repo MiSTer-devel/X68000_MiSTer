@@ -77,7 +77,6 @@ signal	rmsg_content	:std_logic_vector(2 downto 0);
     signal irxfifoempn :std_logic;
     signal irxfifofull :std_logic;
 signal	rxrate	:std_logic_vector(4 downto 0);
-signal	rxsrc		:std_logic;
 signal	RxCL,RxPE,RxPL,RxEO,RxSL,RxST	:std_logic;
 signal	IDCL		:std_logic;
 signal	ID_MAKER	:std_logic_vector(6 downto 0);
@@ -107,7 +106,7 @@ signal	txrate	:std_logic_vector(4 downto 0);
 signal	TxCL,TxPE,TxPL,TxEO,TxSL,TxST	:std_logic;
 signal	TxC,BRKE,TxIDLC,TxE	:std_logic;
 
-signal	CLKM,OUTE	:std_logic;
+signal OUTE		:std_logic;
 signal	CCLD			:std_logic;
 signal	CCLDVAL	:std_logic_vector(6 downto 0);
 signal	PCADD		:std_logic;
@@ -573,7 +572,6 @@ begin
 			rmsg_rc<='0';
 			rmsg_content<=(others=>'0');
 			fifo_IRx<='0';
-			rxsrc<='0';
 			txfifowdat<=(others=>'0');
 			txfifowr<='0';
 			CCLD<='0';
@@ -638,7 +636,6 @@ begin
 				rmsg_rc<='0';
 				rmsg_content<=(others=>'0');
 				fifo_IRx<='0';
-				rxsrc<='0';
 				txfifowdat<=(others=>'0');
 				txfifowr<='0';
 				CCLD<='0';
@@ -770,7 +767,6 @@ begin
 	CDE<=R14(3);
 	MCDS<=R14(2);
 	MCFS<=R14(1 downto 0);
-	rxsrc<=R24(5);
 	rxrate<=R24(4 downto 0);
 	RxCL<=R25(5);
 	RxPE<=R25(4);
@@ -796,7 +792,6 @@ begin
 	TxST<=R45(0);
 	BRKE<=R55(3);
 	TxE<=R55(0);
-	CLKM<=R66(1);
 	OUTE<=R66(0);
 	CCLDVAL<=R67(6 downto 0);
 	PCADDVAL<=R77(6 downto 0) & R76;
