@@ -53,7 +53,7 @@ architecture rtl of em3802 is
     signal R24, R25, R26, R27 : std_logic_vector(7 downto 0); -- Register group 2
     signal R34, R35, R36 : std_logic_vector(7 downto 0); -- Register group 3
     signal R44, R45      : std_logic_vector(7 downto 0); -- Register group 4
-    signal R54, R55, R57 : std_logic_vector(7 downto 0); -- Register group 5
+    signal R54, R55 : std_logic_vector(7 downto 0); -- Register group 5
     signal R64, R65, R66, R67 : std_logic_vector(7 downto 0); -- Register group 6
     signal R74, R75, R76, R77 : std_logic_vector(7 downto 0); -- Register group 7
     signal R84, R85, R86, R87 : std_logic_vector(7 downto 0); -- Register group 8
@@ -77,7 +77,6 @@ signal	rmsg_content	:std_logic_vector(2 downto 0);
     signal irxfifoempn :std_logic;
     signal irxfifofull :std_logic;
 signal	rxrate	:std_logic_vector(4 downto 0);
-signal	rxsrc		:std_logic;
 signal	RxCL,RxPE,RxPL,RxEO,RxSL,RxST	:std_logic;
 signal	IDCL		:std_logic;
 signal	ID_MAKER	:std_logic_vector(6 downto 0);
@@ -106,8 +105,8 @@ signal	TxDF		:std_logic;
 signal	txrate	:std_logic_vector(4 downto 0);
 signal	TxCL,TxPE,TxPL,TxEO,TxSL,TxST	:std_logic;
 signal	TxC,BRKE,TxIDLC,TxE	:std_logic;
-signal	ME,CFC,DE,APD,PN,PDFC	:std_logic;
-signal	CLKM,OUTE	:std_logic;
+
+signal OUTE		:std_logic;
 signal	CCLD			:std_logic;
 signal	CCLDVAL	:std_logic_vector(6 downto 0);
 signal	PCADD		:std_logic;
@@ -226,7 +225,6 @@ signal midim_phase :std_logic;
 signal  midi_clock_dist :std_logic;
 signal interp_div16 :integer range 0 to 15;
 signal interp_measure :integer range 0 to 1048575;
-signal interp_interval :integer range 0 to 1048575;
 signal interp_measured :std_logic;
 signal interp_spacing :integer range 0 to 1048575;
 signal interp_countdown :integer range 0 to 1048575;
@@ -574,7 +572,6 @@ begin
 			rmsg_rc<='0';
 			rmsg_content<=(others=>'0');
 			fifo_IRx<='0';
-			rxsrc<='0';
 			txfifowdat<=(others=>'0');
 			txfifowr<='0';
 			CCLD<='0';
@@ -599,8 +596,6 @@ begin
 			TxC<='0';
 			TxIDLC<='0';
 			txfifowr<='0';
-			CFC<='0';
-			PDFC<='0';
 			CCLD<='0';
 			PCADD<='0';
 			PCCLR<='0';
@@ -641,7 +636,6 @@ begin
 				rmsg_rc<='0';
 				rmsg_content<=(others=>'0');
 				fifo_IRx<='0';
-				rxsrc<='0';
 				txfifowdat<=(others=>'0');
 				txfifowr<='0';
 				CCLD<='0';
@@ -708,8 +702,6 @@ begin
 						TxIDLC<=DATIN(2);
 					when x"6" =>
 						R65<=DATIN;
-						CFC<=DATIN(4);
-						PDFC<=DATIN(0);
 					when x"7" =>
 						R75<=DATIN;
 						PCADD<=DATIN(5);
@@ -775,7 +767,6 @@ begin
 	CDE<=R14(3);
 	MCDS<=R14(2);
 	MCFS<=R14(1 downto 0);
-	rxsrc<=R24(5);
 	rxrate<=R24(4 downto 0);
 	RxCL<=R25(5);
 	RxPE<=R25(4);
@@ -801,11 +792,6 @@ begin
 	TxST<=R45(0);
 	BRKE<=R55(3);
 	TxE<=R55(0);
-	ME<=R65(7);
-	DE<=R65(3);
-	APD<=R65(2);
-	PN<=R65(1);
-	CLKM<=R66(1);
 	OUTE<=R66(0);
 	CCLDVAL<=R67(6 downto 0);
 	PCADDVAL<=R77(6 downto 0) & R76;
@@ -841,7 +827,7 @@ begin
 				R45	when reggroup=x"4" and ADDR="101" else
 				R54	when reggroup=x"5" and ADDR="100" else
 				R55	when reggroup=x"5" and ADDR="101" else
-				R57	when reggroup=x"5" and ADDR="111" else
+				(others=>'0') when reggroup=x"5" and ADDR="111" else
 				R64	when reggroup=x"6" and ADDR="100" else
 				R65	when reggroup=x"6" and ADDR="101" else
 				R66	when reggroup=x"6" and ADDR="110" else
@@ -859,6 +845,11 @@ begin
 				R96	when reggroup=x"9" and ADDR="110" else
 				(others=>'0');
 	
+	-- FSK/TAPE interface is not implemented.
+	-- Preserve documented idle output and direct RxF status.
+	TxF<='0';
+	R64(7)<=RxF;
+	R64(6 downto 0)<=(others=>'0');
 	SYNC<=sync_pulse;
 	CLICK<=click_pulse when OUTE='1' else '0';
 	R16<=irxfifodat when irxfifoempn='1' else x"00";
@@ -1117,12 +1108,15 @@ begin
 		rstn		=>crstn
 	);
 	rxbyte<=rxdata(7 downto 0) when RxCL='0' else ('0' & rxdata(6 downto 0));
-	process(rxframe_done,RxCL,RxPE,RxPL,RxEO,RxSL,RxST)
+	process(rxframe_done,rxdata,RxCL,RxPE,RxPL,RxEO,RxSL,RxST)
 	variable	par	:std_logic;
 	variable	par4	:std_logic_vector(3 downto 0);
 	variable	parloc	:integer range 0 to 12;
 	variable parlen	:integer range 0 to 4;
 	begin
+		rxparerr<='0';
+		rxstop2err<='0';
+
 		if(rxframe_done='1')then
 			par:='0';
 			if(RxCL='0')then
@@ -1420,13 +1414,11 @@ begin
 		if(rstn='0')then
 			interp_div16<=0;
 			interp_measure<=0;
-			interp_interval<=0;
 			interp_measured<='0';
 		elsif(ce='1')then
 			if(sreset='1')then
 				interp_div16<=0;
 				interp_measure<=0;
-				interp_interval<=0;
 				interp_measured<='0';
 			else
 				if(interp_div16=15)then
@@ -1438,13 +1430,6 @@ begin
 					interp_div16<=interp_div16+1;
 				end if;
 				if(midi_clock_dist='1')then
-					if(interp_measured='1')then
-						if(interp_div16=15 and interp_measure<1048575)then
-							interp_interval<=interp_measure+1;
-						else
-							interp_interval<=interp_measure;
-						end if;
-					end if;
 					interp_measure<=0;
 					interp_measured<='1';
 				end if;
