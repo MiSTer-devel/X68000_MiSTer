@@ -206,6 +206,9 @@ wire        ps2_mouse_data_out;
 wire        ps2_mouse_clk_in;
 wire        ps2_mouse_data_in;
 
+wire [15:0] joystick_0, joystick_1;
+wire [15:0] joy_analog_a, joy_analog_b;
+
 wire  [31:0] sd_lba;
 wire   [7:0] sd_rd;
 wire   [7:0] sd_wr;
@@ -232,155 +235,6 @@ wire        ddr_rd;
 wire  [1:0] ddr_wr;
 wire        ddr_ack;
 wire        ddr_ready;
-
-wire [15:0] joystick_0, joystick_1;
-wire [15:0] joy_analog_a, joy_analog_b;
-
-wire [15:0] joy_in_0 = status[43] ? joystick_1 : joystick_0;
-wire [15:0] joy_in_1 = status[43] ? joystick_0 : joystick_1;
-wire  [2:0] joy_mode_A = status[43] ? status[46:44] : status[39:37]; // Joy1 type follows physical joy0; swaps with Joy2 when swap active
-wire  [2:0] joy_mode_B = status[43] ? status[39:37] : status[46:44]; // Joy2 type follows physical joy1; swaps with Joy1 when swap active
-
-wire        strA_tristate;
-wire        strA;
-wire  [5:0] joyA = (joy_mode_A == 3'b000) ?		// default 2-button
-						~{joy_in_0[5:4], (joy_in_0[0]|joy_in_0[6]), (joy_in_0[1]|joy_in_0[6]), (joy_in_0[2]|joy_in_0[7]), (joy_in_0[3]|joy_in_0[7])} :
-
-						// Turbo 2-button
-						 (joy_mode_A == 3'b001) ?
-						~{joyrept_0[1:0], (joy_in_0[0]|joy_in_0[6]), (joy_in_0[1]|joy_in_0[6]), (joy_in_0[2]|joy_in_0[7]), (joy_in_0[3]|joy_in_0[7])} :
-
-						// MegaDrive 3-button - strobe = low
-						 ((joy_mode_A == 3'b010) && (strA == 1'b0)) ?
-						~{joy_in_0[6], joy_in_0[4], 1'b1, 1'b1, joy_in_0[2], joy_in_0[3]} :
-						// strobe - high
-						 ((joy_mode_A == 3'b010) && (strA == 1'b1)) ?
-						~{joy_in_0[9],  joy_in_0[5], joy_in_0[0], joy_in_0[1], joy_in_0[2], joy_in_0[3]} :
-
-						// CyberStick (XE-1AP protocol)
-						(joy_mode_A == 3'b110) ?
-						{xe1_trg2, xe1_trg1, xe1_data[3:0]} :
-
-						// Magical 6-button - strobe = low
-						 ((joy_mode_A == 3'b011) && (strA == 1'b0)) ?
-						~{joy_in_0[9],  joy_in_0[8], joy_in_0[0], joy_in_0[1], joy_in_0[2], joy_in_0[3]} :
-						// strobe = high
-						 ((joy_mode_A == 3'b011) && (strA == 1'b1)) ?
-						~{joy_in_0[5],  joy_in_0[4], joy_in_0[10],  joy_in_0[11], 1'b1, 1'b1} :
-
-						// Capcom 6-button - strobe = low
-						 ((joy_mode_A == 3'b100) && (strA == 1'b0)) ?
-						~{joy_in_0[5],  joy_in_0[4], joy_in_0[0], joy_in_0[1], joy_in_0[2], joy_in_0[3]} :
-						// strobe = high
-						 ((joy_mode_A == 3'b100) && (strA == 1'b1)) ?
-						~{joy_in_0[6], joy_in_0[10], joy_in_0[7], joy_in_0[8], joy_in_0[9], joy_in_0[11]} :
-
-						// Double-DPad - strobe = low
-						 ((joy_mode_A == 3'b101) && (strA == 1'b0)) ?
-						~{joy_in_0[6],  joy_in_0[7], joy_in_0[0], joy_in_0[1], joy_in_0[2], joy_in_0[3]} :
-						// strobe = high
-						 ((joy_mode_A == 3'b101) && (strA == 1'b1)) ?
-						~{joy_in_0[6], joy_in_0[7], joy_in_0[4], joy_in_0[9], joy_in_0[5], joy_in_0[8]} :
-
-						6'b111111;
-
-wire        strB;
-wire        strB_tristate;
-wire  [5:0] joyB = ((joy_mode_B == 3'b000) || (joy_mode_B == 3'b110)) ?		// default 2-button or CyberStick (only support 1 CyberStick)
-						~{joy_in_1[5:4], (joy_in_1[0]|joy_in_1[6]), (joy_in_1[1]|joy_in_1[6]), (joy_in_1[2]|joy_in_1[7]), (joy_in_1[3]|joy_in_1[7])} :
-
-						// Turbo 2-button
-						 (joy_mode_B == 3'b001) ?
-						~{joyrept_1[1:0], (joy_in_1[0]|joy_in_1[6]), (joy_in_1[1]|joy_in_1[6]), (joy_in_1[2]|joy_in_1[7]), (joy_in_1[3]|joy_in_1[7])} :
-
-						// MegaDrive 3-button - strobe = low
-						 ((joy_mode_B == 3'b010) && (strB == 1'b0)) ?
-						~{joy_in_1[6], joy_in_1[4], 1'b1, 1'b1, joy_in_1[2], joy_in_1[3]} :
-						// strobe - high
-						 ((joy_mode_B == 3'b010) && (strB == 1'b1)) ?
-						~{joy_in_1[9],  joy_in_1[5], joy_in_1[0], joy_in_1[1], joy_in_1[2], joy_in_1[3]} :
-
-						// Magical 6-button - strobe = low
-						 ((joy_mode_B == 3'b011) && (strA == 1'b0)) ?
-						~{joy_in_1[9],  joy_in_1[8], joy_in_1[0], joy_in_1[1], joy_in_1[2], joy_in_1[3]} :
-						// strobe = high
-						 ((joy_mode_B == 3'b011) && (strA == 1'b1)) ?
-						~{joy_in_1[5],  joy_in_1[4], joy_in_1[10],  joy_in_1[11], 1'b1, 1'b1} :
-						
-						// Capcom 6-button - strobe = low
-						((joy_mode_B == 3'b100) && (strB == 1'b0)) ?
-						~{joy_in_1[5],  joy_in_1[4], joy_in_1[0], joy_in_1[1], joy_in_1[2], joy_in_1[3]} :
-						// strobe = high
-						((joy_mode_B == 3'b100) && (strB == 1'b1)) ?
-						~{joy_in_1[6], joy_in_1[10], joy_in_1[7], joy_in_1[8], joy_in_1[9], joy_in_1[11]}:
-
-						// Double-DPad - strobe = low
-						 ((joy_mode_B == 3'b101) && (strB == 1'b0)) ?
-						~{joy_in_1[6],  joy_in_1[7], joy_in_1[0], joy_in_1[1], joy_in_1[2], joy_in_1[3]} :
-						// strobe = high
-						 ((joy_mode_B == 3'b101) && (strB == 1'b1)) ?
-						~{joy_in_1[6], joy_in_1[7], joy_in_1[4], joy_in_1[9], joy_in_1[5], joy_in_1[8]} :
-
-						6'b111111;
-
-
-////////////////////////////  Joystick values  ////////////////////////////////// 
-
-reg [3:0] scan_counter = 0;
-reg [1:0] joyrept_0;
-reg [1:0] joyrept_1;
-
-
-always @(posedge clk_sys) begin
-	reg VBlank_ff;
-
-	// turbo-repeat based on VBLANK
-	VBlank_ff <= VBlank;
-	if ((VBlank_ff == 1'b0) && (VBlank == 1'b1)) begin
-		scan_counter <= scan_counter + 1'd1;
-
-		// repeat counters
-		joyrept_0[0] <= (joy_in_0[8] & scan_counter[2]) | (joy_in_0[11] & scan_counter[1]) | joy_in_0[4];
-		joyrept_0[1] <= (joy_in_0[9] & scan_counter[2]) | (joy_in_0[10] & scan_counter[1]) | joy_in_0[5];
-		
-		joyrept_1[0] <= (joy_in_1[8] & scan_counter[2]) | (joy_in_1[11] & scan_counter[1]) | joy_in_1[4];
-		joyrept_1[1] <= (joy_in_1[9] & scan_counter[2]) | (joy_in_1[10] & scan_counter[1]) | joy_in_1[5];
-
-	end
-end
-
-wire xe1_trg1;
-wire xe1_trg2;
-wire xe1_runbtn;
-wire xe1_selbtn;
-wire [3:0] xe1_data;
-
-
-XE1AP #(40) XE1AP		// for CyberStick - 40 clock cycles per microsecond (40MHz)
-(
-	.reset(reset),
-	.clk_sys(clk_sys),
-
-   .joystick_0(joy_in_0),
-   .joystick_l_analog_0(joy_analog_a),
-   .joystick_r_analog_0(joy_analog_b),
-	
-	.orientation(0),			// throttle on left side, stick on right side
-   .req(strA),					// signal requesting response from XE-1AP (on return to high)
-									// pin 8 on original 9-pin connector 
-   .lo_hi(xe1_trg2),			// pin 6 on original 9-pin connector
-   .ack(xe1_trg1),			// pin 7 on original 9-pin connector
-   .data(xe1_data),			// Data[3] = pin 4 on original 9-pin connector
-									// Data[2] = pin 3 on original 9-pin connector
-									// Data[1] = pin 2 on original 9-pin connector
-									// Data[0] = pin 1 on original 9-pin connector
-   .run_btn(xe1_runbtn),	// need to send back for the XHE-3 PC Engine attachment (not in use here)
-   .select_btn(xe1_selbtn)	// need to send back for the XHE-3 PC Engine attachment (not in use here)
-
-);
-
-////////////////////////////  End Joystick  ////////////////////////////////// 
-
 
 hps_io #(.CONF_STR(CONF_STR), .PS2DIV(2400), .PS2WE(1), .VDNUM(8)) hps_io
 (
@@ -437,6 +291,160 @@ hps_io #(.CONF_STR(CONF_STR), .PS2DIV(2400), .PS2WE(1), .VDNUM(8)) hps_io
 	.joystick_1(joystick_1),
 	.joystick_l_analog_0(joy_analog_a),
 	.joystick_r_analog_0(joy_analog_b)
+);
+
+
+////////////////////////////  Joysticks  ////////////////////////////////// 
+
+reg  [15:0] joy_in_0;
+reg  [15:0] joy_in_1;
+reg   [2:0] joy_mode_A;
+reg   [2:0] joy_mode_B;
+
+always @(posedge clk_sys) begin
+	joy_in_0   <= status[43] ? joystick_1    : joystick_0;
+	joy_in_1   <= status[43] ? joystick_0    : joystick_1;
+	joy_mode_A <= status[43] ? status[46:44] : status[39:37]; // Joy1 type follows physical joy0; swaps with Joy2 when swap active
+	joy_mode_B <= status[43] ? status[39:37] : status[46:44]; // Joy2 type follows physical joy1; swaps with Joy1 when swap active
+end
+
+reg [3:0] scan_counter = 0;
+reg [1:0] joyrept_0;
+reg [1:0] joyrept_1;
+
+always @(posedge clk_sys) begin
+	reg VBlank_ff;
+
+	// turbo-repeat based on VBLANK
+	VBlank_ff <= VBlank;
+	if ((VBlank_ff == 1'b0) && (VBlank == 1'b1)) begin
+		scan_counter <= scan_counter + 1'd1;
+
+		// repeat counters
+		joyrept_0[0] <= (joy_in_0[8] & scan_counter[2]) | (joy_in_0[11] & scan_counter[1]) | joy_in_0[4];
+		joyrept_0[1] <= (joy_in_0[9] & scan_counter[2]) | (joy_in_0[10] & scan_counter[1]) | joy_in_0[5];
+		
+		joyrept_1[0] <= (joy_in_1[8] & scan_counter[2]) | (joy_in_1[11] & scan_counter[1]) | joy_in_1[4];
+		joyrept_1[1] <= (joy_in_1[9] & scan_counter[2]) | (joy_in_1[10] & scan_counter[1]) | joy_in_1[5];
+	end
+end
+
+wire       strA_tristate;
+wire       strA;
+reg  [5:0] joyA;
+
+wire       strB;
+wire       strB_tristate;
+reg  [5:0] joyB;
+
+always @(posedge clk_sys) begin
+	joyA <=   (joy_mode_A == 3'b000) ?		// default 2-button
+				~{joy_in_0[5:4], (joy_in_0[0]|joy_in_0[6]), (joy_in_0[1]|joy_in_0[6]), (joy_in_0[2]|joy_in_0[7]), (joy_in_0[3]|joy_in_0[7])} :
+
+				// Turbo 2-button
+				 (joy_mode_A == 3'b001) ?
+				~{joyrept_0[1:0], (joy_in_0[0]|joy_in_0[6]), (joy_in_0[1]|joy_in_0[6]), (joy_in_0[2]|joy_in_0[7]), (joy_in_0[3]|joy_in_0[7])} :
+
+				// MegaDrive 3-button - strobe = low
+				 ((joy_mode_A == 3'b010) && (strA == 1'b0)) ?
+				~{joy_in_0[6], joy_in_0[4], 1'b1, 1'b1, joy_in_0[2], joy_in_0[3]} :
+				// strobe - high
+				 ((joy_mode_A == 3'b010) && (strA == 1'b1)) ?
+				~{joy_in_0[9],  joy_in_0[5], joy_in_0[0], joy_in_0[1], joy_in_0[2], joy_in_0[3]} :
+
+				// CyberStick (XE-1AP protocol)
+				(joy_mode_A == 3'b110) ?
+				{xe1_trg2, xe1_trg1, xe1_data[3:0]} :
+
+				// Magical 6-button - strobe = low
+				 ((joy_mode_A == 3'b011) && (strA == 1'b0)) ?
+				~{joy_in_0[9],  joy_in_0[8], joy_in_0[0], joy_in_0[1], joy_in_0[2], joy_in_0[3]} :
+				// strobe = high
+				 ((joy_mode_A == 3'b011) && (strA == 1'b1)) ?
+				~{joy_in_0[5],  joy_in_0[4], joy_in_0[10],  joy_in_0[11], 1'b1, 1'b1} :
+
+				// Capcom 6-button - strobe = low
+				 ((joy_mode_A == 3'b100) && (strA == 1'b0)) ?
+				~{joy_in_0[5],  joy_in_0[4], joy_in_0[0], joy_in_0[1], joy_in_0[2], joy_in_0[3]} :
+				// strobe = high
+				 ((joy_mode_A == 3'b100) && (strA == 1'b1)) ?
+				~{joy_in_0[6], joy_in_0[10], joy_in_0[7], joy_in_0[8], joy_in_0[9], joy_in_0[11]} :
+
+				// Double-DPad - strobe = low
+				 ((joy_mode_A == 3'b101) && (strA == 1'b0)) ?
+				~{joy_in_0[6],  joy_in_0[7], joy_in_0[0], joy_in_0[1], joy_in_0[2], joy_in_0[3]} :
+				// strobe = high
+				 ((joy_mode_A == 3'b101) && (strA == 1'b1)) ?
+				~{joy_in_0[6], joy_in_0[7], joy_in_0[4], joy_in_0[9], joy_in_0[5], joy_in_0[8]} :
+
+				6'b111111;
+
+	joyB <=   ((joy_mode_B == 3'b000) || (joy_mode_B == 3'b110)) ?		// default 2-button or CyberStick (only support 1 CyberStick)
+				~{joy_in_1[5:4], (joy_in_1[0]|joy_in_1[6]), (joy_in_1[1]|joy_in_1[6]), (joy_in_1[2]|joy_in_1[7]), (joy_in_1[3]|joy_in_1[7])} :
+
+				// Turbo 2-button
+				 (joy_mode_B == 3'b001) ?
+				~{joyrept_1[1:0], (joy_in_1[0]|joy_in_1[6]), (joy_in_1[1]|joy_in_1[6]), (joy_in_1[2]|joy_in_1[7]), (joy_in_1[3]|joy_in_1[7])} :
+
+				// MegaDrive 3-button - strobe = low
+				 ((joy_mode_B == 3'b010) && (strB == 1'b0)) ?
+				~{joy_in_1[6], joy_in_1[4], 1'b1, 1'b1, joy_in_1[2], joy_in_1[3]} :
+				// strobe - high
+				 ((joy_mode_B == 3'b010) && (strB == 1'b1)) ?
+				~{joy_in_1[9],  joy_in_1[5], joy_in_1[0], joy_in_1[1], joy_in_1[2], joy_in_1[3]} :
+
+				// Magical 6-button - strobe = low
+				 ((joy_mode_B == 3'b011) && (strB == 1'b0)) ?
+				~{joy_in_1[9],  joy_in_1[8], joy_in_1[0], joy_in_1[1], joy_in_1[2], joy_in_1[3]} :
+				// strobe = high
+				 ((joy_mode_B == 3'b011) && (strB == 1'b1)) ?
+				~{joy_in_1[5],  joy_in_1[4], joy_in_1[10],  joy_in_1[11], 1'b1, 1'b1} :
+				
+				// Capcom 6-button - strobe = low
+				((joy_mode_B == 3'b100) && (strB == 1'b0)) ?
+				~{joy_in_1[5],  joy_in_1[4], joy_in_1[0], joy_in_1[1], joy_in_1[2], joy_in_1[3]} :
+				// strobe = high
+				((joy_mode_B == 3'b100) && (strB == 1'b1)) ?
+				~{joy_in_1[6], joy_in_1[10], joy_in_1[7], joy_in_1[8], joy_in_1[9], joy_in_1[11]}:
+
+				// Double-DPad - strobe = low
+				 ((joy_mode_B == 3'b101) && (strB == 1'b0)) ?
+				~{joy_in_1[6],  joy_in_1[7], joy_in_1[0], joy_in_1[1], joy_in_1[2], joy_in_1[3]} :
+				// strobe = high
+				 ((joy_mode_B == 3'b101) && (strB == 1'b1)) ?
+				~{joy_in_1[6], joy_in_1[7], joy_in_1[4], joy_in_1[9], joy_in_1[5], joy_in_1[8]} :
+
+				6'b111111;
+end
+
+wire xe1_trg1;
+wire xe1_trg2;
+wire xe1_runbtn;
+wire xe1_selbtn;
+wire [3:0] xe1_data;
+
+
+XE1AP #(40) XE1AP		// for CyberStick - 40 clock cycles per microsecond (40MHz)
+(
+	.reset(reset),
+	.clk_sys(clk_sys),
+
+   .joystick_0(joy_in_0),
+   .joystick_l_analog_0(joy_analog_a),
+   .joystick_r_analog_0(joy_analog_b),
+	
+	.orientation(0),			// throttle on left side, stick on right side
+   .req(strA),					// signal requesting response from XE-1AP (on return to high)
+									// pin 8 on original 9-pin connector 
+   .lo_hi(xe1_trg2),			// pin 6 on original 9-pin connector
+   .ack(xe1_trg1),			// pin 7 on original 9-pin connector
+   .data(xe1_data),			// Data[3] = pin 4 on original 9-pin connector
+									// Data[2] = pin 3 on original 9-pin connector
+									// Data[1] = pin 2 on original 9-pin connector
+									// Data[0] = pin 1 on original 9-pin connector
+   .run_btn(xe1_runbtn),	// need to send back for the XHE-3 PC Engine attachment (not in use here)
+   .select_btn(xe1_selbtn)	// need to send back for the XHE-3 PC Engine attachment (not in use here)
+
 );
 
 /////////////////  RESET  /////////////////////////
