@@ -1,9 +1,10 @@
 // Mister video sync for x68000 by Jamie Blanks
 
-module mister_sync
+module mister_sync #(parameter PRECOMPUTED_WINDOW = 0)
 (
 	input               gclk,
 	input               rstn,
+	input [51:0]        window_config,
 	input  [15:0]       LRAMDAT,
 
 	input  [1:0]        HMODE,
@@ -55,7 +56,11 @@ module mister_sync
 	output              VPSTART,
 	output              f1,
 	output              vid_osc,
-	output logic        out_is_24khz
+	output logic        out_is_24khz,
+	input               ext_pix_en,
+	input               ext_pix_ce,
+	output [3:0]        pix_mode,
+	output              pix_dyn
 );
 	logic [9:0] VCOUNT;
 	logic [7:0] HUCOUNT;
@@ -129,8 +134,10 @@ module mister_sync
 	wire [9:0] vtotal_m = vtotal_ovr;
 
 
-	wire [7:0] hactive_start = (hvbgn + 3'd4 <= htotal_m) ? hvbgn + 3'd4 : hvbgn + 3'd4 - htotal_m - 1'd1;
-	wire [7:0] hactive_end   = (hvend + 3'd4 <= htotal_m) ? hvend + 3'd4 : hvend + 3'd4 - htotal_m - 1'd1;
+	wire [7:0] hactive_start = PRECOMPUTED_WINDOW ? window_config[51:44] :
+        (hvbgn + 3'd4 <= htotal_m) ? hvbgn + 3'd4 : hvbgn + 3'd4 - htotal_m - 1'd1;
+	wire [7:0] hactive_end = PRECOMPUTED_WINDOW ? window_config[43:36] :
+        (hvend + 3'd4 <= htotal_m) ? hvend + 3'd4 : hvend + 3'd4 - htotal_m - 1'd1;
 	wire [8:0] hline_len = {1'b0, htotal_m} + 9'd1;
 	wire [8:0] hactive_width_w = (hactive_end >= hactive_start) ?
 	                              ({1'b0, hactive_end} - {1'b0, hactive_start}) :
@@ -150,8 +157,8 @@ module mister_sync
 	wire signed [10:0] hmax_start_s = $signed({3'b0, htotal_m}) - $signed({3'b0, hbox_width});
 	wire signed [10:0] hstart_clamped_s = (hstart_s < 0) ? 11'sd0 :
 	                                      (hstart_s > hmax_start_s) ? hmax_start_s : hstart_s;
-	wire [7:0] hbox_start = hstart_clamped_s[7:0];
-	wire [7:0] hbox_end   = hbox_start + hbox_width;
+	wire [7:0] hbox_start = PRECOMPUTED_WINDOW ? window_config[35:28] : hstart_clamped_s[7:0];
+	wire [7:0] hbox_end   = PRECOMPUTED_WINDOW ? window_config[27:20] : hbox_start + hbox_width;
 
 	wire [9:0] vactive_height = (vvend_ovr > vvbgn_ovr) ? (vvend_ovr - vvbgn_ovr) : 10'd1;
 	wire [9:0] vbox_height_nom = is_24khz  ? 10'd424 :
@@ -165,8 +172,8 @@ module mister_sync
 	wire signed [11:0] vmax_start_s = $signed({2'b0, vtotal_m}) - $signed({2'b0, vbox_height});
 	wire signed [11:0] vstart_clamped_s = (vstart_s < 0) ? 12'sd0 :
 	                                      (vstart_s > vmax_start_s) ? vmax_start_s : vstart_s;
-	wire [9:0] vbox_start = vstart_clamped_s[9:0];
-	wire [9:0] vbox_end   = vbox_start + vbox_height;
+	wire [9:0] vbox_start = PRECOMPUTED_WINDOW ? window_config[19:10] : vstart_clamped_s[9:0];
+	wire [9:0] vbox_end   = PRECOMPUTED_WINDOW ? window_config[9:0] : vbox_start + vbox_height;
 
 	assign VIDEN = ~(VRTC || HRTC);
 	// 69.55199 - Video clock
@@ -264,7 +271,9 @@ module mister_sync
 		end
 	end
 
-	assign pix_ce = polyclock;
+	assign pix_ce = ext_pix_en ? ext_pix_ce : polyclock;
+	assign pix_mode = {HRL, hfreq_ovr, HMODE_ovr};
+	assign pix_dyn = v60hz && (mod_inc_dyn != 32'd0);
 	assign out_is_24khz = is_24khz;
 	assign f1 = 1'b0;
 	assign vid_osc = pix_ce;

@@ -83,6 +83,7 @@ signal	status		:std_logic_vector(7 downto 0);
 signal	message		:std_logic_vector(7 downto 0);
 signal	lbab		:std_logic_vector(31 downto 0);
 signal	max_lba		:std_logic_vector(31 downto 0);
+signal	dlen		:std_logic_vector(8 downto 0);
 begin
 
 	bytemax <= "111111111" when mode_scsi='1' else "011111111";
@@ -136,6 +137,7 @@ begin
 				lbab<=(others=>'0');
 				message<=(others=>'0');
 				status<=(others=>'0');
+				dlen<=(others=>'0');
 				wrreq<='0';
 				rdreq<='0';
 				syncreq<='0';
@@ -368,14 +370,24 @@ begin
 							state<=st_status;
 						when x"03" =>
 							IO<='1';
-							bytecount<="000000100";
+							if(cdb(4)=x"00")then
+								bytecount<="000000100";
+							else
+								bytecount<='0' & cdb(4);
+							end if;
 							state<=st_data;
 						when x"04" =>
 							status<=x"00";
 							state<=st_status;
 						when x"12" =>
 							IO<='1';
-							bytecount<="000100100";
+							if(cdb(4)/=x"00" and cdb(4)<x"24")then
+								bytecount<='0' & cdb(4);
+								dlen<='0' & cdb(4);
+							else
+								bytecount<="000100100";
+								dlen<="000100100";
+							end if;
 							state<=st_data;
 						when x"25" =>
 							IO<='1';
@@ -401,7 +413,7 @@ begin
 							swait:=2;
 							state<=st_data;
 						when x"28" =>
-							if(sectcount=x"0000")then
+							if(cdb(7)=x"00" and cdb(8)=x"00")then
 								status<=x"00";
 								state<=st_status;
 							else
@@ -412,7 +424,7 @@ begin
 								state<=st_data;
 							end if;
 						when x"2a" =>
-							if(sectcount=x"0000")then
+							if(cdb(7)=x"00" and cdb(8)=x"00")then
 								status<=x"00";
 								state<=st_status;
 							else
@@ -437,7 +449,7 @@ begin
 								REQ<='1';
 								state<=st_dataw;
 							when x"12" =>
-								case (conv_integer("000100100" - bytecount)) is
+								case (conv_integer(dlen - bytecount)) is
 								when 0 => ODAT<=x"00";
 								when 1 => ODAT<=x"00";
 								when 2 => ODAT<=x"01";

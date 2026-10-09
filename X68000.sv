@@ -32,7 +32,7 @@ assign {UART_RTS, UART_DTR} = 0;
 assign {SD_SCK, SD_MOSI, SD_CS} = 'Z;
 
 assign VGA_SL = 0;
-assign VGA_SCALER = 1;
+assign VGA_SCALER = 0;
 assign VGA_DISABLE = 0;
 assign HDMI_FREEZE = 0;
 assign HDMI_BLACKOUT = 1;
@@ -93,8 +93,9 @@ parameter CONF_STR = {
 	"P4O23,Stereo Mix,None,25%,50%,100%;",
 	"P4ORS,Scale,Normal,V-Integer,Narrower HV-Integer,Wider HV-Integer;",
 	"P4-;",
-	"P4o1,Video Frequency,60fps,Original;",
+	"P4o1,Video Frequency,Original,60fps (31k);",
 	"P4O[70:69],Video Mode,Stretch,Native;,;",
+	"P4O[77],15 kHz line doubler,Off,On;",
 	"P4O45,Aspect ratio,Original,Full Screen,[ARC1],[ARC2];",
 	"h1P5,MT32-pi;",
 	"h1P5-;",
@@ -141,8 +142,10 @@ parameter CONF_STR = {
 /////////////////  CLOCKS  ////////////////////////
 
 wire clk_ram, clk_sys;
-wire clk_vid = clk_ram; // Video uses same 80 MHz clock (no CDC). Timing via polyclock.
+wire clk_vid = clk_ram;
 wire pll_locked;
+wire clk_scan, scan_ready, scan_reset_n;
+wire [3:0] scan_mode;
 
 pll pll
 (
@@ -152,6 +155,12 @@ pll pll
 	.outclk_1(clk_sys), // 40 MHz
 	.outclk_2(),         // 80 MHz (unused)
 	.locked(pll_locked)
+);
+
+x68k_video_clock video_clock (
+    .refclk(CLK_50M), .mgmt_clk(clk_sys), .reset_n(pll_locked),
+    .mode(rt_mode), .v60(status[33]), .clk_video(clk_scan),
+    .ready(scan_ready), .active_mode(scan_mode)
 );
 
 // Video oscillators
@@ -624,23 +633,37 @@ always @(posedge clk_sys) begin
                      (mt32_mode == 'hA1 && mt32_rom == 2) ?  4'd11 : 4'd12;
 end
 
-reg mt32_lcd_on;
-always @(posedge CLK_VIDEO) begin
-	int to;
-	reg old_update;
+reg mt32_lcd_update_meta = 0;
+reg mt32_lcd_update_sync = 0;
+reg mt32_lcd_update_prev = 0;
+reg [1:0] mt32_lcd_div4 = 0;
+reg [24:0] mt32_lcd_timeout = 0;
+reg mt32_lcd_on_sys = 0;
+always @(posedge clk_sys) begin
+	mt32_lcd_update_meta <= mt32_lcd_update;
+	mt32_lcd_update_sync <= mt32_lcd_update_meta;
+	mt32_lcd_update_prev <= mt32_lcd_update_sync;
+	mt32_lcd_div4 <= mt32_lcd_div4 + 1'b1;
+	if (mt32_lcd_div4 == 2'd3 && mt32_lcd_timeout != 0)
+		mt32_lcd_timeout <= mt32_lcd_timeout - 1'b1;
 
-	old_update <= mt32_lcd_update;
-	if(to) to <= to - 1;
-
-	if(mt32_info == 2) mt32_lcd_on <= 1;
-	else if(mt32_info != 3) mt32_lcd_on <= 0;
+	if (mt32_info == 2) mt32_lcd_on_sys <= 1;
+	else if (mt32_info != 3) mt32_lcd_on_sys <= 0;
 	else begin
-		if(!to) mt32_lcd_on <= 0;
-		if(old_update ^ mt32_lcd_update) begin
-			mt32_lcd_on <= 1;
-			to <= 90000000 * 2;
+		if (mt32_lcd_timeout == 0) mt32_lcd_on_sys <= 0;
+		if (mt32_lcd_update_prev ^ mt32_lcd_update_sync) begin
+			mt32_lcd_on_sys <= 1;
+			mt32_lcd_timeout <= 25'd20000000;
+			mt32_lcd_div4 <= 0;
 		end
 	end
+end
+
+reg mt32_lcd_on_meta = 0;
+reg mt32_lcd_on = 0;
+always @(posedge CLK_VIDEO) begin
+	mt32_lcd_on_meta <= mt32_lcd_on_sys;
+	mt32_lcd_on <= mt32_lcd_on_meta;
 end
 
 wire mt32_lcd = mt32_lcd_on & mt32_lcd_en;
@@ -667,13 +690,14 @@ end
 wire [1:0] fddwait = status[48:47];
 wire [1:0] vid_mode = status[70:69];
 
-assign CLK_VIDEO = clk_vid;
+assign CLK_VIDEO = clk_scan;
 assign AUDIO_S = 1;
 
 wire disk_led;
 
 wire [7:0] red, green, blue;
 wire HBlank, VBlank, HSync, VSync, ce_pix, vid_de;
+wire video_31k;
 
 wire snd_clockmode;
 reg sys_ce;
@@ -723,6 +747,8 @@ X68K_top X68K_top
 	.ramclk     (clk_ram),
 	.sysclk     (clk_sys),
 	.vidclk     (clk_vid),
+    .scanclk(clk_scan), .scan_ready(scan_ready), .scan_mode(scan_mode),
+    .scan_reset_out(scan_reset_n),
 	.fdcclk     (clk_sys),
 	.sndclk     (clk_sys),
 	
@@ -767,7 +793,7 @@ X68K_top X68K_top
 	.ldr_wr(ldr_wr),
 	.ldr_ack(ldr_ack),
 	.ldr_done(ldr_done),
-	.vid_hz(~status[33]),
+	.vid_hz(1'b0),
 
 	.pPs2Clkin(ps2_kbd_clk_out),
 	.pPs2Clkout(ps2_kbd_clk_in),
@@ -830,6 +856,11 @@ X68K_top X68K_top
 	.pVideoEN(vid_de),
 	.pVideoClk(ce_pix),
 	.pVideoF1(VGA_F1),
+	.pVideo31k(video_31k),
+	.pPixCe(1'b0),
+	.pPixExt(1'b0),
+	.pVideoMode(rt_mode),
+	.pVideoDyn(),
 
 	.pSndL(aud_r),
 	.pSndR(aud_l),
@@ -904,6 +935,21 @@ wire freak_de;
 wire [7:0] vm_r, vm_g, vm_b;
 wire vm_hs, vm_vs;
 wire [21:0] vm_gamma_bus;
+wire rt_tick = ce_pix;
+wire [3:0] rt_mode;
+wire [7:0] rt_r = r_mt, rt_g = g_mt, rt_b = b_mt;
+wire rt_hs = HSync, rt_vs = VSync, rt_hb = HBlank, rt_vb = VBlank;
+wire sd_enable = status[77] & ~video_31k;
+wire sd_ce, sd_hs, sd_vs, sd_hb, sd_vb;
+wire [7:0] sd_r, sd_g, sd_b;
+wire mix_ce = sd_enable ? sd_ce : rt_tick;
+wire mix_hs = sd_enable ? sd_hs : rt_hs;
+wire mix_vs = sd_enable ? sd_vs : rt_vs;
+wire mix_hb = sd_enable ? sd_hb : rt_hb;
+wire mix_vb = sd_enable ? sd_vb : rt_vb;
+wire [7:0] mix_r = sd_enable ? sd_r : rt_r;
+wire [7:0] mix_g = sd_enable ? sd_g : rt_g;
+wire [7:0] mix_b = sd_enable ? sd_b : rt_b;
 video_freak video_freak
 (
 	.*,
@@ -921,6 +967,18 @@ wire [7:0] r_mt, g_mt, b_mt;
 assign {r_mt, g_mt, b_mt} = mt32_lcd ? {{2{mt32_lcd_pix}},red[7:2], {2{mt32_lcd_pix}},green[7:2], {2{mt32_lcd_pix}},blue[7:2]} 
 	: {red,green,blue};
 
+x68k_linedoubler line_doubler
+(
+	.clk(clk_scan),
+	.reset_n(scan_reset_n & reset_n & ~reset),
+	.ce_in(rt_tick),
+	.r_in(rt_r), .g_in(rt_g), .b_in(rt_b),
+	.hs_in(rt_hs), .vs_in(rt_vs), .hb_in(rt_hb), .vb_in(rt_vb),
+	.ce_out(sd_ce),
+	.r_out(sd_r), .g_out(sd_g), .b_out(sd_b),
+	.hs_out(sd_hs), .vs_out(sd_vs), .hb_out(sd_hb), .vb_out(sd_vb)
+);
+
 video_mixer #(.LINE_LENGTH(800), .HALF_DEPTH(0), .GAMMA(0)) video_mixer
 (
 	.*,
@@ -934,15 +992,16 @@ video_mixer #(.LINE_LENGTH(800), .HALF_DEPTH(0), .GAMMA(0)) video_mixer
 	.VGA_VS(vm_vs),
 	.scandoubler(0),
 	.hq2x(0),
-	.HSync(HSync),
-	.HBlank(HBlank),
-	.VSync(VSync),
-	.VBlank(VBlank),
+	.ce_pix(mix_ce),
+	.HSync(mix_hs),
+	.HBlank(mix_hb),
+	.VSync(mix_vs),
+	.VBlank(mix_vb),
 	.freeze_sync(),
 
-	.R(r_mt),
-	.G(g_mt),
-	.B(b_mt)
+	.R(mix_r),
+	.G(mix_g),
+	.B(mix_b)
 );
 
 gamma_fast gamma_inst

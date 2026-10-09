@@ -167,6 +167,8 @@ type fdstate_t is (
 	fs_crci1,
 	fs_ssizel,
 	fs_ssizeh,
+	fs_gapsum,
+	fs_gapdiv,
 	fs_gap1,
 	fs_syncd,
 	fs_dam0,
@@ -282,6 +284,17 @@ signal	sectcount:std_logic_vector(15 downto 0);
 signal	cursecthead	:std_logic_vector(31 downto 0);
 signal	nxtsecthead	:std_logic_vector(31 downto 0);
 signal	sectlen	:std_logic_vector(15 downto 0);
+signal	gap3len	:integer range 0 to 255;
+signal	gapstd	:integer range 0 to 255;
+signal	gapmin	:integer range 0 to 255;
+signal	gapi	:std_logic_vector(15 downto 0);
+signal	gapacca	:integer range 0 to 262143;
+signal	gapaccb	:integer range 0 to 262143;
+signal	gaprem	:integer range 0 to 262143;
+signal	gaptot	:integer range 0 to 262143;
+signal	gaplen	:integer range 0 to 16383;
+signal	gapdiff	:std_logic_vector(31 downto 0);
+signal	gapdiffok	:std_logic;
 signal	deleted	:std_logic;
 signal	crcwrdat	:std_logic_vector(7 downto 0);
 signal	crcwr		:std_logic;
@@ -1317,6 +1330,7 @@ begin
 				numsect<=(others=>'0');
 				sectcount<=(others=>'0');
 				fddone<='0';
+				gap3len<=10;
 				diskmode0<="00";
 				diskmode1<="00";
 				diskmode<="00";
@@ -1450,7 +1464,11 @@ begin
 						if(img_busy='0')then
 							numsect(15 downto 8)<=img_rddat;
 							sectcount<=(others=>'0');
-							fdstate<=fs_gap0;
+							if(img_rddat=x"00" and numsect(7 downto 0)=x"00")then
+								fdstate<=fs_gap3;
+							else
+								fdstate<=fs_gap0;
+							end if;
 						end if;
 					when fs_gap0 =>
 						if(trackbusy='0')then
@@ -1638,6 +1656,54 @@ begin
 							end if;
 							trackwr<='1';
 							swait:=1;
+							if(sectcount=x"0000")then
+								tbladdr<=trackno+x"09";
+								gapi<=(others=>'0');
+								if(mfm='1')then
+									gapacca<=41;
+									gapaccb<=41;
+								else
+									gapacca<=81;
+									gapaccb<=81;
+								end if;
+								swait:=2;
+								fdstate<=fs_gapsum;
+							else
+								fdstate<=fs_gap1;
+							end if;
+						end if;
+					when fs_gapsum =>
+						gapdiff<=haddr-cursecthead;
+						if((trackno+1)<tracks and haddr>cursecthead and (haddr-cursecthead)<x"00010000")then
+							gapdiffok<='1';
+						else
+							gapdiffok<='0';
+						end if;
+						if(gapi/=numsect and gapacca<16384)then
+							if(mfm='1')then
+								gapacca<=gapacca+65+conv_integer(sectlen);
+								gapaccb<=gapaccb+65-16;
+							else
+								gapacca<=gapacca+36+conv_integer(sectlen);
+								gapaccb<=gapaccb+36-16;
+							end if;
+							gapi<=gapi+1;
+						elsif(gaptot>=gaplen)then
+							gap3len<=gapmin;
+							fdstate<=fs_gap1;
+						else
+							gaprem<=gaplen-gaptot;
+							gap3len<=0;
+							fdstate<=fs_gapdiv;
+						end if;
+					when fs_gapdiv =>
+						if(gap3len<gapstd and gaprem>=conv_integer(numsect))then
+							gaprem<=gaprem-conv_integer(numsect);
+							gap3len<=gap3len+1;
+						else
+							if(gap3len<gapmin)then
+								gap3len<=gapmin;
+							end if;
 							fdstate<=fs_gap1;
 						end if;
 					when fs_gap1 =>
@@ -1763,11 +1829,7 @@ begin
 							end if;
 							trackwr<='1';
 							fdstate<=fs_gap2;
-							if(mfm='1')then
-								bytecount<=10;
-							else
-								bytecount<=5;
-							end if;
+							bytecount<=gap3len;
 							swait:=1;
 						end if;
 					when fs_gap2 =>
@@ -1812,7 +1874,7 @@ begin
 								track_curaddr<=track_curaddr+1;
 								trackwr<='1';
 							else
-								if(trackno<tracks)then
+								if((trackno+1)<tracks)then
 									trackno<=trackno+1;
 									tbladdr<=trackno+x"09";
 									swait:=2;
@@ -1826,7 +1888,7 @@ begin
 						end if;
 					when fs_nxttrack =>
 						if(haddr=x"00000000")then
-							if(trackno<tracks)then
+							if((trackno+1)<tracks)then
 								trackno<=trackno+1;
 								tbladdr<=trackno+x"09";
 								swait:=2;
@@ -2181,6 +2243,22 @@ begin
 			end if;
 		end if;
 	end process;
+
+	gapstd<=	54	when mfm='1' and sectlen<=x"0100" else
+				84	when mfm='1' and sectlen<=x"0200" else
+				116	when mfm='1' else
+				27	when sectlen<=x"0080" else
+				42	when sectlen<=x"0100" else
+				58;
+	gapmin<=	10 when mfm='1' else 5;
+	gaplen<=	6250	when diskmode(1)='0' and mfm='1' else
+				10416	when diskmode="10" and mfm='1' else
+				12500	when mfm='1' else
+				3125	when diskmode(1)='0' else
+				5208	when diskmode="10" else
+				6250;
+	gaptot<=	gapaccb+conv_integer(gapdiff(15 downto 0)) when gapdiffok='1' and (gapaccb+conv_integer(gapdiff(15 downto 0)))>gapacca else
+				gapacca;
 
 	tracklen<=	x"00000c35"	when diskmode="00" and mfm='0' else
 					x"00000c35" when diskmode="01" and mfm='0' else
