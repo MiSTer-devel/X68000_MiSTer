@@ -17,6 +17,10 @@ port(
 	ramclk	:in std_logic;
 	sysclk	:in std_logic;
 	vidclk	:in std_logic;
+    scanclk :in std_logic;
+    scan_ready :in std_logic;
+    scan_mode :in std_logic_vector(3 downto 0);
+    scan_reset_out :out std_logic;
 	fdcclk	:in std_logic;
 	sndclk	:in std_logic;
 
@@ -132,6 +136,11 @@ port(
 	pVideoHS		:out std_logic;
 	pVideoVS		:out std_logic;
 	pVideoF1        :buffer std_logic;
+	pVideo31k       :out std_logic;
+	pPixCe          :in std_logic := '0';
+	pPixExt         :in std_logic := '0';
+	pVideoMode      :out std_logic_vector(3 downto 0);
+	pVideoDyn       :out std_logic;
 	
 	pSndL		:out std_logic_vector(15 downto 0);
 	pSndR		:out std_logic_vector(15 downto 0);
@@ -170,10 +179,17 @@ constant rcpy_brsize	:integer	:=7;
 constant RAMAWIDTH	:integer	:=25;	--per byte
 
 signal	srstn	:std_logic;
+signal	cpu_rstn :std_logic;
+signal	mpu_reset_n :std_logic;
 signal	mem_rstn:std_logic;
 signal	pwr_rstn:std_logic;
 signal	pwrsw	:std_logic;
 signal	vid_rstn	:std_logic;
+signal scan_rstn, render_rstn, scan_lsel :std_logic;
+signal render_hb, render_vb :std_logic;
+signal scan_video_mode :std_logic_vector(1 downto 0);
+signal pixel_ce_pipe :std_logic_vector(1 downto 0);
+signal pixel_sync_pipe :std_logic_vector(4 downto 0);
 
 signal	dbus	:std_logic_vector(15 downto 0);
 signal	abus	:std_logic_vector(23 downto 0);
@@ -868,6 +884,8 @@ signal	midi_csft	:std_logic;
 
 --Contrast controller
 constant	context	:integer	:=2;
+signal scan_contrast :std_logic_vector(3+context downto 0);
+signal scan_controls :std_logic_vector(5+context downto 0);
 signal	contval	:std_logic_vector(3+context downto 0);
 signal	contvalm	:std_logic_vector(3+context downto 0);
 signal	contc_rdat	:std_logic_vector(7 downto 0);
@@ -1351,8 +1369,11 @@ port(
 );
 end component;
 
-component mister_sync
+component x68k_native_crtc
 port(
+    config_clk, pclk, scan_ready :in std_logic;
+    active_mode :in std_logic_vector(3 downto 0);
+    scan_LRAMSEL, render_hblank, render_vblank, render_reset_n, scan_reset_n :out std_logic;
 	LRAMSEL		:out std_logic;
 	LRAMADR		:out std_logic_vector(9 downto 0);
 	LRAMDAT		:in std_logic_vector(15 downto 0);
@@ -1407,6 +1428,10 @@ port(
 	v60hz       :in std_logic;
 	f1          :out std_logic;
 	out_is_24khz :out std_logic;
+	ext_pix_en  :in std_logic;
+	ext_pix_ce  :in std_logic;
+	pix_mode    :out std_logic_vector(3 downto 0);
+	pix_dyn     :out std_logic;
 
 	gclk		:in std_logic;
 	rstn		:in std_logic
@@ -1439,20 +1464,19 @@ port(
 );
 end component;
 
-component VLINEBUF
-	PORT
-	(
-		address_a		: IN STD_LOGIC_VECTOR (9 DOWNTO 0);
-		address_b		: IN STD_LOGIC_VECTOR (9 DOWNTO 0);
-		clock		: IN STD_LOGIC  := '1';
-		data_a		: IN STD_LOGIC_VECTOR (15 DOWNTO 0);
-		data_b		: IN STD_LOGIC_VECTOR (15 DOWNTO 0);
-		wren_a		: IN STD_LOGIC  := '0';
-		wren_b		: IN STD_LOGIC  := '0';
-		q_a		: OUT STD_LOGIC_VECTOR (15 DOWNTO 0);
-		q_b		: OUT STD_LOGIC_VECTOR (15 DOWNTO 0)
-	);
-END component;
+component x68k_scanline_ram
+port(wrclk, rdclk, wren :in std_logic;
+     wraddr, rdaddr :in std_logic_vector(9 downto 0);
+     data :in std_logic_vector(15 downto 0);
+     q :out std_logic_vector(15 downto 0));
+end component;
+component x68k_video_snapshot
+generic(WIDTH :integer := 1);
+port(src_clk, dst_clk, reset_n :in std_logic;
+     in_data :in std_logic_vector(WIDTH-1 downto 0);
+     out_data :out std_logic_vector(WIDTH-1 downto 0);
+     valid :out std_logic);
+end component;
 
 component  FDCs is
 generic(
@@ -2802,7 +2826,8 @@ begin
 
 --	fdcclk<=pClk50M;
 	dem_rstn<=plllock and pwr_rstn;
-	srstn<=plllock and rstn and pwr_rstn and ldr_done and dem_initdone and (not inj_busy);
+	cpu_rstn<=plllock and rstn and pwr_rstn and ldr_done and dem_initdone and (not inj_busy);
+	srstn<=cpu_rstn and mpu_reset_n;
 	vid_rstn<=plllock and pwr_rstn and ram_inidone;
 
 	pwr	:pwrcont  port map(
@@ -2826,8 +2851,8 @@ begin
 	MPU : fx68k port map(
 		clk      => sysclk,
 		HALTn    => '1',
-		extReset => not srstn,
-		pwrUp    => not srstn,
+		extReset => not cpu_rstn,
+		pwrUp    => not cpu_rstn,
 		enPhi1   => not dma_bconte and mpu_cep,
 		enPhi2   => not dma_bconte and mpu_cen,
 		eRWn     => i_rwn,
@@ -2847,6 +2872,7 @@ begin
 		IPL2n    => mpu_ipl(2),
 		iEdb     => dbus,
 		oEdb     => mpu_od,
+		oRESETn  => mpu_reset_n,
 		eab      => mpu_addr(23 downto 1)
 	);
 	
@@ -3502,8 +3528,12 @@ begin
 	-- out_vvend  <= vr_vvend;
 	-- out_rintl  <= vr_rintline;
 
-	CRTC	:mister_sync 
+	CRTC	:x68k_native_crtc
 	port map(
+        config_clk =>sysclk, pclk =>scanclk, scan_ready =>scan_ready,
+        active_mode =>scan_mode, scan_LRAMSEL =>scan_lsel,
+        render_hblank =>render_hb, render_vblank =>render_vb,
+        render_reset_n =>render_rstn, scan_reset_n =>scan_rstn,
 		LRAMSEL     =>LRAMSEL,
 		LRAMADR     =>LVIDADR,
 		LRAMDAT     =>LVIDRD,
@@ -3533,7 +3563,7 @@ begin
 		
 		out_HMODE   =>out_HMODE,
 		out_VMODE   =>out_VMODE,
-		out_hfreq   =>open,
+		out_hfreq   =>pVideo31k,
 		out_htotal  =>out_htotal,
 		--out_hsynl   =>out_hsynl,
 		out_hvbgn   =>out_hvbgn,
@@ -3558,6 +3588,10 @@ begin
 		v60hz       =>vid_hz,
 		f1          =>pVideoF1,
 		out_is_24khz=>vid_is_24khz,
+		ext_pix_en  =>pPixExt,
+		ext_pix_ce  =>pPixCe,
+		pix_mode    =>pVideoMode,
+		pix_dyn     =>pVideoDyn,
 		
 		gclk        =>vidclk,
 		rstn        =>vid_rstn
@@ -3579,31 +3613,48 @@ begin
 		sys_ce  =>sys_ce,
 		srstn	=>vid_rstn
 	);
-	contvalm<=	contval;
+    scan_reset_out <= scan_rstn;
+    scan_control_cdc :x68k_video_snapshot generic map(WIDTH => 6+context)
+    port map(src_clk =>sysclk, dst_clk =>scanclk, reset_n =>vid_rstn,
+             in_data =>vid_mode & contval, out_data =>scan_controls, valid =>open);
+    scan_video_mode <= scan_controls(5+context downto 4+context);
+    scan_contrast <= scan_controls(3+context downto 0);
+    contvalm <= scan_contrast;
 	contR	:contrast  generic map(6,4+context,8) port map(vidRF,contvalm,vidRC);
 	contG	:contrast  generic map(6,4+context,8) port map(vidGF,contvalm,vidGC);
 	contB	:contrast  generic map(6,4+context,8) port map(vidBF,contvalm,vidBC);
 	
-	pVideoclk<=dclk;
-	
-	pVideoR<=vidRC;
-	pVideoG<=vidGC;
-	pVideoB<=vidBC;
-	
-	pVideoEN<=vidEN;
-	pVideoHS<=vidHS;
-	pVideoVS<=vidVS;
-	
-
-	pVideoHB <= vidHS    when vid_mode="10" else
-	            VID_HRTCb when vid_mode="01" else VID_HRTC;
-	pVideoVB <= vidVS    when vid_mode="10" else
-	            VID_VRTCb when vid_mode="01" else VID_VRTC;
-
+    process(scanclk) begin
+        if rising_edge(scanclk) then
+            if scan_rstn='0' then
+                pixel_ce_pipe <= (others=>'0');
+                pVideoClk <= '0';
+                pixel_sync_pipe <= "00111";
+                pVideoR <= (others=>'0'); pVideoG <= (others=>'0'); pVideoB <= (others=>'0');
+                pVideoHS <= '0'; pVideoVS <= '0'; pVideoEN <= '0';
+                pVideoHB <= '1'; pVideoVB <= '1';
+            else
+                pixel_ce_pipe <= pixel_ce_pipe(0) & dclk;
+                pVideoClk <= pixel_ce_pipe(1);
+                pixel_sync_pipe(4 downto 2) <= vidHS & vidVS & vidEN;
+                if scan_video_mode="10" then
+                    pixel_sync_pipe(1 downto 0) <= vidHS & vidVS;
+                elsif scan_video_mode="01" then
+                    pixel_sync_pipe(1 downto 0) <= VID_HRTCb & VID_VRTCb;
+                else
+                    pixel_sync_pipe(1 downto 0) <= VID_HRTC & VID_VRTC;
+                end if;
+                pVideoHS <= pixel_sync_pipe(4); pVideoVS <= pixel_sync_pipe(3);
+                pVideoEN <= pixel_sync_pipe(2);
+                pVideoHB <= pixel_sync_pipe(1); pVideoVB <= pixel_sync_pipe(0);
+                pVideoR <= vidRC; pVideoG <= vidGC; pVideoB <= vidBC;
+            end if;
+        end if;
+    end process;
 
 	process(vidclk) begin
 		if rising_edge(vidclk) then
-			if vid_rstn='0' then
+			if render_rstn='0' then
 				LBUFWR0_Q <= '0';
 				LBUFWR1_Q <= '0';
 			else
@@ -3614,30 +3665,13 @@ begin
 			end if;
 		end if;
 	end process;
-	VLBUF0	:VLINEBUF port map(
-		address_a	=>LBUFADR_Q,
-		address_b	=>LVIDADR,
-		clock		=>vidclk,
-		data_a		=>LBUFWD_Q,
-		data_b		=>(others=>'0'),
-		wren_a		=>LBUFWR0_Q,
-		wren_b		=>'0',
-		--q_a			=>LBUFRD0,
-		q_b			=>LVIDRD0
-	);
-	VLBUF1	:VLINEBUF port map(
-		address_a	=>LBUFADR_Q,
-		address_b	=>LVIDADR,
-		clock		=>vidclk,
-		data_a		=>LBUFWD_Q,
-		data_b		=>(others=>'0'),
-		wren_a		=>LBUFWR1_Q,
-		wren_b		=>'0',
-		--q_a			=>LBUFRD1,
-		q_b			=>LVIDRD1
-	);
-	--LBUFRD<=LBUFRD0 when LRAMSEL='0' else LBUFRD1;
-	LVIDRD<=LVIDRD0 when LRAMSEL='1' else LVIDRD1;
+    VLBUF0 :x68k_scanline_ram port map(
+        wrclk=>vidclk, rdclk=>scanclk, wren=>LBUFWR0_Q and render_rstn,
+        wraddr=>LBUFADR_Q, rdaddr=>LVIDADR, data=>LBUFWD_Q, q=>LVIDRD0);
+    VLBUF1 :x68k_scanline_ram port map(
+        wrclk=>vidclk, rdclk=>scanclk, wren=>LBUFWR1_Q and render_rstn,
+        wraddr=>LBUFADR_Q, rdaddr=>LVIDADR, data=>LBUFWD_Q, q=>LVIDRD1);
+    LVIDRD<=LVIDRD0 when scan_lsel='1' else LVIDRD1;
 
 	vreg	:vcreg port map(
 		addr	=>abus(23 downto 0),
@@ -3865,15 +3899,15 @@ begin
 		gclrpage=>vr_rcpyplane,
 		gclrbusy=>vr_fcbusy,
 		
-		hblank  =>VID_HRTC,
-		vblank  =>VID_VRTC,
+		hblank  =>render_hb,
+		vblank  =>render_vb,
 		is_24khz=>vid_is_24khz,
 		
 		mix_fix =>mix_fix,
 
 		vidclk	=>vidclk,
 		vid_ce  =>vid_ce,
-		rstn	=>vid_rstn
+		rstn	=>render_rstn
 	);
 	
 	rcpy	:rastercopy generic map(
@@ -3949,7 +3983,7 @@ begin
 	
 		clk		=>vidclk,
 		ce      =>vid_ce,
-		rstn	=>srstn
+		rstn	=>srstn and render_rstn
 	);
 
 	spreg	:sprregs port map(
@@ -4340,7 +4374,7 @@ begin
 			if(srstn='0')then
 				VID_HRTCd<='0';
 			elsif(vid_ce = '1')then
-				VID_HRTCd<=VID_HRTC;
+				VID_HRTCd<=render_hb;
 			end if;
 		end if;
 	end process;
@@ -4350,12 +4384,12 @@ begin
 	mfp_gpip7<=VID_HRTCi;
 	mfp_gpip6<=not VID_RINT;
 	mfp_gpip5<='1';
-	mfp_gpip4<=not VID_VRTC;
+	mfp_gpip4<=not render_vb;
 	mfp_gpip3<=opm_intn;
 	mfp_gpip2<=pwrsw;
 	mfp_gpip1<='1';
 	mfp_gpip0<=not rtc_alarm;
-	mfp_tai<=VID_VRTC;
+	mfp_tai<=render_vb;
 
 	UMFP	:MFP generic map(SCFREQ) port map(
 		addr	=>abus(23 downto 0),

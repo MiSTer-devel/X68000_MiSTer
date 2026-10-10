@@ -1,6 +1,19 @@
 derive_pll_clocks
 derive_clock_uncertainty;
 
+set_clock_groups -asynchronous \
+    -group [get_clocks {*|video_clock|pll_inst|*|divclk}] \
+    -group [get_clocks {*|pll|pll_inst|*|divclk}] \
+    -group [get_clocks {pll_hdmi|*|divclk}] \
+    -group [get_clocks {pll_audio|*|divclk}] \
+    -group [get_clocks {*|h2f_user0_clk}] \
+    -group [get_clocks {spi_sck}] \
+    -group [get_clocks {hdmi_sck}] \
+    -group [get_clocks {FPGA_CLK1_50}] \
+    -group [get_clocks {FPGA_CLK2_50}] \
+    -group [get_clocks {FPGA_CLK3_50}]
+
+
 set_multicycle_path -from [get_clocks { *|pll|pll_inst|altera_pll_i|*[0].*|divclk}] -to [get_clocks { *|pll|pll_inst|altera_pll_i|*[1].*|divclk}] -start -setup 2
 set_multicycle_path -from [get_clocks { *|pll|pll_inst|altera_pll_i|*[0].*|divclk}] -to [get_clocks { *|pll|pll_inst|altera_pll_i|*[1].*|divclk}] -start -hold 1
 set_multicycle_path -from [get_clocks { *|pll|pll_inst|altera_pll_i|*[1].*|divclk}] -to [get_clocks { *|pll|pll_inst|altera_pll_i|*[0].*|divclk}] -end -setup 2
