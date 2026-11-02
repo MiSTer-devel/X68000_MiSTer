@@ -22,6 +22,7 @@ port(
 	vvend		:out std_logic_vector(9 downto 0);
 	hadj		:out std_logic_vector(7 downto 0);
 	intraster	:out std_logic_vector(9 downto 0);
+	intraster_wr	:out std_logic;
 	txtoffsetx	:out std_logic_vector(9 downto 0);
 	txtoffsety	:out std_logic_vector(9 downto 0);
 	g0offsetx	:out std_logic_vector(9 downto 0);
@@ -53,6 +54,7 @@ port(
 	RCbusy		:in std_logic;
 	FCbusy		:in std_logic;
 	VIbusy		:in std_logic;
+	field_in		:in std_logic;
 	GR_SIZE		:out std_logic;
 	GR_CMODE	:out std_logic_vector(1 downto 0);
 	PRI_SP		:out std_logic_vector(1 downto 0);
@@ -91,6 +93,7 @@ signal	rvvbgn		:std_logic_vector(9 downto 0);
 signal	rvvend		:std_logic_vector(9 downto 0);
 signal	rhadj		:std_logic_vector(7 downto 0);
 signal	rintraster	:std_logic_vector(9 downto 0);
+signal r09_wr_toggle	:std_logic := '0';
 signal	rtxtoffsetx	:std_logic_vector(9 downto 0);
 signal	rtxtoffsety	:std_logic_vector(9 downto 0);
 signal	rg0offsetx	:std_logic_vector(9 downto 0);
@@ -135,8 +138,23 @@ signal	rVHT		:std_logic;
 signal	rAH			:std_logic;
 signal	rYS			:std_logic;
 signal  rDC         :std_logic;
+signal  field_meta         :std_logic;
+signal  field_sync         :std_logic;
+constant SYS_FIELD :std_logic_vector(23 downto 0) := x"e8e003";
 
 begin
+	process(clk) begin
+		if rising_edge(clk) then
+			if rstn='0' then
+				field_meta<='0';
+				field_sync<='0';
+			else
+				field_meta<=field_in;
+				field_sync<=field_meta;
+			end if;
+		end if;
+	end process;
+
 	process(clk,rstn)begin
 		if rising_edge(clk) then
 			if(rstn='0')then
@@ -150,6 +168,7 @@ begin
 				rvvend		<=(others=>'0');
 				rhadj		<=(others=>'0');
 				rintraster	<=(others=>'0');
+				r09_wr_toggle	<='0';
 				rtxtoffsetx	<=(others=>'0');
 				rtxtoffsety	<=(others=>'0');
 				rg0offsetx	<=(others=>'0');
@@ -255,6 +274,9 @@ begin
 					if(wr(0)='1')then
 						rintraster(7 downto 0)<=wdat(7 downto 0);
 					end if;
+				if(wr(1)='1' or wr(0)='1')then
+					r09_wr_toggle <= not r09_wr_toggle;
+				end if;
 				when VC_R10(23 downto 1) =>
 					if(wr(1)='1')then
 						rtxtoffsetx(9 downto 8)<=wdat(9 downto 8);
@@ -420,6 +442,7 @@ begin
 	vvend		<=rvvend;
 	hadj		<=rhadj;
 	intraster	<=rintraster;
+	intraster_wr	<=r09_wr_toggle;
 	txtoffsetx	<=rtxtoffsetx;
 	txtoffsety	<=rtxtoffsety;
 	g0offsetx	<=rg0offsetx;
@@ -492,34 +515,14 @@ begin
 		x"000" & '0' & rGR_SIZE & rGR_CMODE when addr(23 downto 8)=VC_R0s(15 downto 0) else
 		"00" & rPRI_SP & rPRI_TX & rPRI_GR & rGR_PRI when addr(23 downto 8)=VC_R1s(15 downto 0) else
 		rYS & rAH & rVHT & rEXON & rHP & rBP & rGG & rGT & '0' & rSPREN & rTXTEN & rGRPEN when addr(23 downto 8)=VC_R2s(15 downto 0) else
+		x"00" & "11111" & field_sync & "11" when addr(23 downto 1)=SYS_FIELD(23 downto 1) else
 		x"00" & "1111" & '1' & '0' & rDC & '0' when addr(23 downto 1)=SYS_DC(23 downto 1) else
 		(others=>'1') when addr(23 downto 4)=x"e8e00" and addr(3 downto 1)/="000" else
 		(others=>'1');
 	
 	doe<=	'0' when rd='0' else
-			'1' when addr(23 downto 1)=VC_R00(23 downto 1) else
-			'1' when addr(23 downto 1)=VC_R01(23 downto 1) else
-			'1' when addr(23 downto 1)=VC_R02(23 downto 1) else
-			'1' when addr(23 downto 1)=VC_R03(23 downto 1) else
-			'1' when addr(23 downto 1)=VC_R04(23 downto 1) else
-			'1' when addr(23 downto 1)=VC_R05(23 downto 1) else
-			'1' when addr(23 downto 1)=VC_R06(23 downto 1) else
-			'1' when addr(23 downto 1)=VC_R07(23 downto 1) else
-			'1' when addr(23 downto 1)=VC_R08(23 downto 1) else
-			'1' when addr(23 downto 1)=VC_R09(23 downto 1) else
-			'1' when addr(23 downto 1)=VC_R10(23 downto 1) else
-			'1' when addr(23 downto 1)=VC_R11(23 downto 1) else
-			'1' when addr(23 downto 1)=VC_R12(23 downto 1) else
-			'1' when addr(23 downto 1)=VC_R13(23 downto 1) else
-			'1' when addr(23 downto 1)=VC_R14(23 downto 1) else
-			'1' when addr(23 downto 1)=VC_R15(23 downto 1) else
-			'1' when addr(23 downto 1)=VC_R16(23 downto 1) else
-			'1' when addr(23 downto 1)=VC_R17(23 downto 1) else
-			'1' when addr(23 downto 1)=VC_R18(23 downto 1) else
-			'1' when addr(23 downto 1)=VC_R19(23 downto 1) else
 			'1' when addr(23 downto 1)=VC_R20(23 downto 1) else
 			'1' when addr(23 downto 1)=VC_R21(23 downto 1) else
-			'1' when addr(23 downto 1)=VC_R22(23 downto 1) else
 			'1' when addr(23 downto 1)=VC_RCONT(23 downto 1) else
 			'1' when addr(23 downto 8)=VC_R0s(15 downto 0) else
 			'1' when addr(23 downto 8)=VC_R1s(15 downto 0) else

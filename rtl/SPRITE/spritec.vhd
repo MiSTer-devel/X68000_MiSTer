@@ -80,6 +80,13 @@ signal	sp_no	:std_logic_vector(6 downto 0);
 signal	sp_linenum	:std_logic_vector(9 downto 0);
 signal	linenum_adj	:std_logic_vector(8 downto 0);
 signal	sp_xpos	:std_logic_vector(3 downto 0);
+signal sp_count	:std_logic_vector(5 downto 0) := (others=>'0');
+type sp_select_list_t is array (0 to 31) of std_logic_vector(6 downto 0);
+signal sp_select_list  :sp_select_list_t;
+signal sp_scan_no      :std_logic_vector(6 downto 0);
+signal sp_select_count :integer range 0 to 32;
+signal sp_render_pos   :integer range 0 to 31;
+signal sp_scan_active  :std_logic;
 signal	sp_ypos	:std_logic_vector(3 downto 0);
 signal	sp_dotx	:std_logic_vector(2 downto 0);
 signal	sp_doty	:std_logic_vector(2 downto 0);
@@ -98,7 +105,7 @@ signal	sp_maddr	:std_logic_vector(8 downto 0);
 signal	sp_wren	:std_logic;
 
 constant lastx	:std_logic_vector(8 downto 0)	:=(others=>'1');
-constant lastspno:std_logic_vector(6 downto 0)	:=(others=>'0');
+constant maxspno :std_logic_vector(6 downto 0) :=(others=>'1');
 type state_t is(
 	st_IDLE,
 	st_BG0,
@@ -108,12 +115,20 @@ type state_t is(
 signal	state	:state_t;
 type sprite_state_t is(
 	sp_IDLE,
-	sp_setno,
-	sp_check,
+	sp_list_setno,
+	sp_list_wait,
+	sp_attr_wait,
 	sp_copy,
 	sp_END
 );
-signal	sp_state	:sprite_state_t;
+signal sp_state :sprite_state_t;
+type scan_state_t is(
+	scan_IDLE,
+	scan_setno,
+	scan_check,
+	scan_DONE
+);
+signal scan_state :scan_state_t;
 type bg_state_t is(
 	bg_IDLE,
 	bg_BUSY,
@@ -121,10 +136,6 @@ type bg_state_t is(
 );
 signal	bg_state	:bg_state_t;
 
-signal	bg0hoff_lat	:std_logic_vector(9 downto 0);
-signal	bg0voff_lat	:std_logic_vector(9 downto 0);
-signal	bg1hoff_lat	:std_logic_vector(9 downto 0);
-signal	bg1voff_lat	:std_logic_vector(9 downto 0);
 
 component sline
 port(
@@ -154,10 +165,6 @@ begin
 				if(hcomp='1')then
 					state<=st_BG0;
 					proc_begin<='1';
-					bg0hoff_lat<=bg0hoff;
-					bg0voff_lat<=bg0voff;
-					bg1hoff_lat<=bg1hoff;
-					bg1voff_lat<=bg1voff;
 				elsif(state=st_BG0)then
 					if(bg_state=bg_END)then
 						state<=st_BG1;
@@ -182,11 +189,11 @@ begin
 	bg_asel<=	bg0asel	when state=st_BG0 else
 				bg1asel	when state=st_BG1 else
 				'1';
-	bg_xmod<=	bg0hoff_lat+('0' & bg_x)     when state=st_BG0 else
-				bg1hoff_lat+('0' & bg_x) when state=st_BG1 else
+	bg_xmod<=	bg0hoff+('0' & bg_x)     when state=st_BG0 else
+				bg1hoff+('0' & bg_x) when state=st_BG1 else
 				(others=>'0');
-	bg_ymod<=	bg0voff_lat+('0' & linenum)     when state=st_BG0 else
-				bg1voff_lat+('0' & linenum) when state=st_BG1 else
+	bg_ymod<=	bg0voff+('0' & linenum)     when state=st_BG0 else
+				bg1voff+('0' & linenum) when state=st_BG1 else
 				(others=>'0');
 	bgaddrr0<=	bg_asel & bg_ymod(8 downto 3) & bg_xmod(8 downto 3);
 	bgaddrr1<=	bg_asel & bg_ymod(9 downto 4) & bg_xmod(9 downto 4);
@@ -305,51 +312,106 @@ begin
 	linenum_adj<=linenum;
 	sp_linenum<=('0' & linenum_adj)+"0000010000";
 
+	-- Scan sprite attributes in parallel with BG0/BG1.
 	process(clk,rstn)
-	variable	sp_yposl	:std_logic_vector(9 downto 0);
+	begin
+		if rising_edge(clk) then
+			if(rstn='0')then
+				sp_scan_no<=(others=>'0');
+				sp_select_count<=0;
+				sp_scan_active<='0';
+				scan_state<=scan_IDLE;
+			elsif(ce='1')then
+				if(hcomp='1')then
+					sp_scan_no<=(others=>'0');
+					sp_select_count<=0;
+					sp_scan_active<='1';
+					scan_state<=scan_setno;
+				elsif(sp_scan_active='1')then
+					case scan_state is
+					when scan_setno =>
+						scan_state<=scan_check;
+					when scan_check =>
+						if(sprPRI/="00" and sprypos>('0' & linenum_adj) and sprypos<=sp_linenum)then
+							sp_select_list(sp_select_count)<=sp_scan_no;
+							if(sp_select_count=31)then
+								sp_select_count<=32;
+								sp_scan_active<='0';
+								scan_state<=scan_DONE;
+							elsif(sp_scan_no=maxspno)then
+								sp_select_count<=sp_select_count+1;
+								sp_scan_active<='0';
+								scan_state<=scan_DONE;
+							else
+								sp_select_count<=sp_select_count+1;
+								sp_scan_no<=sp_scan_no+1;
+								scan_state<=scan_setno;
+							end if;
+						elsif(sp_scan_no<maxspno)then
+							sp_scan_no<=sp_scan_no+1;
+							scan_state<=scan_setno;
+						else
+							sp_scan_active<='0';
+							scan_state<=scan_DONE;
+						end if;
+					when others =>
+						sp_scan_active<='0';
+						scan_state<=scan_DONE;
+					end case;
+				end if;
+			end if;
+		end if;
+	end process;
+
+	-- Render the selected list after BG1, in reverse order.
+	process(clk,rstn)
+	variable sp_yposl :std_logic_vector(9 downto 0);
 	begin
 		if rising_edge(clk) then
 			if(rstn='0')then
 				sp_no<=(others=>'0');
 				sp_state<=sp_IDLE;
 				sp_xpos<=(others=>'0');
-			elsif(ce = '1')then
+				sp_count<=(others=>'0');
+				sp_render_pos<=0;
+			elsif(ce='1')then
 				if(hcomp='1')then
 					sp_state<=sp_IDLE;
 				else
 					case sp_state is
 					when sp_IDLE =>
 						if(state=st_SPRITE and proc_begin='1')then
-							sp_no<=(others=>'1');
-							sp_state<=sp_setno;
-						end if;
-					when sp_setno =>
-						sp_state<=sp_check;
-					when sp_check =>
-						if(sprPRI="00" or sprypos<=('0' & linenum_adj) or sprypos>sp_linenum)then
-							if(sp_no>lastspno)then
-								sp_no<=sp_no-1;
-								sp_state<=sp_setno;
-							else
+							sp_count<=(others=>'0');
+							if(sp_select_count=0)then
 								sp_state<=sp_END;
+							else
+								sp_render_pos<=sp_select_count-1;
+								sp_state<=sp_list_setno;
 							end if;
-						else
-							sp_yposl:=('0' & linenum_adj)-sprypos;
-							sp_ypos<=sp_yposl(3 downto 0);
-							sp_xpos<=(others=>'0');
-							sp_state<=sp_copy;
 						end if;
+					when sp_list_setno =>
+						sp_no<=sp_select_list(sp_render_pos);
+						sp_state<=sp_list_wait;
+					when sp_list_wait =>
+						-- Allow the registered sprite attribute address to update.
+						sp_state<=sp_attr_wait;
+					when sp_attr_wait =>
+						sp_yposl:=('0' & linenum_adj)-sprypos;
+						sp_ypos<=sp_yposl(3 downto 0);
+						sp_xpos<=(others=>'0');
+						sp_count<=sp_count+"000001";
+						sp_state<=sp_copy;
 					when sp_copy =>
 						if(sp_xpos<x"f")then
 							sp_xpos<=sp_xpos+x"1";
 						else
-							if(sp_no>lastspno)then
-								sp_no<=sp_no-1;
-								sp_state<=sp_setno;
+							sp_xpos<=(others=>'0');
+							if(sp_render_pos>0)then
+								sp_render_pos<=sp_render_pos-1;
+								sp_state<=sp_list_setno;
 							else
 								sp_state<=sp_END;
 							end if;
-							sp_xpos<=(others=>'0');
 						end if;
 					when others =>
 						sp_state<=sp_IDLE;
@@ -359,7 +421,7 @@ begin
 		end if;
 	end process;
 
-	sprno<=sp_no;
+	sprno<=sp_scan_no when sp_scan_active='1' else sp_no;
 
 	sp_patsub<=sp_xpos(3) & sp_ypos(3);
 	sp_patnolsb(0)<=sp_patsub(0) xor sprVR;
@@ -374,9 +436,9 @@ begin
 				'0' when sp_wr='0' else
 				'1' when sprPRI/="00" else
 				'0';
-	sp1_wr<=sp_any_wr;
-	sp2_wr<=sp_any_wr;
-	sp3_wr<=sp_any_wr;
+	sp1_wr<=sp_any_wr when sprPRI="01" else '0';
+	sp2_wr<=sp_any_wr when sprPRI="10" else '0';
+	sp3_wr<=sp_any_wr when sprPRI="11" else '0';
 	sp1_wrdat<=sprCOLORd & dotin when sprPRI="01" else x"00";
 	sp2_wrdat<=sprCOLORd & dotin when sprPRI="10" else x"00";
 	sp3_wrdat<=sprCOLORd & dotin when sprPRI="11" else x"00";

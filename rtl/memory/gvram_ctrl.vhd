@@ -128,11 +128,11 @@ begin
 					if (g0_clear='1' and g0_caddr/=g0caddrh) or (g1_clear='1' and g1_caddr/=g1caddrh) or
 					   (g2_clear='1' and g2_caddr/=g2caddrh) or (g3_clear='1' and g3_caddr/=g3caddrh) then
 						vmask:=x"0000";
-						if g0_clear='1' and g0_caddr/=g0caddrh and g0_caddr(awidth-1 downto 9)=vaddr(awidth-1 downto 9) then g0caddrh<=g0_caddr; if gmode="00" then vmask:=vmask or x"000F"; else vmask:=vmask or x"00FF"; end if; end if;
-						if g1_clear='1' and g1_caddr/=g1caddrh and g1_caddr(awidth-1 downto 9)=vaddr(awidth-1 downto 9) then g1caddrh<=g1_caddr; if gmode="00" then vmask:=vmask or x"00F0"; else vmask:=vmask or x"00FF"; end if; end if;
-						if g2_clear='1' and g2_caddr/=g2caddrh and g2_caddr(awidth-1 downto 9)=vaddr(awidth-1 downto 9) then g2caddrh<=g2_caddr; if gmode="00" then vmask:=vmask or x"0F00"; else vmask:=vmask or x"FF00"; end if; end if;
-						if g3_clear='1' and g3_caddr/=g3caddrh and g3_caddr(awidth-1 downto 9)=vaddr(awidth-1 downto 9) then g3caddrh<=g3_caddr; if gmode="00" then vmask:=vmask or x"F000"; else vmask:=vmask or x"FF00"; end if; end if;
-						if gmode(1)='1' then vmask:=x"FFFF"; end if;
+						if g0_clear='1' and g0_caddr/=g0caddrh and g0_caddr(awidth-1 downto 9)=vaddr(awidth-1 downto 9) then g0caddrh<=g0_caddr; vmask:=vmask or x"000F"; end if;
+						if g1_clear='1' and g1_caddr/=g1caddrh and g1_caddr(awidth-1 downto 9)=vaddr(awidth-1 downto 9) then g1caddrh<=g1_caddr; vmask:=vmask or x"00F0"; end if;
+						if g2_clear='1' and g2_caddr/=g2caddrh and g2_caddr(awidth-1 downto 9)=vaddr(awidth-1 downto 9) then g2caddrh<=g2_caddr; vmask:=vmask or x"0F00"; end if;
+						if g3_clear='1' and g3_caddr/=g3caddrh and g3_caddr(awidth-1 downto 9)=vaddr(awidth-1 downto 9) then g3caddrh<=g3_caddr; vmask:=vmask or x"F000"; end if;
+
 						clr_page<=vaddr(17 downto 9); clr_count<=(others=>'0');
 						op_word_addr<=vaddr(16 downto 9)&"000000000"; op_bank<='0';
 						op_mask<=vmask; op_wdat<=(others=>'0'); op_is_clear<='1'; op_state<=OP_WRITE;
@@ -162,13 +162,8 @@ begin
 			c0_addr_a<=op_word_addr(16 downto 1); c1_addr_a<=op_word_addr(16 downto 1);
 			if op_is_clear='1' then
 				c0_data_a<=(others=>'0'); c1_data_a<=(others=>'0');
-				if op_mask=x"000F" then c0_nibbleena_a<="0001"; c1_nibbleena_a<="0001";
-				elsif op_mask=x"00F0" then c0_nibbleena_a<="0010"; c1_nibbleena_a<="0010";
-				elsif op_mask=x"00FF" then c0_nibbleena_a<="0011"; c1_nibbleena_a<="0011";
-				elsif op_mask=x"0F00" then c0_nibbleena_a<="0100"; c1_nibbleena_a<="0100";
-				elsif op_mask=x"F000" then c0_nibbleena_a<="1000"; c1_nibbleena_a<="1000";
-				elsif op_mask=x"FF00" then c0_nibbleena_a<="1100"; c1_nibbleena_a<="1100";
-				else c0_nibbleena_a<="1111"; c1_nibbleena_a<="1111"; end if;
+				c0_nibbleena_a<=op_mask(12) & op_mask(8) & op_mask(4) & op_mask(0);
+				c1_nibbleena_a<=op_mask(12) & op_mask(8) & op_mask(4) & op_mask(0);
 			else c0_data_a<=merged; c1_data_a<=merged; end if;
 			if op_state=OP_WRITE then
 				if op_is_clear='1' then c0_wren_a<='1'; c1_wren_a<='1'; elsif op_bank='0' then c0_wren_a<='1'; else c1_wren_a<='1'; end if;

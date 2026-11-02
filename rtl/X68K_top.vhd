@@ -159,10 +159,11 @@ port(
 	-- OPM chip selector: 0 = JT51, 1 = IKAOPM
 	opm_sel     :in std_logic := '0';
 
-	-- Blend Fix: '1'=MAME formula (gpalin>>2), '0'=default (gpalin>>1)
-	mix_fix     :in std_logic := '0';
+       -- Blend Fix: '1'=MAME formula (gpalin>>2), '0'=default (gpalin>>1)
+       mix_fix     :in std_logic := '0';
+       native_video :in std_logic := '0';
 
-	-- Disk format runtime selector: '0'=D88, '1'=XDF/DIM
+       -- Disk format runtime selector: '0'=D88, '1'=XDF/DIM
 	disk_mode   :in std_logic := '0';
 
 	sxsi_inject :in std_logic := '0';
@@ -308,7 +309,7 @@ signal	VID_HRTCb	:std_logic;
 signal	VID_VRTCb	:std_logic;
 signal	VID_RINT	:std_logic;
 signal	VID_VVIDEN	:std_logic;
-signal	vid_is_24khz	:std_logic;
+signal      vid_is_24khz    :std_logic;
 --sprite
 signal	spr_x		:std_logic_vector(9 downto 0);
 signal	spr_y		:std_logic_vector(9 downto 0);
@@ -663,16 +664,6 @@ signal	gv_cpu_rdat : std_logic_vector(15 downto 0);
 signal	vr_hfreq	:std_logic;
 signal	vr_htotal	:std_logic_vector(7 downto 0);
 
---640x400 24kHz auto-detect overrides
-signal	fix_mode_active	:std_logic := '0';
-signal	eff_htotal	:std_logic_vector(7 downto 0);
-signal	eff_hsync	:std_logic_vector(7 downto 0);
-signal	eff_hvbgn	:std_logic_vector(7 downto 0);
-signal	eff_hvend	:std_logic_vector(7 downto 0);
-signal	eff_vtotal	:std_logic_vector(9 downto 0);
-signal	eff_vsync	:std_logic_vector(9 downto 0);
-signal	eff_vvbgn	:std_logic_vector(9 downto 0);
-signal	eff_vvend	:std_logic_vector(9 downto 0);
 signal	vr_hsync	:std_logic_vector(7 downto 0);
 signal	vr_hvbgn	:std_logic_vector(7 downto 0);
 signal	vr_hvend	:std_logic_vector(7 downto 0);
@@ -694,6 +685,7 @@ signal	gr2_offsety	:std_logic_vector(8 downto 0);
 signal	gr3_offsetx	:std_logic_vector(8 downto 0);
 signal	gr3_offsety	:std_logic_vector(8 downto 0);
 signal	vr_rintline	:std_logic_vector(9 downto 0);
+signal vr_r09_wr_toggle	:std_logic;
 signal	vr_MEN		:std_logic;
 signal	vr_SA		:std_logic;
 signal	vr_AP		:std_logic_vector(3 downto 0);
@@ -1987,6 +1979,7 @@ port(
 	hres	:in std_logic_vector(1 downto 0);		--00:256 01:512 10/11:768
 	vres	:in std_logic;							--0:256 1:512
 	vd1		:in std_logic;							--VD bit 1: interlace flag
+	field   :in std_logic;                                                  --Current field parity
 	sp_vres	:in std_logic;							--sprite layer vertical resolution: 0=256, 1=512
 	sp_lh	:in std_logic;							--sprite controller LH bit ($EB0811 bit4)
 	txten	:in std_logic;
@@ -2046,6 +2039,7 @@ port(
 	
 	vvideoen	:out std_logic;
 	rintline:in std_logic_vector(9 downto 0);
+	r09_wr_toggle	:in std_logic := '0';
 	rint	:out std_logic;
 
 	vlineno	:out std_logic_vector(9 downto 0);
@@ -2058,7 +2052,7 @@ port(
 	hblank  :in std_logic;
 	vblank  :in std_logic;
 	is_24khz :in std_logic := '0';
-	
+
 	mix_fix :in std_logic := '0';
 
 	vidclk		:in std_logic;
@@ -2133,6 +2127,7 @@ port(
 	vvend		:out std_logic_vector(9 downto 0);
 	hadj		:out std_logic_vector(7 downto 0);
 	intraster	:out std_logic_vector(9 downto 0);
+	intraster_wr	:out std_logic;
 	txtoffsetx	:out std_logic_vector(9 downto 0);
 	txtoffsety	:out std_logic_vector(9 downto 0);
 	g0offsetx	:out std_logic_vector(9 downto 0);
@@ -2165,6 +2160,7 @@ port(
 	RCbusy		:in std_logic;
 	FCbusy		:in std_logic;
 	VIbusy		:in std_logic;
+	field_in		:in std_logic;
 	GR_SIZE		:out std_logic;
 	GR_CMODE	:out std_logic_vector(1 downto 0);
 	PRI_SP		:out std_logic_vector(1 downto 0);
@@ -2256,6 +2252,7 @@ port(
 	sys_ce  :in std_logic := '1';
 	vclk	:in std_logic;
 	vid_ce  :in std_logic := '1';
+	hcomp	:in std_logic;
 	rstn	:in std_logic
 );
 end component;
@@ -3168,28 +3165,6 @@ begin
 	mc_g0_caddr <= gvclr_caddr when gvclr_active='1' else g0_caddr;
 	mc_g0_clear <= '1' when gvclr_active='1' else g0_clear;
 
-	process(sysclk) begin
-		if rising_edge(sysclk) then
-			if srstn='0' then
-				fix_mode_active <= '0';
-			elsif abus=x"E80028" and (b_wr(0)='1' or b_wr(1)='1') and sys_ce='1' then
-				if dbus=x"0415" then
-					fix_mode_active <= '1';
-				else
-					fix_mode_active <= '0';
-				end if;
-			end if;
-		end if;
-	end process;
-
-	eff_htotal <= x"73"        when fix_mode_active='1' else vr_htotal;
-	eff_hsync  <= x"0A"        when fix_mode_active='1' else vr_hsync;
-	eff_hvbgn  <= x"13"        when fix_mode_active='1' else vr_hvbgn;
-	eff_hvend  <= x"63"        when fix_mode_active='1' else vr_hvend;
-	eff_vtotal <= "0110111110" when fix_mode_active='1' else vr_vtotal;  -- 446
-	eff_vsync  <= vr_vsync;
-	eff_vvbgn  <= "0000100100" when fix_mode_active='1' else vr_vvbgn;   -- 36
-	eff_vvend  <= "0110110100" when fix_mode_active='1' else vr_vvend;   -- 436
 
 	RAM	:memcont generic map(
 		AWIDTH		=>24,
@@ -3550,14 +3525,14 @@ begin
 	
 		hrl         =>vr_DC,
 		hfreq       =>vr_hfreq,
-		htotal      =>eff_htotal,
-		hsynl       =>eff_hsync,
-		hvbgn       =>eff_hvbgn,
-		hvend       =>eff_hvend,
-		vtotal      =>eff_vtotal,
-		vsynl       =>eff_vsync,
-		vvbgn       =>eff_vvbgn,
-		vvend       =>eff_vvend,
+		htotal      =>vr_htotal,
+		hsynl       =>vr_hsync,
+		hvbgn       =>vr_hvbgn,
+		hvend       =>vr_hvend,
+		vtotal      =>vr_vtotal,
+		vsynl       =>vr_vsync,
+		vvbgn       =>vr_vvbgn,
+		vvend       =>vr_vvend,
 		rintl       =>vr_rintline,
 		hadj        =>vr_hadj,
 		
@@ -3691,6 +3666,7 @@ begin
 		vvend		=>vr_vvend,
 		hadj		=>vr_hadj,
 		intraster	=>vr_rintline,
+		intraster_wr	=>vr_r09_wr_toggle,
 		txtoffsetx	=>txt_offsetx,
 		txtoffsety	=>txt_offsety,
 		g0offsetx	=>gr0_offsetx,
@@ -3723,6 +3699,7 @@ begin
 		RCbusy		=>vr_rcpybusy,
 		FCbusy		=>vr_fcbusy,
 		VIbusy		=>'0',
+		field_in		=>pVideoF1,
 		GR_SIZE		=>vr_GR_SIZE,
 		GR_CMODE	=>vr_GR_CMODE,
 		PRI_SP		=>vr_PRI_SP,
@@ -3829,6 +3806,7 @@ begin
 		hres	=>out_HMODE,
 		vres	=>out_VMODE(0),
 		vd1		=>out_VMODE(1),
+		field   =>pVideoF1,
 		sp_vres	=>spreg_VRES(0),
 		sp_lh	=>spreg_LH,
 		txten	=>vr_TXTEN and not vr_TXTBUF,
@@ -3890,6 +3868,7 @@ begin
 	
 		vvideoen	=>VID_VVIDEN,
 		rintline=>out_rintl,
+		r09_wr_toggle	=>vr_r09_wr_toggle,
 		rint	=>VID_RINT,
 		
 --		vlineno	=>vlineno,
@@ -4022,6 +4001,7 @@ begin
 		sys_ce  =>sys_ce,
 		vclk	=>vidclk,
 		vid_ce  =>vid_ce,
+		hcomp	=>HCOMP,
 		rstn	=>srstn
 	);
 	

@@ -12,10 +12,10 @@ module x68k_video_window (
     wire [9:0] vt, vs, vb, ve, ri;
     assign {hm, vm, hrl, hf, ht, hs, hb, he, vt, vs, vb, ve, adj, ri} = config_in;
     wire interlace = vm[0] && !hf;
-    wire hf_ovr = hf | interlace;
-    wire [9:0] vt_ovr = interlace ? {vt[8:0],1'b1} : vt;
-    wire [9:0] vb_ovr = interlace ? {vb[8:0],1'b1} : vb;
-    wire [9:0] ve_ovr = interlace ? {ve[8:0],1'b1} : ve;
+    wire hf_ovr = hf;
+    wire [9:0] vt_ovr = vt;
+    wire [9:0] vb_ovr = vb;
+    wire [9:0] ve_ovr = ve;
     wire is24 = ((hm == 2) && hf_ovr && ht >= 160) ||
                 ((hm == 1) && hf_ovr && !hrl && ht >= 100) ||
                 ((hm == 1) && hf_ovr && hrl && ht >= 80) ||

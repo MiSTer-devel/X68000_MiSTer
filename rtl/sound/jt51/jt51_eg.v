@@ -101,7 +101,8 @@ reg     [4:0]   cfg_III;
 
 always @(*) begin : pre_rate_calc
     kshift_III = keycode_III >> ~ks_III;
-    pre_rate_III = { 1'b0, cfg_III, 1'b0 } + { 2'b0, kshift_III };
+    pre_rate_III = cfg_III == 5'd0 ? 7'd0 :
+        { 1'b0, cfg_III, 1'b0 } + { 2'b0, kshift_III };
 end
 
 
@@ -122,9 +123,6 @@ always @(*) begin : rate_step
         endcase
     end
     else begin
-        if( rate_V[5:2]==4'd0 && state_in_V != ATTACK)
-            step_idx = 8'b11111110; // limit slowest decay rate_IV
-        else
         case( rate_V[1:0] )
             2'd0: step_idx = 8'b10101010; // 4
             2'd1: step_idx = 8'b11101010; // 5
@@ -132,18 +130,21 @@ always @(*) begin : rate_step
             2'd3: step_idx = 8'b11111110; // 7
         endcase
     end
-    // a rate_IV of zero keeps the level still
-    step_V = rate_V[5:2]==4'd0 ? 1'b0 : step_idx[ cnt_V ];
+    // Silicon captures of AR/D1R/D2R at effective RATE 2 and 3 show progress;
+    // effective RATE 0 remains inhibited outside release.
+    step_V = rate_V == 6'd0 ?
+        1'b0 : step_idx[ cnt_V ];
 end
 
 
 
-wire    ar_off_VI;
+wire    keyon_now_VI;
+wire    ar_off_VI = keyon_now_VI && (rate_VI[5:1] == 5'h1f);
 
 always @(posedge clk) if(cen) begin
     // I
     if( d1l_I == 4'd15 )
-        d1level_II <= 5'h10; // 48dB
+        d1level_II <= 5'h1f;
     else
         d1level_II <= {1'b0,d1l_I};
 end
@@ -152,7 +153,7 @@ end
 wire    keyon_last_II;
 wire    keyon_now_II  = !keyon_last_II && keyon_II;
 wire    keyoff_now_II = keyon_last_II && !keyon_II;
-wire    ar_off_II = keyon_now_II && (arate_II == 5'h1f);
+
 wire [1:0]  state_II;
 
 always @(posedge clk) if(cen) begin
@@ -230,18 +231,18 @@ always @(posedge clk) if(cen) begin
         endcase
     else
         case( rate_IV[5:2] )
-            4'h0: cnt_V <= eg_cnt[14:12];
-            4'h1: cnt_V <= eg_cnt[13:11];
-            4'h2: cnt_V <= eg_cnt[12:10];
-            4'h3: cnt_V <= eg_cnt[11: 9];
-            4'h4: cnt_V <= eg_cnt[10: 8];
-            4'h5: cnt_V <= eg_cnt[ 9: 7];
-            4'h6: cnt_V <= eg_cnt[ 8: 6];
-            4'h7: cnt_V <= eg_cnt[ 7: 5];
-            4'h8: cnt_V <= eg_cnt[ 6: 4];
-            4'h9: cnt_V <= eg_cnt[ 5: 3];
-            4'ha: cnt_V <= eg_cnt[ 4: 2];
-            4'hb: cnt_V <= eg_cnt[ 3: 1];
+            4'h0: cnt_V <= eg_cnt[13:11];
+            4'h1: cnt_V <= eg_cnt[12:10];
+            4'h2: cnt_V <= eg_cnt[11: 9];
+            4'h3: cnt_V <= eg_cnt[10: 8];
+            4'h4: cnt_V <= eg_cnt[ 9: 7];
+            4'h5: cnt_V <= eg_cnt[ 8: 6];
+            4'h6: cnt_V <= eg_cnt[ 7: 5];
+            4'h7: cnt_V <= eg_cnt[ 6: 4];
+            4'h8: cnt_V <= eg_cnt[ 5: 3];
+            4'h9: cnt_V <= eg_cnt[ 4: 2];
+            4'ha: cnt_V <= eg_cnt[ 3: 1];
+            4'hb: cnt_V <= eg_cnt[ 2: 0];
             default: cnt_V <= eg_cnt[ 2: 0];
         endcase
 end
@@ -279,11 +280,13 @@ always @(posedge clk) if(cen) begin
         eg_VII <= 10'd0;
     else
     if( state_in_VI == ATTACK ) begin
-        if( sum_up && eg_VI != 10'd0 )
-            if( rate_VI[5:1]==5'hf )
-                eg_VII <= 10'd0;
-            else
-                eg_VII <= ar_result_VI;
+        // Physical held-key probes at effective AR62/63 show a plateau. The
+        // instant-key-on path above remains higher priority, while the
+        // existing fast-step logic continues to handle rates 60/61.
+        if( rate_VI[5:1] == 5'h1f )
+            eg_VII <= eg_VI;
+        else if( sum_up && eg_VI != 10'd0 )
+            eg_VII <= ar_result_VI;
         else
             eg_VII <= eg_VI;
     end
@@ -295,7 +298,7 @@ always @(posedge clk) if(cen) begin
                     4'b1101: eg_VII <= eg_VI + { 7'd0, step_VI, ~step_VI, 1'b0 }; // 13
                     4'b1110: eg_VII <= eg_VI + { 6'd0, step_VI, ~step_VI, 2'b0 }; // 14
                     4'b1111: eg_VII <= eg_VI + 10'd8;// 15
-                    default: eg_VII <= eg_VI + { 8'd0, step_VI, 1'b0 };
+                    default: eg_VII <= eg_VI + { 9'd0, step_VI };
                 endcase
             else eg_VII <= 10'h3FF;
         end
@@ -353,12 +356,12 @@ jt51_sh #( .width(10), .stages(4), .rstval(1'b1) ) u_eg2sh(
     .drop   ( eg_VI     )
 );
 
-jt51_sh #( .width(1), .stages(4) ) u_aroffsh(
+jt51_sh #( .width(1), .stages(4) ) u_keyonvis(
     .rst    ( rst       ),
     .clk    ( clk       ),
     .cen    ( cen       ),
-    .din    ( ar_off_II ),
-    .drop   ( ar_off_VI )
+    .din    ( keyon_now_II ),
+    .drop   ( keyon_now_VI )
 );
 
 jt51_sh #( .width(1), .stages(32) ) u_konsh(

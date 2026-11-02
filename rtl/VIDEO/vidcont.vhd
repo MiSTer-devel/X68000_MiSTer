@@ -87,6 +87,7 @@ port(
 	hres	:in std_logic_vector(1 downto 0);		--00:256 01:512 10/11:768
 	vres	:in std_logic;							--0:256 1:512
 	vd1		:in std_logic;							--VD bit 1: interlace flag
+	field   :in std_logic;                                                  --Current field parity
 	sp_vres	:in std_logic;							--sprite layer vertical resolution: 0=256, 1=512
 	sp_lh	:in std_logic;							--sprite controller LH bit ($EB0811 bit4)
 	txten	:in std_logic;
@@ -147,6 +148,7 @@ port(
 	
 	vvideoen	:out std_logic;
 	rintline:in std_logic_vector(9 downto 0);
+	r09_wr_toggle	:in std_logic := '0';
 	rint	:out std_logic;
 
 	vlineno	:out std_logic_vector(9 downto 0);
@@ -335,6 +337,8 @@ signal	gclrrast	:std_logic_vector(9 downto 0);
 signal	gclrbgnrq	:std_logic;
 signal	gclrendrq	:std_logic;
 signal	gclrbusyb	:std_logic;
+signal	gclr_interlace_second	:std_logic;
+signal	gclrsel	:std_logic_vector(3 downto 0);
 
 signal	mixg,mixr,mixb	:std_logic_vector(5 downto 0);
 signal	mixg_fix,mixr_fix,mixb_fix :std_logic_vector(4 downto 0);
@@ -346,9 +350,21 @@ signal	gmixdat	:std_logic_vector(15 downto 0);
 signal	gpalin_eff	:std_logic_vector(15 downto 0);
 
 signal	rastnum	:std_logic_vector(9 downto 0);
-signal	hblank_d :std_logic := '1';
-signal	raster_offset_early_mode :std_logic;
-signal	raster_irq_early_mode :std_logic;
+signal rint_reg :std_logic := '0';
+signal rintline_prev :std_logic_vector(9 downto 0) := (others=>'0');
+signal rint_hblank_lead :std_logic_vector(10 downto 0);
+signal early15   :std_logic;
+signal snap15    :std_logic := '0';
+signal s15_hc_d  :std_logic := '0';
+signal s15_lcnt  :std_logic_vector(13 downto 0) := (others=>'0');
+signal s15_llen  :std_logic_vector(13 downto 0) := (others=>'0');
+signal s15_point :std_logic_vector(13 downto 0);
+signal r09_wr_toggle_meta :std_logic := '0';
+signal r09_wr_toggle_sync :std_logic := '0';
+signal r09_wr_toggle_prev :std_logic := '0';
+signal r09_wr_event       :std_logic;
+signal      hblank_d :std_logic := '1';
+signal      raster_offset_early_mode :std_logic;
 signal  gpal0noi:std_logic_vector(7 downto 0);
 signal  gpal1noi:std_logic_vector(7 downto 0);
 
@@ -387,15 +403,13 @@ signal gfirst_nonzero_d,gsecond_nonzero_d :std_logic;
 signal gfirst_trigger_d,gr_selected_rank2_d :std_logic;
 signal grskel     :std_logic;
 signal exon_ref   :std_logic;
+signal gt_ref     :std_logic;
 
 signal spr_x_adj_u  :unsigned(9 downto 0);
 signal spr_y_adj_u  :unsigned(9 downto 0);
 
-signal vheight      :std_logic_vector(9 downto 0);
 signal double_scan  :std_logic;
 signal sprite_double :std_logic;
-signal is_480       :std_logic;
-signal early_vblank :std_logic;
 signal gdot_mask : std_logic;
 signal s_crtc_val   :unsigned(1 downto 0);
 signal s_spr_val    :unsigned(1 downto 0);
@@ -470,35 +484,30 @@ begin
 	              when (unsigned(sp_hdisp) >= to_unsigned(4, 6)) else hvbgn_px_u;
 	spr_x_adj_u <= hvbgn_px_u - bg_hstart_u;
 
-	vheight <= (vvend - vvbgn) when unsigned(vvend) > unsigned(vvbgn) else (others=>'0');
 
 	double_scan <= '1' when vres='0' and hfreq='1' else '0';
-	raster_offset_early_mode <= '1' when double_scan='1' and hres="00" else '0';
-	raster_irq_early_mode <= '1' when (double_scan='1' and hres="00") or
-	                                  (hfreq='0' and vres='0' and hres="00") else
-	                         '0';
+    raster_offset_early_mode <= '1' when double_scan='1' and hres="00" else '0';
+    rint_hblank_lead <= ((hvend-hvbgn) & "111") - "00000001000"
+        when unsigned(hvend) > unsigned(hvbgn) else
+        (others=>'0');
 
 	s_crtc_val <= "10" when vres='1' and hfreq='0' else
 	              "01" when (vres='0' and hfreq='0') or (vres='1' and hfreq='1') else
 	              "00";
 	s_spr_val  <= "10" when sp_vres='1' and sp_lh='0' else
-	              "01";
-	sprite_double <= '1' when s_crtc_val > s_spr_val else
-	                 '1' when gmode="01" and hres="01" and hrl='0' and
-	                              vres='1' and hfreq='1' and sp_vres='0' else
-	                 '0';
+	              "01" when (sp_vres='0' and sp_lh='0') or (sp_vres='1' and sp_lh='1') else
+	              "00";
+	sprite_double <= '1' when s_crtc_val > s_spr_val else '0';
 
-	is_480 <= '1' when vheight = "000111100000" else '0';
-	early_vblank <= '1' when (double_scan='1' and is_480='1' and unsigned(vvbgn) < 30) else '0';
 
-	vaddrmod<= '0' & vaddr(9 downto 1)	when double_scan='1' else
-					vaddr(8 downto 0) & '1'			when vd1='1' and vres='1' and hfreq='1' else
+	vaddrmod<= '0' & vaddr(9 downto 1)      when double_scan='1' else
+					vaddr(8 downto 0) & field               when (vres='1' and vd1='0' and hfreq='0') or
+                                             (vres='1' and vd1='1' and hfreq='1') else
 					vaddr;
 	haddrmod<= haddr;
 
 	vvbgn_mod_u <= (resize(unsigned(vvbgn), 10) srl 1) when double_scan='1' else resize(unsigned(vvbgn), 10);
 	bg_vstart_u  <= (resize(unsigned(sp_vdisp), 10) srl 1) when double_scan='1' else
-	                (resize(unsigned(sp_vdisp), 10) sll 1) when vres='1' and hfreq='0' else
 	                resize(unsigned(sp_vdisp), 10);
 	spr_y_adj_u  <= vvbgn_mod_u - bg_vstart_u;
 
@@ -562,8 +571,8 @@ begin
 					g2_voffset_pending <=g2_voffset;
 					g3_hoffset_pending <=g3_hoffset;
 					g3_voffset_pending <=g3_voffset;
-				elsif raster_offset_early_mode='1' and hblank='1' and
-				      hblank_d='0' and vaddr(0)='0' then
+				elsif snap15='1' or (raster_offset_early_mode='1' and hblank='1' and
+				      hblank_d='0' and vaddr(0)='0') then
 					t_hoffset_pending  <=t_hoffset;
 					t_voffset_pending  <=t_voffset;
 					g0_hoffset_pending <=g0_hoffset;
@@ -575,7 +584,7 @@ begin
 					g3_hoffset_pending <=g3_hoffset;
 					g3_voffset_pending <=g3_voffset;
 				elsif hcomp='1' then
-					if raster_offset_early_mode='1' then
+					if raster_offset_early_mode='1' or early15='1' then
 						t_hoffset_lat  <=t_hoffset_pending;
 						t_voffset_lat  <=t_voffset_pending;
 						g0_hoffset_lat <=g0_hoffset_pending;
@@ -625,6 +634,9 @@ begin
 							'0' & (g0_hoffset_lat(8 downto 0)+haddrmod(8 downto 0));
 	g0vaddr_offset<=	g0_voffset_lat+vaddrmod when memres='1' else
 							'0' & (g0_voffset_lat(8 downto 0)+vaddrmod(8 downto 0));
+	gclrsel<=gclrpage when memres='0' else
+			   "0011" when g0vaddr_offset(9)='0' else
+			   "1100";
 	g1haddr_offset<='0' & (g1_hoffset_lat+haddrmod(8 downto 0));
 	g1vaddr_offset<='0' & (g1_voffset_lat+vaddrmod(8 downto 0));
 	g2haddr_offset<='0' & (g2_hoffset_lat+haddrmod(8 downto 0));
@@ -829,7 +841,8 @@ g80_ddat<=	g1_rdat( 7 downto 4) & g0_rdat( 3 downto 0);
 
 	grskel <= '1' when exon='1' and hp='1' and bp='1' and gg='1' and
 						 gt='0' and ah='0' else '0';
-	exon_ref <= exon and not grskel;
+	exon_ref <= exon and (not grskel or vht);
+	gt_ref <= gt or (vht and grskel);
 	
 	gpal0noi<=	
 				x"0" & g4p1_ddat when gmode="00" and grskel='1' and g4p1_ddat(0)='1' and graphen(0)='1' else
@@ -877,6 +890,46 @@ g80_ddat<=	g1_rdat( 7 downto 4) & g0_rdat( 3 downto 0);
 				g8p1_ddat(0) and graphen(0) and grpen_gate when gmode="01" else
 				g16_ddat(0) and grpen_gate;
 
+	-- Two-stage CDC synchronizer: R09 write toggle (sysclk -> vidclk)
+	process(vidclk) begin
+		if rising_edge(vidclk) then
+			if rstn='0' then
+				r09_wr_toggle_meta <= '0';
+				r09_wr_toggle_sync <= '0';
+				r09_wr_toggle_prev <= '0';
+			else
+				r09_wr_toggle_meta <= r09_wr_toggle;
+				r09_wr_toggle_sync <= r09_wr_toggle_meta;
+				if vid_ce='1' then
+					r09_wr_toggle_prev <= r09_wr_toggle_sync;
+				end if;
+			end if;
+		end if;
+	end process;
+	r09_wr_event <= '1' when r09_wr_toggle_sync /= r09_wr_toggle_prev else '0';
+
+	-- 15 kHz 256-dot: snapshot scroll registers at a fixed point of the line,
+	-- like the mid-line snapshot of the 31 kHz double-scan mode
+	early15 <= '1' when hfreq='0' and hres="00" else '0';
+	process(vidclk) begin
+		if rising_edge(vidclk) then
+			s15_hc_d <= hcomp;
+			if hcomp='1' and s15_hc_d='0' then
+				s15_llen <= s15_lcnt;
+				s15_lcnt <= (others=>'0');
+			elsif s15_lcnt(13)='0' then
+				s15_lcnt <= s15_lcnt + "00000000000001";
+			end if;
+			if early15='1' and s15_lcnt=s15_point then
+				snap15 <= '1';
+			else
+				snap15 <= '0';
+			end if;
+		end if;
+	end process;
+	-- snapshot point: 1/8 of the previous line length
+	s15_point <= "000" & s15_llen(13 downto 3);
+
 	process(vidclk)
 	variable hvwidth	:std_logic_vector(10 downto 0);
 	begin
@@ -885,6 +938,8 @@ g80_ddat<=	g1_rdat( 7 downto 4) & g0_rdat( 3 downto 0);
 				haddr<=(others=>'0');
 				vaddr<=(others=>'0');
 				raster<=(others=>'0');
+				rint_reg<='0';
+				rintline_prev<=(others=>'0');
 				lbwr<='0';
 				nxt_trd<='0';
 				nxt_g0rd<='0';
@@ -912,6 +967,7 @@ g80_ddat<=	g1_rdat( 7 downto 4) & g0_rdat( 3 downto 0);
 				gclrrast<=(others=>'1');
 				gclrbgnrq<='0';
 				gclrendrq<='0';
+				gclr_interlace_second<='0';
 			elsif (vid_ce = '1') then
 				lbwr<='0';
 				if(gclrbgn='1' and gclrbusyb='0')then
@@ -920,33 +976,49 @@ g80_ddat<=	g1_rdat( 7 downto 4) & g0_rdat( 3 downto 0);
 					gclrendrq<='1';
 				end if;
 				if(hcomp='1')then
-					if(gclrbusyb='1' and (gclrendrq='1' or gclrrast=raster))then
+					if(gclrbusyb='1' and gclrendrq='1')then
 						gclrendrq<='0';
 						gclrbusyb<='0';
+						gclr_interlace_second<='0';
+					elsif(gclrbusyb='1' and gclrrast=raster)then
+						if(hfreq='0' and vres='1' and vd1='0' and gclr_interlace_second='0')then
+							gclr_interlace_second<='1';
+						else
+							gclrbusyb<='0';
+							gclr_interlace_second<='0';
+						end if;
 					elsif(gclrbusyb='0' and gclrendrq='1')then
 						gclrendrq<='0';
 						gclrbgnrq<='0';
+						gclr_interlace_second<='0';
 					end if;
 				end if;
 				if(vpstart='1')then
 					haddr<=(others=>'0');
 					vaddr<=(others=>'0');
 					raster<=(others=>'0');
+					rintline_prev<=rintline;
+					if rintline="0000000000" then
+						rint_reg<='1';
+					else
+						rint_reg<='0';
+					end if;
 					--h3count<=0;
 					if(gclrbgnrq='1')then
 						gclrbusyb<='1';
 						gclrbgnrq<='0';
 						gclrrast<=raster;
+						gclr_interlace_second<='0';
 					end if;
-					g0_clear<=	gclrpage(0) and (gclrbusyb or gclrbgnrq);
-					g1_clear<=	gclrpage(1) and (gclrbusyb or gclrbgnrq);
-					g2_clear<=	gclrpage(2) and (gclrbusyb or gclrbgnrq);
-					g3_clear<=	gclrpage(3) and (gclrbusyb or gclrbgnrq);
+					g0_clear<=	gclrsel(0) and (gclrbusyb or gclrbgnrq);
+					g1_clear<=	gclrsel(1) and (gclrbusyb or gclrbgnrq);
+					g2_clear<=	gclrsel(2) and (gclrbusyb or gclrbgnrq);
+					g3_clear<=	gclrsel(3) and (gclrbusyb or gclrbgnrq);
 					nxt_trd<=	ten;
-					nxt_g0rd<=	g0en and (not (gclrpage(0) and (gclrbusyb or gclrbgnrq)));
-					nxt_g1rd<=	g1en and (not (gclrpage(1) and (gclrbusyb or gclrbgnrq)));
-					nxt_g2rd<=	g2en and (not (gclrpage(2) and (gclrbusyb or gclrbgnrq)));
-					nxt_g3rd<=	g3en and (not (gclrpage(3) and (gclrbusyb or gclrbgnrq)));
+					nxt_g0rd<=	g0en and (not (gclrsel(0) and (gclrbusyb or gclrbgnrq)));
+					nxt_g1rd<=	g1en and (not (gclrsel(1) and (gclrbusyb or gclrbgnrq)));
+					nxt_g2rd<=	g2en and (not (gclrsel(2) and (gclrbusyb or gclrbgnrq)));
+					nxt_g3rd<=	g3en and (not (gclrsel(3) and (gclrbusyb or gclrbgnrq)));
 					cur_trd<=	'0';
 					cur_g0rd<=	'0';
 					cur_g1rd<=	'0';
@@ -957,7 +1029,7 @@ g80_ddat<=	g1_rdat( 7 downto 4) & g0_rdat( 3 downto 0);
 					vviden_int<='1';
 					hviden<= '1';--not hblank;
 				elsif(hcomp='1')then
-					if raster_offset_early_mode='1' then
+					if raster_offset_early_mode='1' or early15='1' then
 						-- Consume the HBlank snapshot only at the normal line boundary.
 						-- This advances raster scroll changes without starting a memory
 						-- request early or changing the prefetch bank during HBlank.
@@ -980,11 +1052,13 @@ g80_ddat<=	g1_rdat( 7 downto 4) & g0_rdat( 3 downto 0);
 					haddr<=(others=>'0');
 					lvviden<=vviden;
 					raster<=raster+"0000000001";
+					if rintline=raster+"0000000001" then
+						rint_reg<='1';
+					else
+						rint_reg<='0';
+					end if;
 					hviden<='1';
 					
-					if(early_vblank='1') then
-						vaddr<=vaddr+"0000000001";
-					end if;
 					
 					if (raster = vvend-"0000000001") then
 						vviden<='0';
@@ -992,25 +1066,23 @@ g80_ddat<=	g1_rdat( 7 downto 4) & g0_rdat( 3 downto 0);
 					if (raster = (vvend-vvbgn)-"0000000001") then
 						vviden_int<='0';
 					end if;
-					if (vblank = '0') then
-						if(early_vblank='0') then
-							vaddr<=vaddr+"0000000001";
-						end if;
-						g0_clear<=	gclrpage(0) and gclrbusyb;
-						g1_clear<=	gclrpage(1) and gclrbusyb;
-						g2_clear<=	gclrpage(2) and gclrbusyb;
-						g3_clear<=	gclrpage(3) and gclrbusyb;
+                                        if (vblank = '0') then
+                                                vaddr<=vaddr+"0000000001";
+						g0_clear<=	gclrsel(0) and gclrbusyb;
+						g1_clear<=	gclrsel(1) and gclrbusyb;
+						g2_clear<=	gclrsel(2) and gclrbusyb;
+						g3_clear<=	gclrsel(3) and gclrbusyb;
 						nxt_trd<=	ten;
-						nxt_g0rd<=	g0en and (not (gclrpage(0) and gclrbusyb));
-						nxt_g1rd<=	g1en and (not (gclrpage(1) and gclrbusyb));
-						nxt_g2rd<=	g2en and (not (gclrpage(2) and gclrbusyb));
-						nxt_g3rd<=	g3en and (not (gclrpage(3) and gclrbusyb));
+						nxt_g0rd<=	g0en and (not (gclrsel(0) and gclrbusyb));
+						nxt_g1rd<=	g1en and (not (gclrsel(1) and gclrbusyb));
+						nxt_g2rd<=	g2en and (not (gclrsel(2) and gclrbusyb));
+						nxt_g3rd<=	g3en and (not (gclrsel(3) and gclrbusyb));
 				    elsif (vaddr = "0000000000") then
 						nxt_trd<=	ten;
-						nxt_g0rd<=	g0en and (not (gclrpage(0) and gclrbusyb));
-						nxt_g1rd<=	g1en and (not (gclrpage(1) and gclrbusyb));
-						nxt_g2rd<=	g2en and (not (gclrpage(2) and gclrbusyb));
-						nxt_g3rd<=	g3en and (not (gclrpage(3) and gclrbusyb));
+						nxt_g0rd<=	g0en and (not (gclrsel(0) and gclrbusyb));
+						nxt_g1rd<=	g1en and (not (gclrsel(1) and gclrbusyb));
+						nxt_g2rd<=	g2en and (not (gclrsel(2) and gclrbusyb));
+						nxt_g3rd<=	g3en and (not (gclrsel(3) and gclrbusyb));
 					else
 						g0_clear<=	'0';
 						g1_clear<=	'0';
@@ -1047,6 +1119,28 @@ g80_ddat<=	g1_rdat( 7 downto 4) & g0_rdat( 3 downto 0);
 						cur_g2rd<=	'0';
 						cur_g3rd<=	'0';
 					end if;
+					if r09_wr_event='1' then
+						-- R09 written: compare immediately with current raster.
+						rintline_prev<=rintline;
+						if rintline=raster then
+							rint_reg<='1';
+						else
+							rint_reg<='0';
+						end if;
+					elsif rintline/=rintline_prev then
+						rintline_prev<=rintline;
+						if rintline=raster then
+							rint_reg<='1';
+						else
+							rint_reg<='0';
+						end if;
+					elsif (hfreq='0' or hres="00") and -- RINT hblank lead: 15 kHz, or 31 kHz 256-dot modes
+						rintline/="0000000000" and
+						rintline=raster+"0000000001" and
+						('0' & haddr)=rint_hblank_lead then
+						-- Assert raster IRQ eight haddr cycles before hvwidth.
+						rint_reg<='1';
+					end if;
 				end if;
 			end if;
 		end if;
@@ -1055,20 +1149,31 @@ g80_ddat<=	g1_rdat( 7 downto 4) & g0_rdat( 3 downto 0);
 	vlineno<=vaddr;
 
 	rastnum<=raster;
-	rint<='1' when raster_irq_early_mode='1' and rintline/="0000000000" and
-	               rintline=rastnum+"0000000001" else
-	      '1' when raster_irq_early_mode='1' and rintline="0000000000" and
-	               rastnum="0000000000" else
-	      '1' when raster_irq_early_mode='0' and rintline=rastnum else
-	      '0';
+	rint<=rint_reg;
 
 	
 	addrx<=std_logic_vector(unsigned(haddrmod(9 downto 0)) + spr_x_adj_u);
 	addry<=std_logic_vector(unsigned('0' & vaddrmod(9 downto 1)) + unsigned('0' & std_logic_vector(spr_y_adj_u(9 downto 1)))) when (sprite_double='1') else
+
 	       std_logic_vector(unsigned(vaddrmod(9 downto 0)) + spr_y_adj_u + 1) when
-	         ((hres="00" and vres='1' and hfreq='1') or
-	          (hres(0)='1' and hfreq='0') or
-	          (hres(0)='1' and vres='0' and hfreq='1' and sp_vres='0' and vvbgn(0)='1')) else
+	         (((hres="00" and vres='1' and hfreq='1' and sp_vres='0') or
+                 (hres="00" and vres='1' and hfreq='1' and
+                  sp_vres='1' and sp_lh='0') or
+                 (hres="00" and vres='1' and hfreq='1' and
+                  sp_vres='1' and sp_lh='1' and vvbgn(0)='0')) or
+	          (hres(0)='1' and vres='0' and hfreq='1' and
+	           sp_vres='0' and vvbgn(0)='1')) else
+	       -- Advance the sprite line in applicable 15 kHz modes.
+	       -- In 15 kHz 512-line interlaced mode (hres(0)='1', hfreq='0',
+	       -- vres='1', vd1='0'), vaddrmod = vaddr(8:0) & field.
+	       -- field=0 gives even linenum (even PCG rows);
+	       -- field=1 gives odd linenum (odd PCG rows).
+	       -- The +1 offset shifts rows to the wrong field: remove it.
+	       -- VD='01' -> vd1=VD(1)='0' for 512-line interlaced at 15 kHz.
+	       std_logic_vector(unsigned(vaddrmod(9 downto 0)) + spr_y_adj_u) when
+	         (hres(0)='1' and hfreq='0' and vres='1' and vd1='0') else
+	       std_logic_vector(unsigned(vaddrmod(9 downto 0)) + spr_y_adj_u + 1) when
+	         (hres(0)='1' and hfreq='0') else
 	       std_logic_vector(unsigned(vaddr) + (spr_y_adj_u sll 1)) when (double_scan='1' and sp_vres='1') else
 	       std_logic_vector(unsigned(vaddrmod(9 downto 0)) + spr_y_adj_u);
 
@@ -1190,7 +1295,7 @@ g80_ddat<=	g1_rdat( 7 downto 4) & g0_rdat( 3 downto 0);
 			hp => hp,
 			plsb => bp,
 			gg => gg,
-			gt => gt,
+			gt => gt_ref,
 			ah => ah,
 			sp_pal => sprite_ind,
 			tx_pal => t_ddatd,
@@ -1236,9 +1341,9 @@ g80_ddat<=	g1_rdat( 7 downto 4) & g0_rdat( 3 downto 0);
 	t1_addr<=	nxt_taddr	when ramsel='1' else
 					cur_taddr;
 	g0_caddr<=	g_base(arange-1 downto 18) & nxt_g0addr(17 downto 8);
-	g1_caddr<=	g_base(arange-1 downto 18) & nxt_g1addr(17 downto 8);
-	g2_caddr<=	g_base(arange-1 downto 18) & nxt_g2addr(17 downto 8);
-	g3_caddr<=	g_base(arange-1 downto 18) & nxt_g3addr(17 downto 8);
+	g1_caddr<=	g_base(arange-1 downto 18) & nxt_g0addr(17 downto 8) when memres='1' else g_base(arange-1 downto 18) & nxt_g1addr(17 downto 8);
+	g2_caddr<=	g_base(arange-1 downto 18) & nxt_g0addr(17 downto 8) when memres='1' else g_base(arange-1 downto 18) & nxt_g2addr(17 downto 8);
+	g3_caddr<=	g_base(arange-1 downto 18) & nxt_g0addr(17 downto 8) when memres='1' else g_base(arange-1 downto 18) & nxt_g3addr(17 downto 8);
 	g0_rdat<=	(others=>'0') when cur_g0rd='0' else
 					g10_rdat	when ramsel='0' else
 					g00_rdat;

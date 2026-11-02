@@ -9,7 +9,7 @@ module mister_sync #(parameter PRECOMPUTED_WINDOW = 0)
 
 	input  [1:0]        HMODE,
 	input  [1:0]        VMODE,
-	
+
 	input               HRL,    // dock clock divider
 	input               hfreq,  // Horizontal frequency: 0 = 15khz 1 = 31khz
 	input  [7:0]        htotal, // Total Horizontal Dots divided by 8
@@ -26,7 +26,7 @@ module mister_sync #(parameter PRECOMPUTED_WINDOW = 0)
 
 	output  [1:0]       out_HMODE,
 	output  [1:0]       out_VMODE,
-	
+
 	output              out_hfreq,  // Horizontal frequency: 0 = 15khz 1 = 31khz
 	output  [7:0]       out_htotal, // Total Horizontal Dots times 8
 	output  [7:0]       out_hsynl,  // End position of hsync times 8
@@ -95,43 +95,69 @@ module mister_sync #(parameter PRECOMPUTED_WINDOW = 0)
 	logic [9:0]  div_vt_r;
 	logic        div_v60_r;
 
-	wire interlaced = (VMODE[0] == 1'b1 && ~hfreq);
+	// Documented 15 kHz interlace mode.
+	wire standard_interlaced =
+		~hfreq && (VMODE == 2'b01);
 
-	wire hfreq_ovr = interlaced ? 1'b1 : hfreq; //1'b1;
-	wire [1:0] HMODE_ovr = HMODE;//2'b10;
-	wire [1:0] VMODE_ovr = VMODE;
-	wire [7:0] htotal_ovr = htotal;//8'd137;
-	wire [9:0] vtotal_ovr = ~interlaced ? vtotal : {vtotal[8:0], 1'b1};
-	wire [9:0] vsynl_ovr  = vsynl;
-	wire [9:0] vvbgn_ovr  = ~interlaced ? vvbgn : {vvbgn[8:0], 1'b1};
-	wire [9:0] vvend_ovr  = ~interlaced ? vvend : {vvend[8:0], 1'b1};
-	wire [9:0] rintl_ovr  = ~interlaced ? rintl : {rintl[8:0], 1'b1};
+	// Undocumented HF=1/VD=11 mode used by Dragon Buster.
+	// XEiJ identifies this combination as 768x1024 interlace.
+	// Export field parity for scaler classification, while preserving
+	// the documented half-line VSYNC behavior separately below.
+	wire super_interlaced =
+		hfreq && (VMODE == 2'b11);
 
-	wire is_24khz =
-	    ((HMODE_ovr == 2'b10) && hfreq_ovr &&          (htotal_ovr >= 8'd160)) ||
-	    ((HMODE_ovr == 2'b01) && hfreq_ovr && ~HRL  && (htotal_ovr >= 8'd100)) ||
-	    ((HMODE_ovr == 2'b01) && hfreq_ovr &&  HRL  && (htotal_ovr >= 8'd80 )) ||
-	    ((HMODE_ovr == 2'b00) && hfreq_ovr && ~HRL  && (htotal_ovr >= 8'd53 )) ||
-	    ((HMODE_ovr == 2'b00) && hfreq_ovr &&  HRL  && (htotal_ovr >= 8'd40 ) && (htotal_ovr < 8'd50));
+	wire interlaced =
+		standard_interlaced || super_interlaced;
+
+
+
+	wire is_mid_hfreq =
+	    ((HMODE == 2'b10) && hfreq &&          (htotal >= 8'd160)) ||
+	    ((HMODE == 2'b01) && hfreq && ~HRL  && (htotal >= 8'd100)) ||
+	    ((HMODE == 2'b01) && hfreq &&  HRL  && (htotal >= 8'd80 )) ||
+	    ((HMODE == 2'b00) && hfreq && ~HRL  && (htotal >= 8'd53 )) ||
+	    ((HMODE == 2'b00) && hfreq &&  HRL  && (htotal >= 8'd40 ) && (htotal < 8'd50));
 
 	assign out_HMODE    = HMODE;
 	assign out_VMODE    = VMODE;
-	assign out_hfreq    = hfreq_ovr;
+	assign out_hfreq    = hfreq;
 	assign out_htotal   = htotal;
 	assign out_hsynl    = hsynl;
 	assign out_hvbgn    = hvbgn;
 	assign out_hvend    = hvend;
-	assign out_vtotal   = vtotal_ovr;
+	assign out_vtotal   = vtotal;
 	assign out_vsynl    = vsynl;
-	assign out_vvbgn    = vvbgn_ovr;
-	assign out_vvend    = vvend_ovr;
-	assign out_rintl    = rintl_ovr;
+	assign out_vvbgn    = vvbgn;
+	assign out_vvend    = vvend;
+	assign out_rintl    = rintl;
 
-	assign HSYNC = HUCOUNT < hsynl;
-	assign VSYNC = (vsynl_ovr != 0) ? (VCOUNT < vsynl_ovr) : (VCOUNT == 0);
+	// R01 and R05 store the respective sync pulse width minus one.
+	assign HSYNC = HUCOUNT <= hsynl;
+	wire [7:0] htotal_m = htotal;
+	wire [9:0] vtotal_m = vtotal;
 
-	wire [7:0] htotal_m = htotal_ovr;
-	wire [9:0] vtotal_m = vtotal_ovr;
+	// In documented HF=0/VD=01 interlace, one field keeps the normal
+	// line-aligned vertical sync phase while the other is displaced by
+	// half of the complete horizontal period. Keep the internal CRTC
+	// raster, HCOMP, VCOMP and VRAM timing on full-line boundaries.
+	wire [11:0] hphase =
+		({4'd0, HUCOUNT} << 3) + {9'd0, dotpu_cnt};
+	wire [11:0] hperiod =
+		({3'd0, htotal_m} + 12'd1) << 3;
+	wire [11:0] hhalf = hperiod >> 1;
+	wire        second_half = hphase >= hhalf;
+
+	wire vsync_field0 = VCOUNT <= vsynl;
+	wire vsync_field1 =
+		((VCOUNT == 10'd0) && second_half) ||
+		((VCOUNT > 10'd0) && (VCOUNT <= vsynl)) ||
+		((VCOUNT == ({1'b0, vsynl} + 11'd1)) && !second_half);
+
+	// Apply the documented half-line phase only to HF=0/VD=01.
+	// The undocumented HF=1/VD=11 mode initially exports FIELD only,
+	// allowing scaler detection without altering its VSYNC phase.
+	assign VSYNC =
+		(standard_interlaced && field) ? vsync_field1 : vsync_field0;
 
 
 	wire [7:0] hactive_start = PRECOMPUTED_WINDOW ? window_config[51:44] :
@@ -145,11 +171,11 @@ module mister_sync #(parameter PRECOMPUTED_WINDOW = 0)
 	wire [7:0] hactive_width = hactive_width_w[8] ? 8'hff :
 	                           (hactive_width_w == 9'd0) ? 8'd1 : hactive_width_w[7:0];
 	wire [7:0] hbox_width_nom = hfreq ?
-	                            ((HMODE_ovr == 2'b00) ? (HRL ? (is_24khz ? 8'd30 : 8'd48) : (is_24khz ? 8'd40 : 8'd32)) :
-	                             (HMODE_ovr == 2'b01) ? (HRL ? (is_24khz ? 8'd62 : 8'd48) : (is_24khz ? 8'd80 : 8'd64)) :
+	                            ((HMODE == 2'b00) ? (HRL ? (is_mid_hfreq ? 8'd30 : 8'd48) : (is_mid_hfreq ? 8'd40 : 8'd32)) :
+	                             (HMODE == 2'b01) ? (HRL ? (is_mid_hfreq ? 8'd62 : 8'd48) : (is_mid_hfreq ? 8'd80 : 8'd64)) :
 	                             8'd96) :
-	                            ((HMODE_ovr == 2'b00) ? (HRL ? 8'd48 : 8'd32) :
-	                             (HMODE_ovr == 2'b01) ? 8'd64 : 8'd96);
+	                            ((HMODE == 2'b00) ? (HRL ? 8'd48 : 8'd32) :
+	                             (HMODE == 2'b01) ? 8'd64 : 8'd96);
 	wire [7:0] hbox_width_exp = (hactive_width > hbox_width_nom) ? hactive_width : hbox_width_nom;  // expand-to-fit: never clip content
 	wire [7:0] hbox_width = (hbox_width_exp > htotal_m) ? htotal_m : hbox_width_exp;
 	wire [7:0] hbox_margin = (hbox_width > hactive_width) ? ((hbox_width - hactive_width) >> 1) : 8'd0;
@@ -160,15 +186,15 @@ module mister_sync #(parameter PRECOMPUTED_WINDOW = 0)
 	wire [7:0] hbox_start = PRECOMPUTED_WINDOW ? window_config[35:28] : hstart_clamped_s[7:0];
 	wire [7:0] hbox_end   = PRECOMPUTED_WINDOW ? window_config[27:20] : hbox_start + hbox_width;
 
-	wire [9:0] vactive_height = (vvend_ovr > vvbgn_ovr) ? (vvend_ovr - vvbgn_ovr) : 10'd1;
-	wire [9:0] vbox_height_nom = is_24khz  ? 10'd424 :
+	wire [9:0] vactive_height = (vvend > vvbgn) ? (vvend - vvbgn) : 10'd1;
+	wire [9:0] vbox_height_nom = is_mid_hfreq  ? 10'd424 :
 	                             hfreq     ? 10'd512 :
-	                             hfreq_ovr ? 10'd512 : 10'd256;
+                                    10'd256;
 	wire [9:0] vbox_height_exp = (vactive_height > vbox_height_nom) ? vactive_height : vbox_height_nom;
 	wire [9:0] vbox_height = (vbox_height_exp > vtotal_m) ? vtotal_m : vbox_height_exp;
 	wire [9:0] vbox_margin = (vbox_height > vactive_height) ? ((vbox_height - vactive_height) >> 1) : 10'd0;
 
-	wire signed [11:0] vstart_s = $signed({2'b0, vvbgn_ovr}) - $signed({2'b0, vbox_margin});
+	wire signed [11:0] vstart_s = $signed({2'b0, vvbgn}) - $signed({2'b0, vbox_margin});
 	wire signed [11:0] vmax_start_s = $signed({2'b0, vtotal_m}) - $signed({2'b0, vbox_height});
 	wire signed [11:0] vstart_clamped_s = (vstart_s < 0) ? 12'sd0 :
 	                                      (vstart_s > vmax_start_s) ? vmax_start_s : vstart_s;
@@ -176,27 +202,37 @@ module mister_sync #(parameter PRECOMPUTED_WINDOW = 0)
 	wire [9:0] vbox_end   = PRECOMPUTED_WINDOW ? window_config[9:0] : vbox_start + vbox_height;
 
 	assign VIDEN = ~(VRTC || HRTC);
-	// 69.55199 - Video clock
-	// 38.86363 - Also attached to video circuits
-	//                       69.55199       38.86363   80
-	// 15KHz - 55.46Hz
-	// 256x256 = 6.25MHz                    6          12
-	// 512x256 = 10MHz                      4          8
-	// 512x512 = 19.75MHz                   2          4
-
-	// 31Khz -  61.46Hz
-	// 256x256 = 7MHz         10                       12
-	// 512x256 = 11.25MHz     6                        8
-	// 512x512 = 21.75MHz     3                        4
-	// 768x512 = 30.25MHz     2                        3
-	// HRL 0: Dividing ratio 1/2, 1/3, 1/6 
-	//     1:1/2, 1/4, 1/8
-	// If hfreq is off and 512 mode is on, the monitor is interlaced mode
-	// 50.350 crystals are also present on some models to emulate vga
-	// They are selected with a HRES of 2'b11
-	// Vertical mode if 1 when hfreq is 0, will interlace
-	// Vertical mode if 0 when hfreq is 1, will doublescan
-	// otherwise, vertical mode just draws lines.
+	// Video clock sources documented in the X68000 hardware:
+	//   38.863632 MHz
+	//   69.5519 MHz
+	//   50.350 MHz on models supporting the 768-dot clock path
+	//
+	// HF=0 selects the standard horizontal-frequency family.
+	// HF=1 selects the high horizontal-frequency family.
+	//
+	// For HF=1, the iX1096 video clock controller receives:
+	//   HRL, HF, HD1 and HD0.
+	//
+	// Documented horizontal-resolution encodings:
+	//   HD=00: 256-dot mode
+	//   HD=01: 512-dot mode
+	//   HD=10: undefined
+	//   HD=11: 768-dot mode
+	//
+	// HF=1 clock division:
+	//   HRL=0, HD=00: 69.5519 MHz / 6
+	//   HRL=0, HD=01: 69.5519 MHz / 3
+	//   HRL=0, HD=10: undefined mode, existing core clock preserved
+	//   HRL=0, HD=11: 50.350 MHz / 2
+	//
+	//   HRL=1, HD=00: 69.5519 MHz / 8
+	//   HRL=1, HD=01: 69.5519 MHz / 4
+	//   HRL=1, HD=10: undefined mode, existing core clock preserved
+	//   HRL=1, HD=11: 50.350 MHz / 2
+	//
+	// With HF=1 and VD=00, the logical 256-line image is double-scanned.
+	// With HF=1 and VD=01, the 512-line image is progressive.
+	// With HF=0 and VD=01, the documented 512-line mode is interlaced.
 	assign LRAMADR[2:0] = dotpu_cnt;
 	assign LRAMADR[9:3] = hvcount[6:0];
 
@@ -208,29 +244,29 @@ module mister_sync #(parameter PRECOMPUTED_WINDOW = 0)
 	// Rising edge of visible area
 	assign HCOMPb = (HCOMPw && ~HCOMPl);
 	assign VCOMPb = (VCOMPw && ~VCOMPl);
-	
+
 
 	always_comb begin
 		if (v60hz && (mod_inc_dyn != 32'd0))
 			mod_inc = mod_inc_dyn;
 		else begin
-			case ({HRL, hfreq_ovr, HMODE_ovr})
+			case ({HRL, hfreq, HMODE})
 				4'h0: mod_inc = 205848; // HRL:0 HF:0 H:256 (38.864MHz/8 = 4.858MHz)
 				4'h1: mod_inc = 102924; // HRL:0 HF:0 H:512
 				4'h2: mod_inc = 205848; // HRL:0 HF:0 H:768
 				4'h3: mod_inc = 158888; // HRL:0 HF:0 H:###
-				4'h4: mod_inc = 86266;  // HRL:0 HF:1 H:256 (69.552MHz/6 = 11.592MHz)
-				4'h5: mod_inc = 43133;  // HRL:0 HF:1 H:512
-				4'h6: mod_inc = 28755;  // HRL:0 HF:1 H:768
-				4'h7: mod_inc = 39722;  // HRL:0 HF:1 H:### (768 alternate)
-				4'h8: mod_inc = 205848; // HRL:1 HF:0 H:256
-				4'h9: mod_inc = 102924; // HRL:1 HF:0 H:512
-				4'hA: mod_inc = 205848; // HRL:1 HF:0 H:768
-				4'hB: mod_inc = 158888; // HRL:1 HF:0 H:###
-				4'hC: mod_inc = 115022; // HRL:1 HF:1 H:256 (69.552MHz/8 = 8.694MHz)
-				4'hD: mod_inc = 57511;  // HRL:1 HF:1 H:512
-				4'hE: mod_inc = 28755;  // HRL:1 HF:1 H:768
-				4'hF: mod_inc = 39722;  // HRL:1 HF:1 H:### (768 alternate)
+				4'h4: mod_inc = 86266;  // HRL:0 HF:1 HD:00, 256 dots, 69.5519MHz/6
+				4'h5: mod_inc = 43133;  // HRL:0 HF:1 HD:01, 512 dots, 69.5519MHz/3
+				4'h6: mod_inc = 28755;  // HRL:0 HF:1 HD:10, undefined mode
+				4'h7: mod_inc = 39722;  // HRL:0 HF:1 HD:11, 768 dots, 50.350MHz/2
+				4'h8: mod_inc = 205848; // HRL:1 HF:0 HD:00, 256 dots
+				4'h9: mod_inc = 102924; // HRL:1 HF:0 HD:01, 512 dots
+				4'hA: mod_inc = 205848; // HRL:1 HF:0 HD:10, undefined mode
+				4'hB: mod_inc = 158888; // HRL:1 HF:0 HD:11, 768-dot encoding
+				4'hC: mod_inc = 115022; // HRL:1 HF:1 HD:00, 256 dots, 69.5519MHz/8
+				4'hD: mod_inc = 57511;  // HRL:1 HF:1 HD:01, 512 dots, 69.5519MHz/4
+				4'hE: mod_inc = 28755;  // HRL:1 HF:1 HD:10, undefined mode
+				4'hF: mod_inc = 39722;  // HRL:1 HF:1 HD:11, 768 dots, 50.350MHz/2
 				default: mod_inc = 28755;
 			endcase
 		end
@@ -272,10 +308,10 @@ module mister_sync #(parameter PRECOMPUTED_WINDOW = 0)
 	end
 
 	assign pix_ce = ext_pix_en ? ext_pix_ce : polyclock;
-	assign pix_mode = {HRL, hfreq_ovr, HMODE_ovr};
+	assign pix_mode = {HRL, hfreq, HMODE};
 	assign pix_dyn = v60hz && (mod_inc_dyn != 32'd0);
-	assign out_is_24khz = is_24khz;
-	assign f1 = 1'b0;
+	assign out_is_24khz = is_mid_hfreq;
+	assign f1 = interlaced ? field : 1'b0;
 	assign vid_osc = pix_ce;
 
 	always_ff @(posedge gclk) begin // 80mhz is 12.5ns per tick
@@ -334,9 +370,9 @@ module mister_sync #(parameter PRECOMPUTED_WINDOW = 0)
 
 				if (HUCOUNT >= htotal_m) begin
 					VCOUNT <= VCOUNT + 1'd1;
-					if (VCOUNT == vvbgn_ovr)
+					if (VCOUNT == vvbgn)
 							VRTC <= 0;
-						else if (VCOUNT == vvend_ovr)
+						else if (VCOUNT == vvend)
 							VRTC <= 1;
 						if (VCOUNT == vbox_start)
 							VRTC_b <= 0;

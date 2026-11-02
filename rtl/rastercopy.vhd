@@ -51,6 +51,9 @@ begin
 	begin
 		if rising_edge(clk) then
 			if(rstn='0')then
+				STATE<=st_IDLE;
+				sel<=(others=>'0');
+				ackd<='0';
 				cplane<=(others=>'0');
 				srcaddr(selwidth+7 downto selwidth)<=(others=>'0');
 				dstaddr(selwidth+7 downto selwidth)<=(others=>'0');
@@ -64,7 +67,7 @@ begin
 				case STATE is
 				when st_IDLE=>
 	--				if(sstart='0' and lstart='1')then
-					if(start='1')then
+					if(start='1' and plane/="0000")then
 						srcaddr(selwidth+7 downto selwidth)<=src;
 						dstaddr(selwidth+7 downto selwidth)<=dst;
 						cplane<=plane;

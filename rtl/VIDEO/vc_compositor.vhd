@@ -153,9 +153,14 @@ begin
         end if;
 
 		if spren = '0' and txten = '1' and tx_pal_eff = 0 then
-			rep_source := SRC_TX;
-			rep_color  := tx_color;
-			st_present := tx_color /= x"0000";
+		    rep_source := SRC_TX;
+		    if grpen = '0' or unsigned(pri_tx) > unsigned(pri_gr) then
+		        rep_color  := tx_color0;
+		        st_present := tx_color0 /= x"0000";
+		    else
+		        rep_color  := (others => '0');
+		        st_present := false;
+		    end if;
 		end if;
 
         if pri_gr = "11" and gr_present then
@@ -225,7 +230,7 @@ begin
         result_source := normal_source;
         result_valid  := normal_valid;
 
-        if ah = '1' and gr_present then
+        if ah = '1' and plsb = '1' and gr_present then
             result_color  := mix_x(gr_color, tx_color0);
             result_source := SRC_GR;
             result_valid  := '1';

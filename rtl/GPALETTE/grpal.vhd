@@ -111,7 +111,7 @@ begin
 	red<=	('0' & pdat1(2 downto 0) & pdat0(7 downto 6))+('0' & pdat3(2 downto 0) & pdat2(7 downto 6));
 	blu<=	('0' & pdat0(5 downto 1))+('0' & pdat2(5 downto 1));
 	
-	pals<=grn(5 downto 1) & red(5 downto 1) & blu(5 downto 1) & '0';
+	pals<=grn(5 downto 1) & red(5 downto 1) & blu(5 downto 1) & pdat2(0);
 	palout<=palp when skel='0' or psel(0)='0' else pals;
 
 	palp2(15 downto 8)<=	pdat1m when gmode='0' and psel2(1)='0' else

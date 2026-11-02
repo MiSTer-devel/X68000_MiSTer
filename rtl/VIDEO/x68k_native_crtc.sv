@@ -90,7 +90,7 @@ module x68k_native_crtc
         .src_clk(config_clk), .dst_clk(pclk), .reset_n(rstn && prepared_valid),
         .in_data({prepared_config, prepared_window}),
         .out_data({c_HMODE, c_VMODE, c_HRL, c_hfreq, c_htotal, c_hsynl, c_hvbgn, c_hvend, c_vtotal, c_vsynl, c_vvbgn, c_vvend, c_hadj, c_rintl, c_window}), .valid(cfg_valid));
-    wire c_hf = c_hfreq | c_VMODE[0];
+    wire c_hf = c_hfreq;
     wire [3:0] c_mode = {c_HRL, c_hf, c_HMODE};
     wire scan_ok = rstn && scan_ready && cfg_valid && (c_mode == active_mode);
     (* altera_attribute = "-name SYNCHRONIZER_IDENTIFICATION FORCED_IF_ASYNCHRONOUS", preserve *) reg [2:0] scan_reset;
@@ -114,6 +114,7 @@ module x68k_native_crtc
         else count <= count + 1'b1;
 
     wire line_event, frame_event;
+    wire timing_f1;
     mister_sync #(.PRECOMPUTED_WINDOW(1)) timing (
         .window_config(c_window),
         .gclk(pclk), .rstn(scan_reset_n), .LRAMDAT(LRAMDAT),
@@ -136,26 +137,35 @@ module x68k_native_crtc
         .RFOUT(RFOUT), .GFOUT(GFOUT), .BFOUT(BFOUT),
         .HSYNC(HSYNC), .VSYNC(VSYNC), .HRTC(HRTC), .VRTC(VRTC),
         .HRTC_b(HRTC_b), .VRTC_b(VRTC_b), .VIDEN(VIDEN),
-        .HCOMP(line_event), .VPSTART(frame_event));
+        .HCOMP(line_event), .VPSTART(frame_event), .f1(timing_f1));
 
     wire interlaced = VMODE[0] && !hfreq;
-    assign pix_mode = {HRL, hfreq | interlaced, HMODE};
+    assign pix_mode = {HRL, hfreq, HMODE};
     assign pix_dyn = 0;
-    assign f1 = 0;
+    // Synchronize field parity from the scan timing domain to the
+    // renderer domain. FIELD changes only at an interlaced frame
+    // boundary and is consumed by the CRTC registers and vidcont.
+    (* altera_attribute = "-name SYNCHRONIZER_IDENTIFICATION FORCED_IF_ASYNCHRONOUS", preserve *)
+    reg [1:0] field_sync;
+    always @(posedge gclk or negedge render_reset_n)
+        if (!render_reset_n) field_sync <= 2'b00;
+        else field_sync <= {field_sync[0], timing_f1};
+
+    assign f1 = field_sync[1];
     assign vid_osc = pix_ce;
     assign VCOMP = VPSTART;
     assign out_HMODE = HMODE;
     assign out_VMODE = VMODE;
-    assign out_hfreq = hfreq | interlaced;
+    assign out_hfreq = hfreq;
     assign out_htotal = htotal;
     assign out_hsynl = hsynl;
     assign out_hvbgn = hvbgn;
     assign out_hvend = hvend;
-    assign out_vtotal = interlaced ? {vtotal[8:0],1'b1} : vtotal;
+    assign out_vtotal = vtotal;
     assign out_vsynl = vsynl;
-    assign out_vvbgn = interlaced ? {vvbgn[8:0],1'b1} : vvbgn;
-    assign out_vvend = interlaced ? {vvend[8:0],1'b1} : vvend;
-    assign out_rintl = interlaced ? {rintl[8:0],1'b1} : rintl;
+    assign out_vvbgn = vvbgn;
+    assign out_vvend = vvend;
+    assign out_rintl = rintl;
     assign out_is_24khz =
         ((HMODE == 2) && out_hfreq && htotal >= 160) ||
         ((HMODE == 1) && out_hfreq && !HRL && htotal >= 100) ||

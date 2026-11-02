@@ -1003,21 +1003,21 @@ begin
 						clrmask:=(others=>'0'); clrplanes:=(others=>'0');
 						if g0_caddr/=g0caddrh and g0_clear='1' and g0_caddr(awidth-1 downto 9)=clraddr(awidth-1 downto 9) then
 							g0caddrh<=g0_caddr; clrplanes(0):='1';
-							if gmode="00" then clrmask:=clrmask or x"000F"; else clrmask:=clrmask or x"00FF"; end if;
+							clrmask:=clrmask or x"000F";
 						end if;
 						if g1_caddr/=g1caddrh and g1_clear='1' and g1_caddr(awidth-1 downto 9)=clraddr(awidth-1 downto 9) then
 							g1caddrh<=g1_caddr; clrplanes(1):='1';
-							if gmode="00" then clrmask:=clrmask or x"00F0"; else clrmask:=clrmask or x"00FF"; end if;
+							clrmask:=clrmask or x"00F0";
 						end if;
 						if g2_caddr/=g2caddrh and g2_clear='1' and g2_caddr(awidth-1 downto 9)=clraddr(awidth-1 downto 9) then
 							g2caddrh<=g2_caddr; clrplanes(2):='1';
-							if gmode="00" then clrmask:=clrmask or x"0F00"; else clrmask:=clrmask or x"FF00"; end if;
+							clrmask:=clrmask or x"0F00";
 						end if;
 						if g3_caddr/=g3caddrh and g3_clear='1' and g3_caddr(awidth-1 downto 9)=clraddr(awidth-1 downto 9) then
 							g3caddrh<=g3_caddr; clrplanes(3):='1';
-							if gmode="00" then clrmask:=clrmask or x"F000"; else clrmask:=clrmask or x"FF00"; end if;
+							clrmask:=clrmask or x"F000";
 						end if;
-						if gmode(1)='1' then clrmask:=x"FFFF"; end if;
+
 						gclr_mask<=clrmask; gclr_planes<=clrplanes;
 						ramaddrh<=clraddr(awidth-1 downto 8);
 						rambgnaddr<=(others=>'0'); ramendaddr<=(others=>'1'); dual_phase<='0';

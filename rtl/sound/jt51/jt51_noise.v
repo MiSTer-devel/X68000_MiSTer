@@ -102,7 +102,8 @@ always @(posedge clk, posedge rst) begin
     if( rst ) begin
         mix <= 12'd0;
     end else if( op31_no && cen ) begin
-        mix     <= { mix_sgn, eg[9:2] ^ {8{out}}, {3{mix_sgn}} };
+        mix <= (&eg) ? 12'd0 :
+            { mix_sgn, eg[9:2] ^ {8{out}}, {3{mix_sgn}} };
     end
 end
 

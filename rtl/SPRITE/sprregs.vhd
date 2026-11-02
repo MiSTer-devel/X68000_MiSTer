@@ -39,6 +39,7 @@ port(
 	sys_ce  :in std_logic := '1';
 	vclk	:in std_logic;
 	vid_ce  :in std_logic := '1';
+	hcomp	:in std_logic;
 	rstn	:in std_logic
 );
 end sprregs;
@@ -126,6 +127,18 @@ port(
 	rstn	:in std_logic
 );
 end component;
+signal bg0xpos_vid   :std_logic_vector(9 downto 0);
+signal bg0ypos_vid   :std_logic_vector(9 downto 0);
+signal bg1xpos_vid   :std_logic_vector(9 downto 0);
+signal bg1ypos_vid   :std_logic_vector(9 downto 0);
+signal bg1txsel_vid :std_logic_vector(1 downto 0);
+signal bg0txsel_vid :std_logic_vector(1 downto 0);
+signal bgon_vid     :std_logic_vector(1 downto 0);
+signal hdisp_vid    :std_logic_vector(5 downto 0);
+signal vdisp_vid    :std_logic_vector(7 downto 0);
+signal lh_vid       :std_logic;
+signal vres_vid     :std_logic_vector(1 downto 0);
+signal hres_vid     :std_logic_vector(1 downto 0);
 begin
 	reg0_cs<='1' when addr(23 downto 10)="11101011000000" and addr(2 downto 1)="00" else '0';
 	reg1_cs<='1' when addr(23 downto 10)="11101011000000" and addr(2 downto 1)="01" else '0';
@@ -191,19 +204,51 @@ begin
 	reg0e	:ramreg generic map(x"eb080e") port map(addr,reg0erdat,wrdat,b_rd,b_wr,reg0edoe,reg0edat,sclk,sys_ce,rstn);
 	reg10	:ramreg generic map(x"eb0810") port map(addr,reg10rdat,wrdat,b_rd,b_wr,reg10doe,reg10dat,sclk,sys_ce,rstn);
 
-	BG0Xpos<=	reg00dat(9 downto 0);
-	BG0Ypos<=	reg02dat(9 downto 0);
-	BG1Xpos<=	reg04dat(9 downto 0);
-	BG1Ypos<=	reg06dat(9 downto 0);
+	process(vclk, rstn)
+	begin
+		if rstn='0' then
+			bg0xpos_vid   <= (others=>'0');
+			bg0ypos_vid   <= (others=>'0');
+			bg1xpos_vid   <= (others=>'0');
+			bg1ypos_vid   <= (others=>'0');
+			bg1txsel_vid <= (others=>'0');
+			bg0txsel_vid <= (others=>'0');
+			bgon_vid     <= (others=>'0');
+			hdisp_vid    <= (others=>'0');
+			vdisp_vid    <= (others=>'0');
+			lh_vid       <= '0';
+			vres_vid     <= (others=>'0');
+			hres_vid     <= (others=>'0');
+		elsif rising_edge(vclk) then
+			if vid_ce='1' and hcomp='1' then
+				bg0xpos_vid   <= reg00dat(9 downto 0);
+				bg0ypos_vid   <= reg02dat(9 downto 0);
+				bg1xpos_vid   <= reg04dat(9 downto 0);
+				bg1ypos_vid   <= reg06dat(9 downto 0);
+				bg1txsel_vid <= reg08dat(5 downto 4);
+				bg0txsel_vid <= reg08dat(2 downto 1);
+				bgon_vid     <= reg08dat(3) & reg08dat(0);
+				hdisp_vid    <= reg0cdat(5 downto 0);
+				vdisp_vid    <= reg0edat(7 downto 0);
+				lh_vid       <= reg10dat(4);
+				vres_vid     <= reg10dat(3 downto 2);
+				hres_vid     <= reg10dat(1 downto 0);
+			end if;
+		end if;
+	end process;
+	BG0Xpos<=	bg0xpos_vid;
+	BG0Ypos<=	bg0ypos_vid;
+	BG1Xpos<=	bg1xpos_vid;
+	BG1Ypos<=	bg1ypos_vid;
 	DISPEN<=	reg08dat(9);
-	BG1TXSEL<=	reg08dat(5 downto 4);
-	BG0TXSEL<=	reg08dat(2 downto 1);
-	BGON<=		reg08dat(3) & reg08dat(0);
+	BG1TXSEL<=	bg1txsel_vid;
+	BG0TXSEL<=	bg0txsel_vid;
+	BGON<=		bgon_vid;
 	HTOTAL<=	reg0adat(7 downto 0);
-	HDISP<=		reg0cdat(5 downto 0);
-	VDISP<=		reg0edat(7 downto 0);
-	LH<=		reg10dat(4);
-	VRES<=		reg10dat(3 downto 2);
-	HRES<=		reg10dat(1 downto 0);
+	HDISP<=		hdisp_vid;
+	VDISP<=		vdisp_vid;
+	LH<=		lh_vid;
+	VRES<=		vres_vid;
+	HRES<=		hres_vid;
 
 end rtl;

@@ -101,9 +101,10 @@ signal	lm_as	:std_logic;
 signal	gc_bt	:std_logic_vector(1 downto 0);
 signal	gc_br	:std_logic_vector(1 downto 0);
 signal	bwcount	:integer range 0 to (128*16)-1;
-signal	brcount	:integer range 0 to 127;
+signal	brcount	:integer range 0 to 129;
 signal	blen		:integer range 0 to 128;
 signal	bwtotal	:integer range 0 to (128*16)-1;
+signal	lrar_allow	:std_logic;
 signal	bren	:std_logic;
 
 component dma1ch
@@ -205,6 +206,7 @@ begin
 				pri2(1 downto 0)<="00";
 				pri3(1 downto 0)<="00";
 				actch<=4;
+				busactv<=(others=>'0');
 	--			lm_as:='1';
 			elsif(ce = '1')then
 				c_pri:="1111";
@@ -489,12 +491,47 @@ begin
 	end process;
 	buschkv(4)<='1' when (lm_as='0' and m_as='1') else '0';
 
-	int<=irqv(3) or irqv(2) or irqv(1) or irqv(0);
-	ivect<=	ivect0 when irqv(0)='1' else
-			ivect1 when irqv(1)='1' else
-			ivect2 when irqv(2)='1' else
-			ivect3 when irqv(3)='1' else
-			x"00";
+        int<=irqv(3) or irqv(2) or irqv(1) or irqv(0);
+
+        process(irqv,pri0,pri1,pri2,pri3,ivect0,ivect1,ivect2,ivect3)
+        variable c_pri   :std_logic_vector(3 downto 0);
+        variable n_pri   :std_logic_vector(3 downto 0);
+        variable channel :integer range 0 to 4;
+        begin
+                c_pri:="1111";
+                channel:=4;
+                for i in 0 to 3 loop
+                        case i is
+                        when 0 =>
+                                n_pri:=pri0;
+                        when 1 =>
+                                n_pri:=pri1;
+                        when 2 =>
+                                n_pri:=pri2;
+                        when 3 =>
+                                n_pri:=pri3;
+                        when others =>
+                                n_pri:="1111";
+                        end case;
+                        if(irqv(i)='1' and n_pri<=c_pri)then
+                                channel:=i;
+                                c_pri:=n_pri;
+                        end if;
+                end loop;
+
+                case channel is
+                when 0 =>
+                        ivect<=ivect0;
+                when 1 =>
+                        ivect<=ivect1;
+                when 2 =>
+                        ivect<=ivect2;
+                when 3 =>
+                        ivect<=ivect3;
+                when others =>
+                        ivect<=x"00";
+                end case;
+        end process;
 
 	b_addr<=b_addr0	when actch=0 else
 			b_addr1	when actch=1 else
@@ -577,25 +614,45 @@ begin
 					(blen*16)-1 when gc_br="11" else
 					0;
 
-	process(clk,rstn)begin
+	-- Limited-rate auto-request bandwidth control.
+	-- The current sample interval measures non-CPU bus ownership.
+	-- Its measured utilization enables or disables limited-rate
+	-- auto-requests during the following sample interval.
+	bren<='1' when lrar_allow='1' and bwcount<blen else '0';
+
+	process(clk,rstn)
+	variable usage_next :integer range 0 to 129;
+	begin
 		if rising_edge(clk) then
 			if(rstn='0')then
 				bwcount<=0;
-				bren<='1';
-			elsif(ce = '1')then
-				if(actch/=4)then
-					if(brcount<(blen-1))then
-						brcount<=brcount+1;
-					else
-						bren<='0';
-					end if;
+				brcount<=0;
+				lrar_allow<='1';
+			elsif(ce='1')then
+				usage_next:=brcount;
+
+				-- actch/=4 represents DMAC ownership of the system bus.
+				-- Saturate above the largest programmable threshold so
+				-- that utilization greater than 128 remains detectable.
+				if(actch/=4 and usage_next<129)then
+					usage_next:=usage_next+1;
 				end if;
+
 				if(bwcount<bwtotal)then
 					bwcount<=bwcount+1;
+					brcount<=usage_next;
 				else
 					bwcount<=0;
 					brcount<=0;
-					bren<='1';
+
+					-- Utilization equal to the programmed limit is allowed.
+					-- Only utilization exceeding the limit blocks the next
+					-- complete sample interval.
+					if(usage_next<=blen)then
+						lrar_allow<='1';
+					else
+						lrar_allow<='0';
+					end if;
 				end if;
 			end if;
 		end if;
